@@ -30,7 +30,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'My First iOS Flutter App 1'),
+      home: const MyHomePage(title: 'My First iOS Flutter App 2'),
     );
   }
 }
