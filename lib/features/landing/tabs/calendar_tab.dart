@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 
 import '../../calendar/models/calendar_entry.dart';
 import '../../calendar/widgets/month_calendar.dart';
+import '../../roster/models/imported_roster.dart';
 import '../../roster/services/ical_roster_parser.dart';
+import '../../roster/services/roster_storage.dart';
 
 class CalendarTab extends StatefulWidget {
   const CalendarTab({super.key});
@@ -15,13 +17,24 @@ class CalendarTab extends StatefulWidget {
 }
 
 class _CalendarTabState extends State<CalendarTab> {
+  final _storage = RosterStorage();
+  bool _loading = true;
   bool _rosterLoaded = false;
   DateTime _visibleMonth = DateTime(2026, 8);
   DateTime? _selectedDate;
   List<CalendarEntry> _entries = const [];
+  List<ImportedRoster> _rosters = const [];
 
   @override
-  Widget build(BuildContext context) => _rosterLoaded
+  void initState() {
+    super.initState();
+    _restoreRosters();
+  }
+
+  @override
+  Widget build(BuildContext context) => _loading
+      ? const Center(child: CircularProgressIndicator())
+      : _rosterLoaded
       ? _buildLoadedCalendar(context)
       : _buildEmptyCalendar(context);
 
@@ -90,7 +103,7 @@ class _CalendarTabState extends State<CalendarTab> {
             OutlinedButton.icon(
               onPressed: _importRoster,
               icon: const Icon(Icons.upload_file_rounded, size: 18),
-              label: const Text('New roster'),
+              label: const Text('Upload next roster'),
             ),
           ],
         ),
@@ -153,9 +166,25 @@ class _CalendarTabState extends State<CalendarTab> {
       final entries = const IcalRosterParser().parse(utf8.decode(bytes));
       if (entries.isEmpty) throw const FormatException('No duties found');
       if (!mounted) return;
+      final roster = ImportedRoster(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        fileName: file.name,
+        importedAt: DateTime.now(),
+        entries: entries,
+      );
+      final updatedRosters = [
+        ..._rosters.where((stored) => stored.fileName != file.name),
+        roster,
+      ];
+      await _storage.save(updatedRosters);
+      if (!mounted) return;
+      final allEntries =
+          updatedRosters.expand((stored) => stored.entries).toList()
+            ..sort((first, second) => first.date.compareTo(second.date));
       setState(() {
         _rosterLoaded = true;
-        _entries = entries;
+        _rosters = updatedRosters;
+        _entries = allEntries;
         _visibleMonth = DateTime(
           entries.first.date.year,
           entries.first.date.month,
@@ -170,6 +199,31 @@ class _CalendarTabState extends State<CalendarTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Roster could not be imported: $error')),
       );
+    }
+  }
+
+  Future<void> _restoreRosters() async {
+    try {
+      final rosters = await _storage.load();
+      final entries = rosters.expand((roster) => roster.entries).toList()
+        ..sort((first, second) => first.date.compareTo(second.date));
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _rosters = rosters;
+        _entries = entries;
+        _rosterLoaded = entries.isNotEmpty;
+        if (entries.isNotEmpty) {
+          _visibleMonth = DateTime(
+            entries.last.date.year,
+            entries.last.date.month,
+          );
+          _selectedDate = entries.last.date;
+        }
+      });
+    } on Object {
+      if (!mounted) return;
+      setState(() => _loading = false);
     }
   }
 
