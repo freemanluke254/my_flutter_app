@@ -13,6 +13,18 @@ class OfpFlightDetails {
     required this.callsign,
     required this.planId,
     required this.flightDate,
+    this.scheduledFlightTime = '',
+    this.detailedRoute = '',
+    this.takeoffWeight = '',
+    this.landingWeight = '',
+    this.zeroFuelWeight = '',
+    this.payload = '',
+    this.blockFuel = '',
+    this.taxiFuel = '',
+    this.tripFuel = '',
+    this.contingencyFuel = '',
+    this.finalReserveFuel = '',
+    this.extraFuel = '',
   });
   final String flightNumber;
   final String departure;
@@ -25,6 +37,18 @@ class OfpFlightDetails {
   final String callsign;
   final String planId;
   final DateTime? flightDate;
+  final String scheduledFlightTime;
+  final String detailedRoute;
+  final String takeoffWeight;
+  final String landingWeight;
+  final String zeroFuelWeight;
+  final String payload;
+  final String blockFuel;
+  final String taxiFuel;
+  final String tripFuel;
+  final String contingencyFuel;
+  final String finalReserveFuel;
+  final String extraFuel;
 }
 
 class OfpParser {
@@ -92,6 +116,22 @@ class OfpParser {
               }[dateMatch.group(2)!.toUpperCase()]!,
               int.parse(dateMatch.group(1)!),
             ),
+      scheduledFlightTime: match(
+        r'(?:SCHEDULED\s+FLIGHT\s+TIME|EET)\s*[: ]\s*(\d{2}:?\d{2})',
+      ),
+      detailedRoute: match(r'(?:ATC\s+ROUTE|ROUTE)\s*[: ]\s*([^\r\n]+)'),
+      takeoffWeight: match(r'(?:PLAN(?:NED)?\s+)?TOW\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      landingWeight: match(r'(?:PLAN(?:NED)?\s+)?LAW\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      zeroFuelWeight: match(
+        r'(?:PLAN(?:NED)?\s+)?ZFW\s*[: ]\s*(\d+(?:\.\d+)?)',
+      ),
+      payload: match(r'PAYLOAD\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      blockFuel: match(r'BLOCK\s+FUEL\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      taxiFuel: match(r'TAXI\s+FUEL\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      tripFuel: match(r'TRIP\s+FUEL\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      contingencyFuel: match(r'CONT(?:INGENCY)?\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      finalReserveFuel: match(r'FINAL\s+RES(?:ERVE)?\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      extraFuel: match(r'EXTRA\s*[: ]\s*(\d+(?:\.\d+)?)'),
     );
   }
 }

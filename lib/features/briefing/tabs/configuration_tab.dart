@@ -2,110 +2,328 @@ import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
 
-class ConfigurationTab extends StatelessWidget {
+class ConfigurationTab extends StatefulWidget {
   const ConfigurationTab({
     required this.flight,
     required this.onUploadDocuments,
+    required this.onFlightChanged,
     super.key,
   });
-
   final FlightBriefing? flight;
   final Future<void> Function() onUploadDocuments;
-
+  final ValueChanged<FlightBriefing> onFlightChanged;
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      Text(
-        'Configuration',
-        style: Theme.of(
-          context,
-        ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        'Confirm the aircraft and operational setup before beginning the briefing.',
-        style: TextStyle(color: Color(0xFF667069)),
-      ),
-      const SizedBox(height: 20),
-      if (flight == null)
-        const Card(
-          elevation: 0,
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Text('Select a flight in Upcoming Flights first.'),
-          ),
-        )
-      else ...[
-        Card(
-          elevation: 0,
-          color: const Color(0xFFE6EEF7),
-          child: ListTile(
-            leading: const Icon(
-              Icons.flight_takeoff_rounded,
-              color: Color(0xFF244A73),
-            ),
-            title: Text(
-              '${flight!.flightNumber}  ${flight!.route}',
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-            subtitle: const Text('Selected flight'),
-          ),
-        ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: onUploadDocuments,
-          icon: const Icon(Icons.upload_file_rounded),
-          label: const Text('Upload OFP and flight documents'),
-        ),
-        const SizedBox(height: 18),
-      ],
-      _ConfigurationItem(
-        icon: Icons.airplanemode_active_rounded,
-        title: 'Aircraft',
-        value: flight?.aircraftType ?? 'Select a flight',
-      ),
-      _ConfigurationItem(
-        icon: Icons.badge_outlined,
-        title: 'Registration',
-        value: flight?.registration.isNotEmpty == true
-            ? flight!.registration
-            : 'Read from imported OFP',
-      ),
-      const _ConfigurationItem(
-        icon: Icons.route_outlined,
-        title: 'Operation',
-        value: 'ETOPS, terrain and airspace requirements',
-      ),
-      const _ConfigurationItem(
-        icon: Icons.build_outlined,
-        title: 'Technical status',
-        value: 'MEL and defect review pending',
-      ),
-    ],
-  );
+  State<ConfigurationTab> createState() => _ConfigurationTabState();
 }
 
-class _ConfigurationItem extends StatelessWidget {
-  const _ConfigurationItem({
-    required this.icon,
-    required this.title,
-    required this.value,
-  });
-  final IconData icon;
-  final String title;
-  final String value;
+class _ConfigurationTabState extends State<ConfigurationTab> {
+  final _controllers = <String, TextEditingController>{};
+  String _pilotFlying = '';
 
   @override
-  Widget build(BuildContext context) => Card(
+  void initState() {
+    super.initState();
+    _load(widget.flight);
+  }
+
+  @override
+  void didUpdateWidget(covariant ConfigurationTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.flight != widget.flight) _load(widget.flight);
+  }
+
+  @override
+  void dispose() {
+    for (final controller in _controllers.values) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final flight = widget.flight;
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          flight == null
+              ? 'Upload flight plan documents'
+              : 'Upload flight plan documents for ${flight.flightNumber}',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Load the OFP and supporting package, then confirm the flight setup below.',
+          style: TextStyle(color: Color(0xFF667069)),
+        ),
+        const SizedBox(height: 16),
+        if (flight == null)
+          const Card(
+            elevation: 0,
+            child: Padding(
+              padding: EdgeInsets.all(24),
+              child: Text('Select a flight in Flights first.'),
+            ),
+          )
+        else ...[
+          FilledButton.icon(
+            onPressed: widget.onUploadDocuments,
+            icon: const Icon(Icons.upload_file_rounded),
+            label: const Text('Upload OFP and flight documents'),
+          ),
+          const SizedBox(height: 14),
+          _FlightPlanHeader(flight: flight),
+          const SizedBox(height: 14),
+          _section(
+            title: 'Aircraft and crew',
+            child: Column(
+              children: [
+                _row([
+                  _field('registration', 'Registration'),
+                  _field('aircraftType', 'Aircraft type'),
+                ]),
+                _row([
+                  _field('captain', 'Captain'),
+                  _field('firstOfficer', 'First officer'),
+                ]),
+                _row([
+                  _field('reliefPilot', 'SO / Relief'),
+                  _field('otherCrew', 'Other'),
+                ]),
+                DropdownButtonFormField<String>(
+                  initialValue: _pilotFlying.isEmpty ? null : _pilotFlying,
+                  decoration: const InputDecoration(
+                    labelText: 'Pilot flying this sector',
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'Captain', child: Text('Captain')),
+                    DropdownMenuItem(
+                      value: 'First officer',
+                      child: Text('First officer'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'SO / Relief',
+                      child: Text('SO / Relief pilot'),
+                    ),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _pilotFlying = value ?? ''),
+                ),
+              ],
+            ),
+          ),
+          _section(
+            title: 'Route',
+            child: TextField(
+              controller: _controllers['detailedRoute'],
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Planned ATC route',
+                alignLabelWithHint: true,
+              ),
+            ),
+          ),
+          _section(
+            title: 'Planned weights',
+            child: Column(
+              children: [
+                _row([
+                  _field('takeoffWeight', 'TOW'),
+                  _field('landingWeight', 'LAW'),
+                ]),
+                _row([
+                  _field('zeroFuelWeight', 'ZFW'),
+                  _field('payload', 'Payload'),
+                ]),
+              ],
+            ),
+          ),
+          _section(
+            title: 'Fuel plan',
+            child: Column(
+              children: [
+                _row([
+                  _field('blockFuel', 'Block fuel'),
+                  _field('taxiFuel', 'Taxi fuel'),
+                ]),
+                _row([
+                  _field('tripFuel', 'Trip fuel'),
+                  _field('contingencyFuel', 'Contingency'),
+                ]),
+                _row([
+                  _field('finalReserveFuel', 'Final reserve'),
+                  _field('extraFuel', 'Extra fuel'),
+                ]),
+              ],
+            ),
+          ),
+          FilledButton.icon(
+            onPressed: _save,
+            icon: const Icon(Icons.save_outlined),
+            label: const Text('Save flight setup'),
+          ),
+          const SizedBox(height: 20),
+        ],
+      ],
+    );
+  }
+
+  Widget _section({required String title, required Widget child}) => Card(
     elevation: 0,
     color: Colors.white,
-    margin: const EdgeInsets.only(bottom: 10),
-    child: ListTile(
-      leading: Icon(icon, color: const Color(0xFF173D31)),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(value),
-      trailing: const Icon(Icons.chevron_right_rounded),
+    margin: const EdgeInsets.only(bottom: 12),
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     ),
   );
+  Widget _row(List<Widget> children) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(
+      children: [
+        Expanded(child: children[0]),
+        const SizedBox(width: 10),
+        Expanded(child: children[1]),
+      ],
+    ),
+  );
+  Widget _field(String key, String label) => TextField(
+    controller: _controllers[key],
+    decoration: InputDecoration(labelText: label),
+  );
+
+  void _load(FlightBriefing? flight) {
+    final values = <String, String>{
+      'registration': flight?.registration ?? '',
+      'aircraftType': flight?.aircraftType ?? '',
+      'captain': flight?.captain ?? '',
+      'firstOfficer': flight?.firstOfficer ?? '',
+      'reliefPilot': flight?.reliefPilot ?? '',
+      'otherCrew': flight?.otherCrew ?? '',
+      'detailedRoute': flight?.detailedRoute ?? '',
+      'takeoffWeight': flight?.takeoffWeight ?? '',
+      'landingWeight': flight?.landingWeight ?? '',
+      'zeroFuelWeight': flight?.zeroFuelWeight ?? '',
+      'payload': flight?.payload ?? '',
+      'blockFuel': flight?.blockFuel ?? '',
+      'taxiFuel': flight?.taxiFuel ?? '',
+      'tripFuel': flight?.tripFuel ?? '',
+      'contingencyFuel': flight?.contingencyFuel ?? '',
+      'finalReserveFuel': flight?.finalReserveFuel ?? '',
+      'extraFuel': flight?.extraFuel ?? '',
+    };
+    for (final entry in values.entries) {
+      (_controllers[entry.key] ??= TextEditingController()).text = entry.value;
+    }
+    _pilotFlying = flight?.pilotFlying ?? '';
+  }
+
+  void _save() {
+    final flight = widget.flight;
+    if (flight == null) return;
+    String value(String key) => _controllers[key]!.text.trim();
+    widget.onFlightChanged(
+      flight.copyWith(
+        registration: value('registration'),
+        aircraftType: value('aircraftType'),
+        captain: value('captain'),
+        firstOfficer: value('firstOfficer'),
+        reliefPilot: value('reliefPilot'),
+        otherCrew: value('otherCrew'),
+        pilotFlying: _pilotFlying,
+        detailedRoute: value('detailedRoute'),
+        takeoffWeight: value('takeoffWeight'),
+        landingWeight: value('landingWeight'),
+        zeroFuelWeight: value('zeroFuelWeight'),
+        payload: value('payload'),
+        blockFuel: value('blockFuel'),
+        taxiFuel: value('taxiFuel'),
+        tripFuel: value('tripFuel'),
+        contingencyFuel: value('contingencyFuel'),
+        finalReserveFuel: value('finalReserveFuel'),
+        extraFuel: value('extraFuel'),
+      ),
+    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Flight setup saved.')));
+  }
+}
+
+class _FlightPlanHeader extends StatelessWidget {
+  const _FlightPlanHeader({required this.flight});
+  final FlightBriefing flight;
+  @override
+  Widget build(BuildContext context) {
+    final date = flight.flightDate;
+    final dateText = date == null
+        ? 'Date pending'
+        : '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+    final callsign = flight.callsign.isEmpty
+        ? flight.flightNumber
+        : flight.callsign;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF244A73),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  callsign,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '$dateText  ·  ${flight.route}',
+                  style: const TextStyle(color: Colors.white),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'STD ${flight.departureTime}   STA ${flight.arrivalTime}   EET ${flight.scheduledFlightTime.isEmpty ? 'Pending' : flight.scheduledFlightTime}',
+                  style: const TextStyle(
+                    color: Color(0xFFDCE8F3),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            children: [
+              const Text('PLAN ID', style: TextStyle(color: Color(0xFFDCE8F3))),
+              Text(
+                flight.planId.isEmpty ? '—' : flight.planId,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }

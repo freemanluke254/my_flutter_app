@@ -103,6 +103,23 @@ class BriefingStorage {
     'reportTime': flight.reportTime,
     'scheduledDepartureUtc': flight.scheduledDepartureUtc?.toIso8601String(),
     'flightDate': flight.flightDate?.toIso8601String(),
+    'scheduledFlightTime': flight.scheduledFlightTime,
+    'detailedRoute': flight.detailedRoute,
+    'captain': flight.captain,
+    'firstOfficer': flight.firstOfficer,
+    'reliefPilot': flight.reliefPilot,
+    'otherCrew': flight.otherCrew,
+    'pilotFlying': flight.pilotFlying,
+    'takeoffWeight': flight.takeoffWeight,
+    'landingWeight': flight.landingWeight,
+    'zeroFuelWeight': flight.zeroFuelWeight,
+    'payload': flight.payload,
+    'blockFuel': flight.blockFuel,
+    'taxiFuel': flight.taxiFuel,
+    'tripFuel': flight.tripFuel,
+    'contingencyFuel': flight.contingencyFuel,
+    'finalReserveFuel': flight.finalReserveFuel,
+    'extraFuel': flight.extraFuel,
     'documents': flight.documents
         .map(
           (document) => {
@@ -131,6 +148,23 @@ class BriefingStorage {
     flightDate: json['flightDate'] == null
         ? null
         : DateTime.parse(json['flightDate']! as String),
+    scheduledFlightTime: json['scheduledFlightTime'] as String? ?? '',
+    detailedRoute: json['detailedRoute'] as String? ?? '',
+    captain: json['captain'] as String? ?? '',
+    firstOfficer: json['firstOfficer'] as String? ?? '',
+    reliefPilot: json['reliefPilot'] as String? ?? '',
+    otherCrew: json['otherCrew'] as String? ?? '',
+    pilotFlying: json['pilotFlying'] as String? ?? '',
+    takeoffWeight: json['takeoffWeight'] as String? ?? '',
+    landingWeight: json['landingWeight'] as String? ?? '',
+    zeroFuelWeight: json['zeroFuelWeight'] as String? ?? '',
+    payload: json['payload'] as String? ?? '',
+    blockFuel: json['blockFuel'] as String? ?? '',
+    taxiFuel: json['taxiFuel'] as String? ?? '',
+    tripFuel: json['tripFuel'] as String? ?? '',
+    contingencyFuel: json['contingencyFuel'] as String? ?? '',
+    finalReserveFuel: json['finalReserveFuel'] as String? ?? '',
+    extraFuel: json['extraFuel'] as String? ?? '',
     documents: (json['documents']! as List<Object?>).map((value) {
       final item = (value! as Map<Object?, Object?>).cast<String, Object?>();
       return BriefingDocument(

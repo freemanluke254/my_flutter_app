@@ -54,7 +54,11 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         selectedFlight: _flight,
         onSelected: _selectUpcomingFlight,
       ),
-      ConfigurationTab(flight: _flight, onUploadDocuments: _uploadDocuments),
+      ConfigurationTab(
+        flight: _flight,
+        onUploadDocuments: _uploadDocuments,
+        onFlightChanged: (flight) => _changeFlight(flight, _active),
+      ),
       BriefingTab(
         flight: _flight,
         isActive: _active,
@@ -333,6 +337,26 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       reportTime: current.reportTime,
       scheduledDepartureUtc: current.scheduledDepartureUtc,
       flightDate: current.flightDate,
+      scheduledFlightTime:
+          ofp?.scheduledFlightTime ?? current.scheduledFlightTime,
+      detailedRoute: ofp?.detailedRoute.isNotEmpty == true
+          ? ofp!.detailedRoute
+          : current.detailedRoute,
+      captain: current.captain,
+      firstOfficer: current.firstOfficer,
+      reliefPilot: current.reliefPilot,
+      otherCrew: current.otherCrew,
+      pilotFlying: current.pilotFlying,
+      takeoffWeight: ofp?.takeoffWeight ?? current.takeoffWeight,
+      landingWeight: ofp?.landingWeight ?? current.landingWeight,
+      zeroFuelWeight: ofp?.zeroFuelWeight ?? current.zeroFuelWeight,
+      payload: ofp?.payload ?? current.payload,
+      blockFuel: ofp?.blockFuel ?? current.blockFuel,
+      taxiFuel: ofp?.taxiFuel ?? current.taxiFuel,
+      tripFuel: ofp?.tripFuel ?? current.tripFuel,
+      contingencyFuel: ofp?.contingencyFuel ?? current.contingencyFuel,
+      finalReserveFuel: ofp?.finalReserveFuel ?? current.finalReserveFuel,
+      extraFuel: ofp?.extraFuel ?? current.extraFuel,
       documents: counts.entries
           .map(
             (entry) => BriefingDocument(

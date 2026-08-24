@@ -46,6 +46,23 @@ class FlightBriefing {
     this.reportTime = '',
     this.scheduledDepartureUtc,
     this.flightDate,
+    this.scheduledFlightTime = '',
+    this.detailedRoute = '',
+    this.captain = '',
+    this.firstOfficer = '',
+    this.reliefPilot = '',
+    this.otherCrew = '',
+    this.pilotFlying = '',
+    this.takeoffWeight = '',
+    this.landingWeight = '',
+    this.zeroFuelWeight = '',
+    this.payload = '',
+    this.blockFuel = '',
+    this.taxiFuel = '',
+    this.tripFuel = '',
+    this.contingencyFuel = '',
+    this.finalReserveFuel = '',
+    this.extraFuel = '',
   });
   final String flightNumber;
   final String route;
@@ -60,4 +77,85 @@ class FlightBriefing {
   final String reportTime;
   final DateTime? scheduledDepartureUtc;
   final DateTime? flightDate;
+  final String scheduledFlightTime;
+  final String detailedRoute;
+  final String captain;
+  final String firstOfficer;
+  final String reliefPilot;
+  final String otherCrew;
+  final String pilotFlying;
+  final String takeoffWeight;
+  final String landingWeight;
+  final String zeroFuelWeight;
+  final String payload;
+  final String blockFuel;
+  final String taxiFuel;
+  final String tripFuel;
+  final String contingencyFuel;
+  final String finalReserveFuel;
+  final String extraFuel;
+
+  FlightBriefing copyWith({
+    String? flightNumber,
+    String? route,
+    String? departureTime,
+    String? arrivalTime,
+    String? aircraftType,
+    String? registration,
+    String? planType,
+    List<BriefingDocument>? documents,
+    String? callsign,
+    String? planId,
+    String? reportTime,
+    DateTime? scheduledDepartureUtc,
+    DateTime? flightDate,
+    String? scheduledFlightTime,
+    String? detailedRoute,
+    String? captain,
+    String? firstOfficer,
+    String? reliefPilot,
+    String? otherCrew,
+    String? pilotFlying,
+    String? takeoffWeight,
+    String? landingWeight,
+    String? zeroFuelWeight,
+    String? payload,
+    String? blockFuel,
+    String? taxiFuel,
+    String? tripFuel,
+    String? contingencyFuel,
+    String? finalReserveFuel,
+    String? extraFuel,
+  }) => FlightBriefing(
+    flightNumber: flightNumber ?? this.flightNumber,
+    route: route ?? this.route,
+    departureTime: departureTime ?? this.departureTime,
+    arrivalTime: arrivalTime ?? this.arrivalTime,
+    aircraftType: aircraftType ?? this.aircraftType,
+    registration: registration ?? this.registration,
+    planType: planType ?? this.planType,
+    documents: documents ?? this.documents,
+    callsign: callsign ?? this.callsign,
+    planId: planId ?? this.planId,
+    reportTime: reportTime ?? this.reportTime,
+    scheduledDepartureUtc: scheduledDepartureUtc ?? this.scheduledDepartureUtc,
+    flightDate: flightDate ?? this.flightDate,
+    scheduledFlightTime: scheduledFlightTime ?? this.scheduledFlightTime,
+    detailedRoute: detailedRoute ?? this.detailedRoute,
+    captain: captain ?? this.captain,
+    firstOfficer: firstOfficer ?? this.firstOfficer,
+    reliefPilot: reliefPilot ?? this.reliefPilot,
+    otherCrew: otherCrew ?? this.otherCrew,
+    pilotFlying: pilotFlying ?? this.pilotFlying,
+    takeoffWeight: takeoffWeight ?? this.takeoffWeight,
+    landingWeight: landingWeight ?? this.landingWeight,
+    zeroFuelWeight: zeroFuelWeight ?? this.zeroFuelWeight,
+    payload: payload ?? this.payload,
+    blockFuel: blockFuel ?? this.blockFuel,
+    taxiFuel: taxiFuel ?? this.taxiFuel,
+    tripFuel: tripFuel ?? this.tripFuel,
+    contingencyFuel: contingencyFuel ?? this.contingencyFuel,
+    finalReserveFuel: finalReserveFuel ?? this.finalReserveFuel,
+    extraFuel: extraFuel ?? this.extraFuel,
+  );
 }
