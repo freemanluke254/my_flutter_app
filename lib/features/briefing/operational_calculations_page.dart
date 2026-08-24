@@ -652,8 +652,9 @@ class _OperationalCalculationsPageState
               bank == null ||
               tas <= 0 ||
               bank <= 0 ||
-              bank >= 90)
+              bank >= 90) {
             return null;
+          }
           final speed = tas * 0.514444;
           final tangent = math.tan(bank * math.pi / 180);
           final radiusNm = speed * speed / (9.80665 * tangent) / 1852;
