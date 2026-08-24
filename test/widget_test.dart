@@ -127,6 +127,22 @@ void main() {
     expect(find.text('10:40'), findsWidgets);
   });
 
+  testWidgets('flight briefing includes office report workflow', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+
+    await tester.tap(find.byIcon(Icons.airplane_ticket_outlined));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Report & brief'), findsOneWidget);
+    expect(find.text('Sign on to eCrew'), findsOneWidget);
+    expect(find.text('Flight package'), findsOneWidget);
+    expect(find.text('Aircraft defects & MEL'), findsOneWidget);
+    expect(find.text('Cabin crew brief'), findsOneWidget);
+  });
+
   testWidgets('custom compliance date shows a colour-coded countdown', (
     tester,
   ) async {
