@@ -7,6 +7,8 @@ part 'features/auth/create_account_screen.dart';
 part 'features/auth/sign_in_screen.dart';
 part 'features/learning/learning_page.dart';
 part 'features/legacy/legacy_home_screen.dart';
+part 'features/legacy/tabs/legacy_today_page.dart';
+part 'features/legacy/widgets/legacy_home_widgets.dart';
 part 'features/legacy/widgets/placeholder_page.dart';
 
 class FocusApp extends StatelessWidget {
