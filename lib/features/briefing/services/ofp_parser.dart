@@ -10,6 +10,8 @@ class OfpFlightDetails {
     required this.aircraftType,
     required this.registration,
     required this.operation,
+    required this.callsign,
+    required this.planId,
   });
   final String flightNumber;
   final String departure;
@@ -19,6 +21,8 @@ class OfpFlightDetails {
   final String aircraftType;
   final String registration;
   final String operation;
+  final String callsign;
+  final String planId;
 }
 
 class OfpParser {
@@ -60,6 +64,8 @@ class OfpParser {
       aircraftType: match(r'^TYPE\s+([^\r\n]+)', fallback: 'Pending'),
       registration: match(r'REGN\s+([A-Z0-9]+)', fallback: 'Pending'),
       operation: match(r'APPL RULE:\s*([^\r\n]+)', fallback: 'From OFP'),
+      callsign: match(r'^([A-Z]{3}\d+[A-Z]?)\s+\d{2}[A-Z]{3}\d{2}'),
+      planId: match(r'PLAN ID\s+([A-Z0-9]+)', fallback: 'Not stated'),
     );
   }
 }

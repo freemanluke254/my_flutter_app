@@ -67,6 +67,9 @@ class BriefingStorage {
     'aircraftType': flight.aircraftType,
     'registration': flight.registration,
     'planType': flight.planType,
+    'callsign': flight.callsign,
+    'planId': flight.planId,
+    'reportTime': flight.reportTime,
     'documents': flight.documents
         .map(
           (document) => {
@@ -86,6 +89,9 @@ class BriefingStorage {
     aircraftType: json['aircraftType']! as String,
     registration: json['registration']! as String,
     planType: json['planType']! as String,
+    callsign: json['callsign'] as String? ?? '',
+    planId: json['planId'] as String? ?? '',
+    reportTime: json['reportTime'] as String? ?? '',
     documents: (json['documents']! as List<Object?>).map((value) {
       final item = (value! as Map<Object?, Object?>).cast<String, Object?>();
       return BriefingDocument(

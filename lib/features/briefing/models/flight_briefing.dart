@@ -41,6 +41,9 @@ class FlightBriefing {
     required this.registration,
     required this.planType,
     required this.documents,
+    this.callsign = '',
+    this.planId = '',
+    this.reportTime = '',
   });
   final String flightNumber;
   final String route;
@@ -50,4 +53,7 @@ class FlightBriefing {
   final String registration;
   final String planType;
   final List<BriefingDocument> documents;
+  final String callsign;
+  final String planId;
+  final String reportTime;
 }
