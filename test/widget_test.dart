@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trying_flutter/main.dart';
+import 'package:trying_flutter/features/planning/planning_compliance_page.dart';
 
 void main() {
   testWidgets('create account validates empty fields', (tester) async {
@@ -89,10 +91,15 @@ void main() {
     expect(find.text('Pilot-in-command name'), findsOneWidget);
   });
 
-  testWidgets('completed roster flight creates a logbook draft', (tester) async {
+  testWidgets('completed roster flight creates a logbook draft', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
 
-    await tester.drag(find.byType(CustomScrollView).first, const Offset(0, -700));
+    await tester.drag(
+      find.byType(CustomScrollView).first,
+      const Offset(0, -700),
+    );
     await tester.pumpAndSettle();
     final completeButton = find.text('Flight complete · prepare log entry');
     await tester.tap(completeButton);
@@ -101,5 +108,30 @@ void main() {
     expect(find.text('Flight logbook'), findsOneWidget);
     expect(find.text('LHR → LAS'), findsOneWidget);
     expect(find.text('10:40'), findsWidgets);
+  });
+
+  testWidgets('custom compliance date shows a colour-coded countdown', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MaterialApp(home: PlanningCompliancePage()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add item'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'Class 1 medical');
+    await tester.fling(
+      find.byType(ListView).last,
+      const Offset(0, -1200),
+      2000,
+    );
+    await tester.pumpAndSettle();
+    final addButton = find.widgetWithText(FilledButton, 'Add reminder');
+    await tester.tap(addButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Class 1 medical'), findsOneWidget);
+    expect(find.textContaining('days remaining'), findsOneWidget);
+    expect(find.text('VALID'), findsOneWidget);
   });
 }
