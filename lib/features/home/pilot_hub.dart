@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../flight_logbook_page.dart';
 import '../commute/commute_reminder_page.dart';
+import '../briefing/office_briefing_panel.dart';
 import '../planning/planning_compliance_page.dart';
 
 class PilotHub extends StatefulWidget {
@@ -446,6 +447,7 @@ class _BriefingOverview extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
     children: [
+      OfficeBriefingPanel(reportTime: flight.reportTime),
       const _OperationalWarning(),
       const SizedBox(height: 14),
       _BriefingSection(
