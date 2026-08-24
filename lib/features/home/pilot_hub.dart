@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../flight_logbook_page.dart';
+import '../planning/planning_compliance_page.dart';
 
 class PilotHub extends StatefulWidget {
   const PilotHub({super.key});
@@ -758,6 +759,12 @@ class _MorePage extends StatelessWidget {
         style: TextStyle(color: Color(0xFF6C756F)),
       ),
       const SizedBox(height: 20),
+      _FeatureTile(
+        icon: Icons.verified_user_outlined,
+        title: 'Planning & compliance',
+        subtitle: 'Expiry dates, deadlines and personal reminder rules',
+        onTap: () => _open(context, const PlanningCompliancePage()),
+      ),
       _FeatureTile(
         icon: Icons.calendar_month_outlined,
         title: 'Roster',
