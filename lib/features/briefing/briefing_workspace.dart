@@ -146,6 +146,45 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         if (!confirmed || !mounted) return;
       }
     }
+    if (!mounted) return;
+    final callsign = flight.callsign.isEmpty
+        ? flight.flightNumber
+        : flight.callsign;
+    final flightDate = flight.flightDate;
+    final dateLabel = flightDate == null
+        ? 'Date pending'
+        : '${flightDate.day.toString().padLeft(2, '0')}/${flightDate.month.toString().padLeft(2, '0')}/${flightDate.year}';
+    final activate =
+        await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            icon: const Icon(
+              Icons.flight_takeoff_rounded,
+              color: Color(0xFF28634A),
+              size: 46,
+            ),
+            title: Text('Activate $callsign?'),
+            content: Text(
+              '$dateLabel\n${flight.route}',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(context, true),
+                icon: const Icon(Icons.flight_takeoff_rounded),
+                label: const Text('Let’s go flying'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!activate || !mounted) return;
     _changeFlight(flight, false);
     setState(() => _selectedIndex = 1);
   }
