@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../flight_logbook_page.dart';
 import '../commute/commute_reminder_page.dart';
 import '../briefing/office_briefing_panel.dart';
+import '../briefing/b787_preflight_checklist.dart';
 import '../planning/planning_compliance_page.dart';
 
 class PilotHub extends StatefulWidget {
@@ -381,7 +382,7 @@ class _BriefingPage extends StatelessWidget {
   final _FlightDay flight;
   @override
   Widget build(BuildContext context) => DefaultTabController(
-    length: 4,
+    length: 5,
     child: Column(
       children: [
         Padding(
@@ -421,6 +422,7 @@ class _BriefingPage extends StatelessWidget {
               Tab(text: 'Overview'),
               Tab(text: 'Weather'),
               Tab(text: 'NOTAMs'),
+              Tab(text: 'Preflight'),
               Tab(text: 'Tools'),
             ],
           ),
@@ -431,6 +433,7 @@ class _BriefingPage extends StatelessWidget {
               _BriefingOverview(flight: flight),
               const _WeatherBriefing(),
               const _NotamBriefing(),
+              const B787PreflightChecklist(),
               const _ToolsGrid(),
             ],
           ),

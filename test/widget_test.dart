@@ -143,6 +143,28 @@ void main() {
     expect(find.text('Cabin crew brief'), findsOneWidget);
   });
 
+  testWidgets('787 preflight checklist follows procedure stages', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.tap(find.byIcon(Icons.airplane_ticket_outlined));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Preflight'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('787-9 preflight flow'), findsOneWidget);
+    expect(
+      find.text('Flight deck arrival & preliminary setup'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Before Start boundary reached'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('custom compliance date shows a colour-coded countdown', (
     tester,
   ) async {
