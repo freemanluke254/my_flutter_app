@@ -7,10 +7,10 @@ import '../models/expiry_record.dart';
 class ExpiryStorage {
   static const _key = 'expiry_records_v1';
 
-  SharedPreferencesAsync get _preferences => SharedPreferencesAsync();
+  Future<SharedPreferences> get _preferences => SharedPreferences.getInstance();
 
   Future<List<ExpiryRecord>> load() async {
-    final source = await _preferences.getString(_key);
+    final source = (await _preferences).getString(_key);
     if (source == null || source.isEmpty) return [];
     return (jsonDecode(source) as List<Object?>)
         .map(
@@ -21,8 +21,10 @@ class ExpiryStorage {
         .toList();
   }
 
-  Future<void> save(List<ExpiryRecord> records) => _preferences.setString(
-    _key,
-    jsonEncode(records.map((record) => record.toJson()).toList()),
-  );
+  Future<void> save(List<ExpiryRecord> records) async {
+    await (await _preferences).setString(
+      _key,
+      jsonEncode(records.map((record) => record.toJson()).toList()),
+    );
+  }
 }

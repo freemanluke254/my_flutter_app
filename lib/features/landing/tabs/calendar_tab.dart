@@ -179,7 +179,7 @@ class _CalendarTabState extends State<CalendarTab> {
         ..sort((first, second) => first.date.compareTo(second.date));
       final entries = [...rosterEntries];
       final expiries = await _expiryStorage.load();
-      final savedView = await SharedPreferencesAsync().getString(
+      final savedView = (await SharedPreferences.getInstance()).getString(
         'roster_view_mode',
       );
       entries.addAll(

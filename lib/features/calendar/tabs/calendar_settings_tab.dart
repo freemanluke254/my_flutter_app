@@ -24,7 +24,7 @@ class _CalendarSettingsTabState extends State<CalendarSettingsTab> {
   RosterViewMode _viewMode = RosterViewMode.monthly;
   bool _loading = true;
 
-  SharedPreferencesAsync get _preferences => SharedPreferencesAsync();
+  Future<SharedPreferences> get _preferences => SharedPreferences.getInstance();
 
   @override
   void initState() {
@@ -179,11 +179,12 @@ class _CalendarSettingsTabState extends State<CalendarSettingsTab> {
 
   Future<void> _load() async {
     try {
-      final enabled = await _preferences.getBool(_enabledKey);
-      final day = await _preferences.getInt(_dayKey);
-      final hour = await _preferences.getInt(_hourKey);
-      final minute = await _preferences.getInt(_minuteKey);
-      final viewMode = await _preferences.getString(_viewKey);
+      final preferences = await _preferences;
+      final enabled = preferences.getBool(_enabledKey);
+      final day = preferences.getInt(_dayKey);
+      final hour = preferences.getInt(_hourKey);
+      final minute = preferences.getInt(_minuteKey);
+      final viewMode = preferences.getString(_viewKey);
       if (!mounted) return;
       setState(() {
         _enabled = enabled ?? true;
@@ -202,13 +203,12 @@ class _CalendarSettingsTabState extends State<CalendarSettingsTab> {
   }
 
   Future<void> _save() async {
-    await Future.wait([
-      _preferences.setBool(_enabledKey, _enabled),
-      _preferences.setInt(_dayKey, _day),
-      _preferences.setInt(_hourKey, _time.hour),
-      _preferences.setInt(_minuteKey, _time.minute),
-      _preferences.setString(_viewKey, _viewMode.name),
-    ]);
+    final preferences = await _preferences;
+    await preferences.setBool(_enabledKey, _enabled);
+    await preferences.setInt(_dayKey, _day);
+    await preferences.setInt(_hourKey, _time.hour);
+    await preferences.setInt(_minuteKey, _time.minute);
+    await preferences.setString(_viewKey, _viewMode.name);
     widget.onSettingsChanged();
   }
 }
