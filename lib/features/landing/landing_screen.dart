@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'tabs/briefing_tab.dart';
+import '../briefing/briefing_workspace.dart';
 import 'tabs/calendar_tab.dart';
 import 'tabs/logbook_tab.dart';
 import 'tabs/more_tab.dart';
@@ -22,13 +22,20 @@ class _LandingScreenState extends State<LandingScreen> {
     final tabs = [
       TodayTab(pilotName: widget.pilotName),
       const CalendarTab(),
-      const BriefingTab(),
+      const BriefingWorkspace(),
       const LogbookTab(),
       const MoreTab(),
     ];
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pilot App'),
+        leading: _selectedIndex == 2
+            ? IconButton(
+                onPressed: () => setState(() => _selectedIndex = 0),
+                tooltip: 'Back to Pilot App',
+                icon: const Icon(Icons.arrow_back_rounded),
+              )
+            : null,
+        title: Text(_selectedIndex == 2 ? 'Flight Briefing' : 'Pilot App'),
         actions: [
           IconButton(
             onPressed: () {},
@@ -40,39 +47,41 @@ class _LandingScreenState extends State<LandingScreen> {
       body: SafeArea(
         child: IndexedStack(index: _selectedIndex, children: tabs),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) {
-          setState(() => _selectedIndex = index);
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.today_outlined),
-            selectedIcon: Icon(Icons.today_rounded),
-            label: 'Today',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Calendar',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.airplane_ticket_outlined),
-            selectedIcon: Icon(Icons.airplane_ticket_rounded),
-            label: 'Briefing',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: 'Logbook',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.grid_view_outlined),
-            selectedIcon: Icon(Icons.grid_view_rounded),
-            label: 'More',
-          ),
-        ],
-      ),
+      bottomNavigationBar: _selectedIndex == 2
+          ? null
+          : NavigationBar(
+              selectedIndex: _selectedIndex,
+              onDestinationSelected: (index) {
+                setState(() => _selectedIndex = index);
+              },
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.today_outlined),
+                  selectedIcon: Icon(Icons.today_rounded),
+                  label: 'Today',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  selectedIcon: Icon(Icons.calendar_month_rounded),
+                  label: 'Calendar',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.airplane_ticket_outlined),
+                  selectedIcon: Icon(Icons.airplane_ticket_rounded),
+                  label: 'Briefing',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.menu_book_outlined),
+                  selectedIcon: Icon(Icons.menu_book_rounded),
+                  label: 'Logbook',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.grid_view_outlined),
+                  selectedIcon: Icon(Icons.grid_view_rounded),
+                  label: 'More',
+                ),
+              ],
+            ),
     );
   }
 }

@@ -1,7 +1,11 @@
+import 'dart:convert';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../calendar/models/calendar_entry.dart';
 import '../../calendar/widgets/month_calendar.dart';
+import '../../roster/services/ical_roster_parser.dart';
 
 class CalendarTab extends StatefulWidget {
   const CalendarTab({super.key});
@@ -55,13 +59,13 @@ class _CalendarTabState extends State<CalendarTab> {
           ),
           const SizedBox(height: 22),
           FilledButton.icon(
-            onPressed: _loadSampleRoster,
+            onPressed: _importRoster,
             icon: const Icon(Icons.upload_file_rounded),
             label: const Text('Load roster'),
           ),
           const SizedBox(height: 8),
           const Text(
-            'Sample data is used until file import is connected.',
+            'Select the .ics file supplied with your roster.',
             style: TextStyle(color: Color(0xFF667069), fontSize: 11),
           ),
         ],
@@ -89,7 +93,7 @@ class _CalendarTabState extends State<CalendarTab> {
               ),
             ),
             OutlinedButton.icon(
-              onPressed: _loadSampleRoster,
+              onPressed: _importRoster,
               icon: const Icon(Icons.upload_file_rounded, size: 18),
               label: const Text('New roster'),
             ),
@@ -127,32 +131,35 @@ class _CalendarTabState extends State<CalendarTab> {
     );
   }
 
-  void _loadSampleRoster() {
-    setState(() {
-      _rosterLoaded = true;
-      _visibleMonth = DateTime(2026, 8);
-      _selectedDate = DateTime(2026, 8, 24);
-      _entries = [
-        CalendarEntry(
-          date: DateTime(2026, 8, 24),
-          type: CalendarEntryType.flight,
-          title: 'BA275 · LHR–LAS',
-          details: 'Report 14:20 · Departure 16:05 · B787-9',
-        ),
-        CalendarEntry(
-          date: DateTime(2026, 8, 26),
-          type: CalendarEntryType.standby,
-          title: 'Home standby',
-          details: '06:00–14:00',
-        ),
-        CalendarEntry(
-          date: DateTime(2026, 8, 30),
-          type: CalendarEntryType.expiry,
-          title: 'Class 1 medical expires',
-          details: 'Renewal required before further flying.',
-        ),
-      ];
-    });
+  Future<void> _importRoster() async {
+    final file = await FilePicker.pickFile(
+      type: FileType.custom,
+      allowedExtensions: const ['ics'],
+    );
+    if (!mounted || file == null) return;
+    try {
+      final bytes = await file.readAsBytes();
+      final entries = const IcalRosterParser().parse(utf8.decode(bytes));
+      if (entries.isEmpty) throw const FormatException('No duties found');
+      if (!mounted) return;
+      setState(() {
+        _rosterLoaded = true;
+        _entries = entries;
+        _visibleMonth = DateTime(
+          entries.first.date.year,
+          entries.first.date.month,
+        );
+        _selectedDate = entries.first.date;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${entries.length} calendar days imported.')),
+      );
+    } on Object catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Roster could not be imported: $error')),
+      );
+    }
   }
 
   void _changeMonth(int difference) {

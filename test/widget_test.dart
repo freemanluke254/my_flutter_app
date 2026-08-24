@@ -13,7 +13,9 @@ void main() {
     expect(find.text('Calendar'), findsOneWidget);
   });
 
-  testWidgets('calendar is hidden until a roster is loaded', (tester) async {
+  testWidgets('calendar prompts for a roster before displaying a month', (
+    tester,
+  ) async {
     await tester.binding.setSurfaceSize(const Size(800, 1000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(const PilotApp());
@@ -22,12 +24,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('No roster loaded'), findsOneWidget);
     expect(find.text('August 2026'), findsNothing);
-
-    await tester.tap(find.text('Load roster'));
-    await tester.pumpAndSettle();
-    expect(find.text('August 2026'), findsOneWidget);
-    await tester.drag(find.byType(ListView), const Offset(0, -450));
-    await tester.pumpAndSettle();
-    expect(find.text('BA275 · LHR–LAS'), findsOneWidget);
+    expect(find.text('Load roster'), findsOneWidget);
   });
 }
