@@ -3,27 +3,50 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:trying_flutter/main.dart';
 
 void main() {
-  testWidgets('home screen shows dashboard and task interaction', (
-    tester,
-  ) async {
+  testWidgets('create account validates empty fields', (tester) async {
     await tester.pumpWidget(const FocusApp());
 
-    expect(find.text('Good morning, Luke.'), findsOneWidget);
-    expect(find.text('Today’s tasks'), findsOneWidget);
-    expect(find.text('1 of 3 done'), findsOneWidget);
-
-    await tester.tap(find.text('Review project direction'));
+    expect(find.text('Create your account'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
     await tester.pump();
-    expect(find.text('2 of 3 done'), findsOneWidget);
+    expect(find.text('Please enter your name'), findsOneWidget);
+    expect(find.text('Please enter your email'), findsOneWidget);
+    expect(find.text('Use at least 8 characters'), findsOneWidget);
   });
 
-  testWidgets('navigation changes pages', (tester) async {
+  testWidgets('valid account form opens dashboard', (tester) async {
     await tester.pumpWidget(const FocusApp());
-    await tester.tap(find.byIcon(Icons.calendar_month_outlined));
-    await tester.pumpAndSettle();
-    expect(
-      find.text('This space is ready for your next idea.'),
-      findsOneWidget,
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Luke Freeman');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'luke@example.com',
     );
+    await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.tap(find.widgetWithText(FilledButton, 'Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Good morning, Luke.'), findsOneWidget);
+  });
+
+  testWidgets('sign in screen validates and opens dashboard', (tester) async {
+    await tester.pumpWidget(const FocusApp());
+
+    final signInLink = find.widgetWithText(TextButton, 'Sign in');
+    await tester.ensureVisible(signInLink);
+    await tester.tap(signInLink);
+    await tester.pumpAndSettle();
+    expect(find.text('Welcome back'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pump();
+    expect(find.text('Please enter your email'), findsOneWidget);
+    expect(find.text('Please enter your password'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'luke@example.com');
+    await tester.enterText(find.byType(TextFormField).at(1), 'password123');
+    await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Good morning, Luke.'), findsOneWidget);
   });
 }
