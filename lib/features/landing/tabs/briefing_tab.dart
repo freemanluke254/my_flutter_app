@@ -2,234 +2,79 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../briefing/models/flight_briefing.dart';
-import '../../briefing/widgets/briefing_document_tile.dart';
 
-class BriefingTab extends StatefulWidget {
-  const BriefingTab({super.key});
+class BriefingTab extends StatelessWidget {
+  const BriefingTab({
+    required this.flight,
+    required this.isActive,
+    required this.onFlightChanged,
+    super.key,
+  });
 
-  @override
-  State<BriefingTab> createState() => _BriefingTabState();
-}
-
-class _BriefingTabState extends State<BriefingTab> {
-  int _selectedFlight = 0;
-
-  final List<FlightBriefing> _flights = [
-    FlightBriefing(
-      flightNumber: 'VS23',
-      route: 'LHR → LAX',
-      departureTime: '24 Aug · 17:15 local',
-      arrivalTime: '25 Aug · 04:25 local',
-      aircraftType: 'B787-9',
-      registration: 'G-VMAP',
-      planType: 'ETOPS 138 · North Atlantic',
-      documents: [
-        BriefingDocument(
-          type: BriefingDocumentType.operationalFlightPlan,
-          title: 'Operational flight plan',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.weather,
-          title: 'Weather briefing',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.notams,
-          title: 'NOTAM briefing',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.routeChart,
-          title: 'Route chart',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.significantWeather,
-          title: 'Significant weather charts',
-          fileCount: 4,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.tracks,
-          title: 'North Atlantic tracks',
-          fileCount: 1,
-        ),
-      ],
-    ),
-    FlightBriefing(
-      flightNumber: 'VS358',
-      route: 'LHR → BOM',
-      departureTime: '24 Aug · 11:25 local',
-      arrivalTime: '25 Aug · 20:40 local',
-      aircraftType: 'B787-9',
-      registration: 'G-VOWS',
-      planType: 'Non-ETOPS · Terrain critical',
-      documents: [
-        BriefingDocument(
-          type: BriefingDocumentType.operationalFlightPlan,
-          title: 'Operational flight plan',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.weather,
-          title: 'Weather briefing',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.notams,
-          title: 'NOTAM briefing',
-          fileCount: 1,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.routeChart,
-          title: 'Route charts',
-          fileCount: 2,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.significantWeather,
-          title: 'Significant weather charts',
-          fileCount: 4,
-        ),
-        BriefingDocument(
-          type: BriefingDocumentType.terrain,
-          title: 'Critical terrain scenario',
-          fileCount: 1,
-        ),
-      ],
-    ),
-  ];
+  final FlightBriefing? flight;
+  final bool isActive;
+  final void Function(FlightBriefing flight, bool active) onFlightChanged;
 
   @override
-  Widget build(BuildContext context) {
-    final flight = _flights[_selectedFlight];
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                'Briefing',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            FilledButton.icon(
-              onPressed: _importPackage,
-              icon: const Icon(Icons.upload_file_rounded),
-              label: const Text('Import'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Review the decoded package while retaining every original document.',
-          style: TextStyle(color: Color(0xFF667069)),
-        ),
-        const SizedBox(height: 18),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: List.generate(
-              _flights.length,
-              (index) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  label: Text(_flights[index].flightNumber),
-                  selected: index == _selectedFlight,
-                  onSelected: (_) => setState(() => _selectedFlight = index),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _FlightHeader(flight: flight),
-        const SizedBox(height: 22),
-        const Text(
-          'Flight package',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 10),
-        ...flight.documents.map(
-          (document) => BriefingDocumentTile(
-            document: document,
-            onTap: () => _showDocumentMessage(document),
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Decoded information is for briefing support. Verify operational decisions against the current approved source document.',
-          style: TextStyle(color: Color(0xFF667069), fontSize: 11, height: 1.4),
-        ),
-      ],
-    );
+  Widget build(BuildContext context) => ListView(
+    padding: const EdgeInsets.all(20),
+    children: [
+      Text('Briefing', style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+      const SizedBox(height: 6),
+      const Text('Prepare and activate the next flight from your roster.', style: TextStyle(color: Color(0xFF667069))),
+      const SizedBox(height: 18),
+      if (flight == null) _NoFlightCard(onAdd: () => _addFlight(context)) else _FlightCard(flight: flight!, active: isActive),
+      const SizedBox(height: 18),
+      if (flight != null && !isActive)
+        _UploadCard(onUpload: () => _uploadDocuments(context), onChangeFlight: () => _addFlight(context))
+      else if (flight != null)
+        _ActiveCard(flight: flight!, onReplaceDocuments: () => _uploadDocuments(context)),
+    ],
+  );
+
+  Future<void> _addFlight(BuildContext context) async {
+    final number = TextEditingController(text: flight?.flightNumber);
+    final departure = TextEditingController();
+    final arrival = TextEditingController();
+    final saved = await showDialog<bool>(context: context, builder: (context) => AlertDialog(
+      title: const Text('Add flight manually'),
+      content: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(controller: number, decoration: const InputDecoration(labelText: 'Flight number')), const SizedBox(height: 10),
+        TextField(controller: departure, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Departure airport')), const SizedBox(height: 10),
+        TextField(controller: arrival, textCapitalization: TextCapitalization.characters, decoration: const InputDecoration(labelText: 'Arrival airport')),
+      ]),
+      actions: [TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')), FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Add flight'))],
+    ));
+    if (saved != true || number.text.trim().isEmpty) return;
+    onFlightChanged(FlightBriefing(
+      flightNumber: number.text.trim().toUpperCase(),
+      route: '${departure.text.trim().toUpperCase()} → ${arrival.text.trim().toUpperCase()}',
+      departureTime: 'Manually added flight', arrivalTime: 'Times pending flight package', aircraftType: 'Aircraft pending', registration: '', planType: 'Documents not uploaded', documents: const [],
+    ), false);
   }
 
-  Future<void> _importPackage() async {
-    final files = await FilePicker.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: const ['pdf'],
-    );
-    if (!mounted || files.isEmpty) return;
-
-    final grouped = <String, List<PlatformFile>>{};
-    for (final file in files) {
-      final match = RegExp(
-        r'^([A-Za-z]+\d+)',
-        caseSensitive: false,
-      ).firstMatch(file.name);
-      final flightNumber = match?.group(1)?.toUpperCase() ?? 'IMPORTED';
-      grouped.putIfAbsent(flightNumber, () => []).add(file);
-    }
-    final imported = grouped.entries
-        .map((group) => _flightFromFiles(group.key, group.value))
-        .toList();
-    if (imported.isEmpty) return;
-    setState(() {
-      _flights
-        ..clear()
-        ..addAll(imported);
-      _selectedFlight = 0;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '${files.length} documents grouped into ${imported.length} flight package${imported.length == 1 ? '' : 's'}.',
-        ),
-      ),
-    );
-  }
-
-  FlightBriefing _flightFromFiles(
-    String flightNumber,
-    List<PlatformFile> files,
-  ) {
-    final counts = <BriefingDocumentType, int>{};
+  Future<void> _uploadDocuments(BuildContext context) async {
+    final files = await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: const ['pdf']);
+    if (files.isEmpty || !context.mounted) return;
+    final documents = <BriefingDocumentType, int>{};
     for (final file in files) {
       final type = _documentType(file.name);
-      counts[type] = (counts[type] ?? 0) + 1;
+      documents[type] = (documents[type] ?? 0) + 1;
     }
-    final documents = counts.entries
-        .map(
-          (entry) => BriefingDocument(
-            type: entry.key,
-            title: _documentTitle(entry.key),
-            fileCount: entry.value,
-          ),
-        )
-        .toList();
-    return FlightBriefing(
-      flightNumber: flightNumber,
-      route: 'Imported flight package',
-      departureTime: 'Open the OFP to confirm flight details',
-      arrivalTime: '${files.length} source documents selected',
-      aircraftType: 'Aircraft details pending OFP decoding',
-      registration: '',
-      planType: 'Imported locally',
-      documents: documents,
+    final detectedNumber = RegExp(r'^([A-Za-z]+\d+)').firstMatch(files.first.name)?.group(1)?.toUpperCase();
+    final current = flight;
+    final updated = FlightBriefing(
+      flightNumber: detectedNumber ?? current?.flightNumber ?? 'IMPORTED',
+      route: current?.route ?? 'Route pending OFP decoding',
+      departureTime: current?.departureTime ?? 'From uploaded flight package',
+      arrivalTime: current?.arrivalTime ?? '${files.length} documents uploaded',
+      aircraftType: current?.aircraftType ?? 'Aircraft pending OFP decoding',
+      registration: current?.registration ?? '',
+      planType: 'Active flight package',
+      documents: documents.entries.map((item) => BriefingDocument(type: item.key, title: _title(item.key), fileCount: item.value)).toList(),
     );
+    onFlightChanged(updated, true);
+    await showDialog<void>(context: context, builder: (context) => AlertDialog(icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF28634A), size: 44), title: const Text('Flight activated'), content: Text('${updated.flightNumber}\n${files.length} documents uploaded', textAlign: TextAlign.center), actions: [FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))]));
   }
 
   BriefingDocumentType _documentType(String filename) {
@@ -243,60 +88,20 @@ class _BriefingTabState extends State<BriefingTab> {
     return BriefingDocumentType.weather;
   }
 
-  String _documentTitle(BriefingDocumentType type) => switch (type) {
-    BriefingDocumentType.operationalFlightPlan => 'Operational flight plan',
-    BriefingDocumentType.weather => 'Weather briefing',
-    BriefingDocumentType.notams => 'NOTAM briefing',
-    BriefingDocumentType.routeChart => 'Route charts',
-    BriefingDocumentType.significantWeather => 'Significant weather charts',
-    BriefingDocumentType.tracks => 'Track message',
-    BriefingDocumentType.terrain => 'Critical terrain scenario',
+  String _title(BriefingDocumentType type) => switch (type) {
+    BriefingDocumentType.operationalFlightPlan => 'Operational flight plan', BriefingDocumentType.weather => 'Weather briefing', BriefingDocumentType.notams => 'NOTAM briefing', BriefingDocumentType.routeChart => 'Route charts', BriefingDocumentType.significantWeather => 'Significant weather charts', BriefingDocumentType.tracks => 'Track message', BriefingDocumentType.terrain => 'Critical terrain scenario',
   };
-
-  void _showDocumentMessage(
-    BriefingDocument document,
-  ) => ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        '${document.title}: original PDF and decoded summary will open here.',
-      ),
-    ),
-  );
 }
 
-class _FlightHeader extends StatelessWidget {
-  const _FlightHeader({required this.flight});
-  final FlightBriefing flight;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: const Color(0xFF173D31),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '${flight.flightNumber} · ${flight.route}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          '${flight.departureTime}\n${flight.arrivalTime}',
-          style: const TextStyle(color: Color(0xFFDCEADD), height: 1.5),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          '${flight.aircraftType} · ${flight.registration}\n${flight.planType}',
-          style: const TextStyle(color: Colors.white70, height: 1.5),
-        ),
-      ],
-    ),
-  );
+class _FlightCard extends StatelessWidget {
+  const _FlightCard({required this.flight, required this.active});
+  final FlightBriefing flight; final bool active;
+  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: active ? const Color(0xFF173D31) : const Color(0xFFD9E1EA), borderRadius: BorderRadius.circular(20)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    Row(children: [Expanded(child: Text(active ? 'ACTIVE FLIGHT' : 'NEXT FLIGHT', style: TextStyle(color: active ? const Color(0xFF9BD1B4) : const Color(0xFF244A73), fontSize: 11, fontWeight: FontWeight.w900))), Icon(active ? Icons.check_circle_rounded : Icons.schedule_rounded, color: active ? const Color(0xFF9BD1B4) : const Color(0xFF244A73))]),
+    const SizedBox(height: 10), Text('${flight.flightNumber} · ${flight.route}', style: TextStyle(color: active ? Colors.white : const Color(0xFF18334F), fontSize: 23, fontWeight: FontWeight.w800)), const SizedBox(height: 10), Text('${flight.departureTime}\n${flight.arrivalTime}', style: TextStyle(color: active ? Colors.white70 : const Color(0xFF43576A), height: 1.5)),
+  ]));
 }
+
+class _NoFlightCard extends StatelessWidget { const _NoFlightCard({required this.onAdd}); final VoidCallback onAdd; @override Widget build(BuildContext context) => Card(elevation: 0, child: Padding(padding: const EdgeInsets.all(24), child: Column(children: [const Icon(Icons.flight_outlined, size: 48), const SizedBox(height: 12), const Text('No upcoming rostered flight', style: TextStyle(fontWeight: FontWeight.w800)), const SizedBox(height: 12), OutlinedButton.icon(onPressed: onAdd, icon: const Icon(Icons.add), label: const Text('Add flight manually'))]))); }
+class _UploadCard extends StatelessWidget { const _UploadCard({required this.onUpload, required this.onChangeFlight}); final VoidCallback onUpload; final VoidCallback onChangeFlight; @override Widget build(BuildContext context) => Card(elevation: 0, color: Colors.white, child: Padding(padding: const EdgeInsets.all(20), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [const Text('Upload flight documents', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)), const SizedBox(height: 6), const Text('Upload the OFP, weather, NOTAMs, charts and any additional planning documents.'), const SizedBox(height: 16), FilledButton.icon(onPressed: onUpload, icon: const Icon(Icons.upload_file_rounded), label: const Text('Choose flight documents')), TextButton(onPressed: onChangeFlight, child: const Text('Schedule changed? Choose another flight'))]))); }
+class _ActiveCard extends StatelessWidget { const _ActiveCard({required this.flight, required this.onReplaceDocuments}); final FlightBriefing flight; final VoidCallback onReplaceDocuments; @override Widget build(BuildContext context) => Card(elevation: 0, color: Colors.white, child: ListTile(leading: const CircleAvatar(child: Icon(Icons.folder_copy_outlined)), title: Text('${flight.documents.fold<int>(0, (sum, item) => sum + item.fileCount)} documents ready', style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Continue through the briefing tabs below.'), trailing: IconButton(onPressed: onReplaceDocuments, tooltip: 'Replace documents', icon: const Icon(Icons.refresh_rounded)))); }
