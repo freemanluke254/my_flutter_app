@@ -346,6 +346,44 @@ class _CalendarTabState extends State<CalendarTab> {
       ),
     );
     if (saved != true) return;
+    if (!mounted) return;
+    final overlaps = _entries
+        .where(
+          (candidate) =>
+              candidate.displaysAsBar &&
+              candidate.entryKey != entry?.entryKey &&
+              _sameDay(candidate.date, selectedDate),
+        )
+        .toList();
+    if (selectedType != CalendarEntryType.dayOff && overlaps.isNotEmpty) {
+      final continueWithOverlap =
+          await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              icon: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFBD7A17),
+                size: 44,
+              ),
+              title: const Text('Duty overlap detected'),
+              content: Text(
+                'This entry overlaps ${overlaps.map((item) => item.title).join(', ')} on ${selectedDate.day}/${selectedDate.month}/${selectedDate.year}. Do you want to save it anyway?',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Go back'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save anyway'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+      if (!continueWithOverlap) return;
+    }
     final id =
         entry?.adjustmentId ?? DateTime.now().microsecondsSinceEpoch.toString();
     final originalKey = entry?.originalEntryKey ?? entry?.entryKey;
@@ -356,9 +394,16 @@ class _CalendarTabState extends State<CalendarTab> {
       details: details.text.trim().isEmpty
           ? 'Manually entered'
           : details.text.trim(),
-      barLabel: selectedType == CalendarEntryType.flight
+      continuityId: entry?.continuityId,
+      utcPeriod: entry?.utcPeriod,
+      showDetails: entry?.showDetails ?? true,
+      barLabel:
+          selectedType == CalendarEntryType.flight ||
+              selectedType == CalendarEntryType.positioning
           ? title.text.trim().split(' ').first
           : null,
+      barLabelPosition:
+          entry?.barLabelPosition ?? CalendarBarLabelPosition.left,
       adjustmentId: id,
       originalEntryKey: entry == null ? null : originalKey,
     );
@@ -379,27 +424,61 @@ class _CalendarTabState extends State<CalendarTab> {
   }
 
   Future<void> _deleteEntry(CalendarEntry entry) async {
-    final confirmed =
-        await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('Delete calendar entry?'),
-            content: Text(entry.title),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('Delete'),
-              ),
-            ],
+    final tripEntries = entry.continuityId == null
+        ? <CalendarEntry>[entry]
+        : _entries
+              .where(
+                (candidate) => candidate.continuityId == entry.continuityId,
+              )
+              .toList();
+    final deletionScope = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(
+          Icons.warning_amber_rounded,
+          color: Color(0xFFB93B3B),
+          size: 44,
+        ),
+        title: Text(
+          entry.type == CalendarEntryType.flight
+              ? 'Are you sure you want to delete this flight?'
+              : 'Are you sure you want to delete this duty?',
+        ),
+        content: Text(
+          tripEntries.length > 1
+              ? '${entry.title} is part of a ${tripEntries.length}-day trip. Choose whether to delete only this sector/day or the complete trip, including downroute time and the return flight.'
+              : entry.title,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-        ) ??
-        false;
-    if (!confirmed) return;
+          if (tripEntries.length > 1)
+            OutlinedButton(
+              onPressed: () => Navigator.pop(context, 'trip'),
+              child: const Text('Delete entire trip'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, 'entry'),
+            child: Text(
+              tripEntries.length > 1 ? 'Delete this only' : 'Delete duty',
+            ),
+          ),
+        ],
+      ),
+    );
+    if (deletionScope == null) return;
     final changes = [..._adjustments];
+    final targets = deletionScope == 'trip' ? tripEntries : [entry];
+    for (final target in targets) {
+      _applyDeletion(changes, target);
+    }
+    await _adjustmentStorage.save(changes);
+    await _restoreRosters();
+  }
+
+  void _applyDeletion(List<CalendarAdjustment> changes, CalendarEntry entry) {
     if (entry.adjustmentId != null && entry.originalEntryKey == null) {
       changes.removeWhere((change) => change.id == entry.adjustmentId);
     } else {
@@ -418,12 +497,11 @@ class _CalendarTabState extends State<CalendarTab> {
         changes[index] = deletion;
       }
     }
-    await _adjustmentStorage.save(changes);
-    await _restoreRosters();
   }
 
   String _typeLabel(CalendarEntryType type) => switch (type) {
     CalendarEntryType.flight => 'Flight',
+    CalendarEntryType.positioning => 'Positioning sector',
     CalendarEntryType.standby => 'Home standby',
     CalendarEntryType.reserve => 'Reserve',
     CalendarEntryType.training => 'Training or check',

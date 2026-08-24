@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 enum CalendarEntryType {
   flight,
+  positioning,
   standby,
   reserve,
   training,
@@ -46,6 +47,7 @@ class CalendarEntry {
 
   bool get displaysAsBar => switch (type) {
     CalendarEntryType.flight ||
+    CalendarEntryType.positioning ||
     CalendarEntryType.standby ||
     CalendarEntryType.reserve ||
     CalendarEntryType.leave ||
@@ -57,6 +59,7 @@ class CalendarEntry {
 
   Color get color => switch (type) {
     CalendarEntryType.flight => const Color(0xFF244A73),
+    CalendarEntryType.positioning => const Color(0xFF397684),
     CalendarEntryType.standby => const Color(0xFFBD7A17),
     CalendarEntryType.reserve => const Color(0xFF9A6418),
     CalendarEntryType.training => const Color(0xFF315F9A),
@@ -68,6 +71,7 @@ class CalendarEntry {
 
   IconData get icon => switch (type) {
     CalendarEntryType.flight => Icons.flight_takeoff_rounded,
+    CalendarEntryType.positioning => Icons.airline_seat_recline_normal_rounded,
     CalendarEntryType.standby => Icons.schedule_rounded,
     CalendarEntryType.reserve => Icons.event_available_outlined,
     CalendarEntryType.training => Icons.school_outlined,
