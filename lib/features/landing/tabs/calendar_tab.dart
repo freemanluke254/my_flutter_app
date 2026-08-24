@@ -263,17 +263,15 @@ class _CalendarTabState extends State<CalendarTab> {
       await _addManualEntry(date ?? DateTime.now());
       return;
     }
-    var selectedDate = entry?.date ?? date ?? DateTime.now();
-    var selectedType = entry?.type ?? CalendarEntryType.flight;
-    final title = TextEditingController(text: entry?.title);
-    final details = TextEditingController(text: entry?.details);
+    var selectedDate = entry.date;
+    var selectedType = entry.type;
+    final title = TextEditingController(text: entry.title);
+    final details = TextEditingController(text: entry.details);
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(
-            entry == null ? 'Add calendar entry' : 'Amend calendar entry',
-          ),
+          title: const Text('Amend calendar entry'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -355,7 +353,7 @@ class _CalendarTabState extends State<CalendarTab> {
         .where(
           (candidate) =>
               candidate.displaysAsBar &&
-              candidate.entryKey != entry?.entryKey &&
+              candidate.entryKey != entry.entryKey &&
               _sameDay(candidate.date, selectedDate),
         )
         .toList();
@@ -389,8 +387,8 @@ class _CalendarTabState extends State<CalendarTab> {
       if (!continueWithOverlap) return;
     }
     final id =
-        entry?.adjustmentId ?? DateTime.now().microsecondsSinceEpoch.toString();
-    final originalKey = entry?.originalEntryKey ?? entry?.entryKey;
+        entry.adjustmentId ?? DateTime.now().microsecondsSinceEpoch.toString();
+    final originalKey = entry.originalEntryKey ?? entry.entryKey;
     final amended = CalendarEntry(
       date: selectedDate,
       type: selectedType,
@@ -398,25 +396,24 @@ class _CalendarTabState extends State<CalendarTab> {
       details: details.text.trim().isEmpty
           ? 'Manually entered'
           : details.text.trim(),
-      continuityId: entry?.continuityId,
-      utcPeriod: entry?.utcPeriod,
-      showDetails: entry?.showDetails ?? true,
+      continuityId: entry.continuityId,
+      utcPeriod: entry.utcPeriod,
+      showDetails: entry.showDetails,
       barLabel:
           selectedType == CalendarEntryType.flight ||
               selectedType == CalendarEntryType.positioning
-          ? title.text.trim().split(' ').first
+          ? '${entry.manuallyEntered ? 'M · ' : ''}${title.text.trim().split(' ').first}'
           : null,
-      barLabelPosition:
-          entry?.barLabelPosition ?? CalendarBarLabelPosition.left,
+      barLabelPosition: entry.barLabelPosition,
       adjustmentId: id,
-      originalEntryKey: entry == null ? null : originalKey,
+      originalEntryKey: originalKey,
       manuallyEntered: entry.manuallyEntered,
     );
     final changes = [..._adjustments];
     final index = changes.indexWhere((change) => change.id == id);
     final change = CalendarAdjustment(
       id: id,
-      originalEntryKey: entry == null ? null : originalKey,
+      originalEntryKey: originalKey,
       entry: amended,
     );
     if (index < 0) {
