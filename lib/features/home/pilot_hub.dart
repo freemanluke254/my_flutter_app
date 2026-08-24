@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import '../../flight_logbook_page.dart';
 import '../commute/commute_reminder_page.dart';
 import '../briefing/office_briefing_panel.dart';
-import '../briefing/b787_preflight_checklist.dart';
+import '../briefing/b787_operational_workflow.dart';
 import '../planning/planning_compliance_page.dart';
+import '../briefing/operational_calculations_page.dart';
 
 class PilotHub extends StatefulWidget {
   const PilotHub({super.key});
@@ -422,8 +423,8 @@ class _BriefingPage extends StatelessWidget {
               Tab(text: 'Overview'),
               Tab(text: 'Weather'),
               Tab(text: 'NOTAMs'),
-              Tab(text: 'Preflight'),
-              Tab(text: 'Tools'),
+              Tab(text: 'Workflow'),
+              Tab(text: 'Calculations'),
             ],
           ),
         ),
@@ -433,8 +434,8 @@ class _BriefingPage extends StatelessWidget {
               _BriefingOverview(flight: flight),
               const _WeatherBriefing(),
               const _NotamBriefing(),
-              const B787PreflightChecklist(),
-              const _ToolsGrid(),
+              const B787OperationalWorkflow(),
+              const OperationalCalculationsPage(),
             ],
           ),
         ),
@@ -570,50 +571,6 @@ class _NotamBriefing extends StatelessWidget {
           _CheckRow(text: 'Alternates'),
           _CheckRow(text: 'En-route and oceanic'),
         ],
-      ),
-    ],
-  );
-}
-
-class _ToolsGrid extends StatelessWidget {
-  const _ToolsGrid();
-  @override
-  Widget build(BuildContext context) => GridView.count(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
-    crossAxisCount: MediaQuery.sizeOf(context).width > 700 ? 3 : 2,
-    mainAxisSpacing: 10,
-    crossAxisSpacing: 10,
-    childAspectRatio: 1.15,
-    children: const [
-      _ToolCard(
-        icon: Icons.local_gas_station_outlined,
-        title: 'Fuel & uplift',
-        subtitle: 'Density and conversion',
-      ),
-      _ToolCard(
-        icon: Icons.speed_rounded,
-        title: 'Mach / TAS',
-        subtitle: 'Speed conversion',
-      ),
-      _ToolCard(
-        icon: Icons.air_rounded,
-        title: 'Crosswind',
-        subtitle: 'Wind components',
-      ),
-      _ToolCard(
-        icon: Icons.access_time_rounded,
-        title: 'Time & distance',
-        subtitle: 'ETA calculations',
-      ),
-      _ToolCard(
-        icon: Icons.swap_vert_rounded,
-        title: 'Pressure',
-        subtitle: 'hPa / inHg',
-      ),
-      _ToolCard(
-        icon: Icons.calculate_outlined,
-        title: 'Cold temperature',
-        subtitle: 'Altitude correction',
       ),
     ],
   );
@@ -1288,41 +1245,6 @@ class _CheckRow extends StatelessWidget {
         const SizedBox(width: 9),
         Text(text),
       ],
-    ),
-  );
-}
-
-class _ToolCard extends StatelessWidget {
-  const _ToolCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-  final IconData icon;
-  final String title, subtitle;
-  @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    color: const Color(0xFFFBFAF6),
-    child: InkWell(
-      onTap: () {},
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: const Color(0xFF28634A), size: 28),
-            const Spacer(),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 3),
-            Text(
-              subtitle,
-              style: const TextStyle(color: Color(0xFF6C756F), fontSize: 11),
-            ),
-          ],
-        ),
-      ),
     ),
   );
 }

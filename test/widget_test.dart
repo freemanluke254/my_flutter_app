@@ -151,10 +151,15 @@ void main() {
     await tester.tap(find.byIcon(Icons.airplane_ticket_outlined));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Preflight'));
+    await tester.tap(find.text('Workflow'));
     await tester.pumpAndSettle();
 
     expect(find.text('787-9 preflight flow'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Flight deck arrival & preliminary setup'),
+      250,
+      scrollable: find.byType(Scrollable).last,
+    );
     expect(
       find.text('Flight deck arrival & preliminary setup'),
       findsOneWidget,
@@ -169,6 +174,28 @@ void main() {
       find.textContaining('Before Start boundary reached'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('flight workflow and calculation workspace are available', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+    await tester.tap(find.byIcon(Icons.airplane_ticket_outlined));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Workflow'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Flight phases'));
+    await tester.pumpAndSettle();
+    expect(find.text('787-9 flight workflow'), findsOneWidget);
+    expect(find.text('Before start'), findsOneWidget);
+
+    await tester.tap(find.text('Calculations'));
+    await tester.pumpAndSettle();
+    expect(find.text('Operational calculations'), findsOneWidget);
+    expect(find.text('Fuel trend'), findsOneWidget);
+    expect(find.text('Wind components'), findsOneWidget);
   });
 
   testWidgets('custom compliance date shows a colour-coded countdown', (
