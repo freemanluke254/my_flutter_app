@@ -1,16 +1,18 @@
-import 'dart:convert';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../calendar/models/calendar_entry.dart';
+import '../../calendar/services/expiry_storage.dart';
 import '../../calendar/widgets/month_calendar.dart';
-import '../../roster/models/imported_roster.dart';
-import '../../roster/services/ical_roster_parser.dart';
 import '../../roster/services/roster_storage.dart';
 
 class CalendarTab extends StatefulWidget {
-  const CalendarTab({super.key});
+  const CalendarTab({
+    required this.refreshVersion,
+    required this.onUploadRequested,
+    super.key,
+  });
+  final int refreshVersion;
+  final VoidCallback onUploadRequested;
 
   @override
   State<CalendarTab> createState() => _CalendarTabState();
@@ -18,17 +20,23 @@ class CalendarTab extends StatefulWidget {
 
 class _CalendarTabState extends State<CalendarTab> {
   final _storage = RosterStorage();
+  final _expiryStorage = ExpiryStorage();
   bool _loading = true;
   bool _rosterLoaded = false;
   DateTime _visibleMonth = DateTime(2026, 8);
   DateTime? _selectedDate;
   List<CalendarEntry> _entries = const [];
-  List<ImportedRoster> _rosters = const [];
 
   @override
   void initState() {
     super.initState();
     _restoreRosters();
+  }
+
+  @override
+  void didUpdateWidget(covariant CalendarTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshVersion != widget.refreshVersion) _restoreRosters();
   }
 
   @override
@@ -72,7 +80,7 @@ class _CalendarTabState extends State<CalendarTab> {
           ),
           const SizedBox(height: 22),
           FilledButton.icon(
-            onPressed: _importRoster,
+            onPressed: widget.onUploadRequested,
             icon: const Icon(Icons.upload_file_rounded),
             label: const Text('Load roster'),
           ),
@@ -99,11 +107,6 @@ class _CalendarTabState extends State<CalendarTab> {
                   fontWeight: FontWeight.w800,
                 ),
               ),
-            ),
-            OutlinedButton.icon(
-              onPressed: _importRoster,
-              icon: const Icon(Icons.upload_file_rounded, size: 18),
-              label: const Text('Upload next roster'),
             ),
           ],
         ),
@@ -155,70 +158,36 @@ class _CalendarTabState extends State<CalendarTab> {
     );
   }
 
-  Future<void> _importRoster() async {
-    final file = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: const ['ics'],
-    );
-    if (!mounted || file == null) return;
-    try {
-      final bytes = await file.readAsBytes();
-      final entries = const IcalRosterParser().parse(utf8.decode(bytes));
-      if (entries.isEmpty) throw const FormatException('No duties found');
-      if (!mounted) return;
-      final roster = ImportedRoster(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        fileName: file.name,
-        importedAt: DateTime.now(),
-        entries: entries,
-      );
-      final updatedRosters = [
-        ..._rosters.where((stored) => stored.fileName != file.name),
-        roster,
-      ];
-      await _storage.save(updatedRosters);
-      if (!mounted) return;
-      final allEntries =
-          updatedRosters.expand((stored) => stored.entries).toList()
-            ..sort((first, second) => first.date.compareTo(second.date));
-      setState(() {
-        _rosterLoaded = true;
-        _rosters = updatedRosters;
-        _entries = allEntries;
-        _visibleMonth = DateTime(
-          entries.first.date.year,
-          entries.first.date.month,
-        );
-        _selectedDate = entries.first.date;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${entries.length} calendar days imported.')),
-      );
-    } on Object catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Roster could not be imported: $error')),
-      );
-    }
-  }
-
   Future<void> _restoreRosters() async {
     try {
       final rosters = await _storage.load();
-      final entries = rosters.expand((roster) => roster.entries).toList()
+      final rosterEntries = rosters.expand((roster) => roster.entries).toList()
         ..sort((first, second) => first.date.compareTo(second.date));
+      final entries = [...rosterEntries];
+      final expiries = await _expiryStorage.load();
+      entries.addAll(
+        expiries.map(
+          (record) => CalendarEntry(
+            date: record.date,
+            type: CalendarEntryType.expiry,
+            title: '${record.title} expires',
+            details:
+                'Expiry date: ${record.date.day}/${record.date.month}/${record.date.year}',
+          ),
+        ),
+      );
+      entries.sort((first, second) => first.date.compareTo(second.date));
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _rosters = rosters;
         _entries = entries;
-        _rosterLoaded = entries.isNotEmpty;
-        if (entries.isNotEmpty) {
+        _rosterLoaded = rosters.isNotEmpty;
+        if (rosters.isNotEmpty) {
           _visibleMonth = DateTime(
-            entries.last.date.year,
-            entries.last.date.month,
+            rosterEntries.last.date.year,
+            rosterEntries.last.date.month,
           );
-          _selectedDate = entries.last.date;
+          _selectedDate = rosterEntries.last.date;
         }
       });
     } on Object {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../briefing/briefing_workspace.dart';
-import 'tabs/calendar_tab.dart';
+import '../calendar/calendar_workspace.dart';
 import 'tabs/logbook_tab.dart';
 import 'tabs/more_tab.dart';
 import 'tabs/today_tab.dart';
@@ -21,21 +21,27 @@ class _LandingScreenState extends State<LandingScreen> {
   Widget build(BuildContext context) {
     final tabs = [
       TodayTab(pilotName: widget.pilotName),
-      const CalendarTab(),
+      const CalendarWorkspace(),
       const BriefingWorkspace(),
       const LogbookTab(),
       const MoreTab(),
     ];
     return Scaffold(
       appBar: AppBar(
-        leading: _selectedIndex == 2
+        leading: _selectedIndex == 1 || _selectedIndex == 2
             ? IconButton(
                 onPressed: () => setState(() => _selectedIndex = 0),
                 tooltip: 'Back to Pilot App',
                 icon: const Icon(Icons.arrow_back_rounded),
               )
             : null,
-        title: Text(_selectedIndex == 2 ? 'Flight Briefing' : 'Pilot App'),
+        title: Text(
+          _selectedIndex == 1
+              ? 'Calendar'
+              : _selectedIndex == 2
+              ? 'Flight Briefing'
+              : 'Pilot App',
+        ),
         actions: [
           IconButton(
             onPressed: () {},
@@ -47,7 +53,7 @@ class _LandingScreenState extends State<LandingScreen> {
       body: SafeArea(
         child: IndexedStack(index: _selectedIndex, children: tabs),
       ),
-      bottomNavigationBar: _selectedIndex == 2
+      bottomNavigationBar: _selectedIndex == 1 || _selectedIndex == 2
           ? null
           : NavigationBar(
               selectedIndex: _selectedIndex,
