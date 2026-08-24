@@ -107,6 +107,7 @@ class MonthCalendar extends StatelessWidget {
                 date: date,
                 entries: dateEntries,
                 allEntries: entries,
+                isToday: _sameDay(DateTime.now(), date),
                 selected: selectedDate != null && _sameDay(selectedDate!, date),
                 onTap: () => onDateSelected(date),
               );
@@ -146,6 +147,7 @@ class _DayCell extends StatelessWidget {
     required this.date,
     required this.entries,
     required this.allEntries,
+    required this.isToday,
     required this.selected,
     required this.onTap,
   });
@@ -153,6 +155,7 @@ class _DayCell extends StatelessWidget {
   final DateTime date;
   final List<CalendarEntry> entries;
   final List<CalendarEntry> allEntries;
+  final bool isToday;
   final bool selected;
   final VoidCallback onTap;
 
@@ -170,15 +173,37 @@ class _DayCell extends StatelessWidget {
             ? const Color(0xFFF0F3F5)
             : null,
         borderRadius: BorderRadius.circular(10),
+        border: isToday
+            ? Border.all(color: const Color(0xFF244A73), width: 2)
+            : null,
       ),
       child: Column(
         children: [
           const SizedBox(height: 8),
-          Text(
-            '${date.day}',
-            style: TextStyle(
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '${date.day}',
+                style: TextStyle(
+                  color: isToday ? const Color(0xFF244A73) : null,
+                  fontWeight: selected || isToday
+                      ? FontWeight.w800
+                      : FontWeight.w500,
+                ),
+              ),
+              if (isToday) ...[
+                const SizedBox(width: 3),
+                const Text(
+                  'TODAY',
+                  style: TextStyle(
+                    color: Color(0xFF244A73),
+                    fontSize: 6,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ],
           ),
           const SizedBox(height: 7),
           ...entries

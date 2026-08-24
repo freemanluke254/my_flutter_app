@@ -58,6 +58,7 @@ class PeriodCalendar extends StatelessWidget {
           final weekend =
               date.weekday == DateTime.saturday ||
               date.weekday == DateTime.sunday;
+          final isToday = _sameDay(date, DateTime.now());
           return InkWell(
             onTap: () => onDateSelected(date),
             borderRadius: BorderRadius.circular(12),
@@ -68,6 +69,9 @@ class PeriodCalendar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: weekend ? const Color(0xFFF0F3F5) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                border: isToday
+                    ? Border.all(color: const Color(0xFF244A73), width: 2)
+                    : null,
               ),
               child: Row(
                 children: [
@@ -77,10 +81,11 @@ class PeriodCalendar extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _weekdays[date.weekday - 1],
+                          isToday ? 'Today' : _weekdays[date.weekday - 1],
                           style: const TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF667069),
+                            color: Color(0xFF244A73),
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         Text(
