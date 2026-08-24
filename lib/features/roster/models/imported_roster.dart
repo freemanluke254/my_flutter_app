@@ -39,6 +39,7 @@ class ImportedRoster {
     'showDetails': entry.showDetails,
     'barLabel': entry.barLabel,
     'barLabelPosition': entry.barLabelPosition.name,
+    'manuallyEntered': entry.manuallyEntered,
   };
 
   static CalendarEntry _entryFromJson(Map<String, Object?> json) =>
@@ -54,5 +55,6 @@ class ImportedRoster {
         barLabelPosition: CalendarBarLabelPosition.values.byName(
           json['barLabelPosition'] as String? ?? 'left',
         ),
+        manuallyEntered: json['manuallyEntered'] as bool? ?? false,
       );
 }

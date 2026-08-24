@@ -27,6 +27,7 @@ class CalendarEntry {
     this.barLabelPosition = CalendarBarLabelPosition.left,
     this.adjustmentId,
     this.originalEntryKey,
+    this.manuallyEntered = false,
   });
 
   final DateTime date;
@@ -40,6 +41,7 @@ class CalendarEntry {
   final CalendarBarLabelPosition barLabelPosition;
   final String? adjustmentId;
   final String? originalEntryKey;
+  final bool manuallyEntered;
 
   String get entryKey => '${date.toIso8601String()}|${type.name}|$title';
 

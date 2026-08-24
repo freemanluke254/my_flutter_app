@@ -85,6 +85,7 @@ class CalendarAdjustmentStorage {
     'showDetails': entry.showDetails,
     'barLabel': entry.barLabel,
     'barLabelPosition': entry.barLabelPosition.name,
+    'manuallyEntered': entry.manuallyEntered,
   };
 
   CalendarEntry _entryFromJson(
@@ -105,5 +106,6 @@ class CalendarAdjustmentStorage {
     ),
     adjustmentId: id,
     originalEntryKey: originalKey,
+    manuallyEntered: json['manuallyEntered'] as bool? ?? true,
   );
 }

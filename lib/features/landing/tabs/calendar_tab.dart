@@ -259,6 +259,10 @@ class _CalendarTabState extends State<CalendarTab> {
   }
 
   Future<void> _editEntry({CalendarEntry? entry, DateTime? date}) async {
+    if (entry == null) {
+      await _addManualEntry(date ?? DateTime.now());
+      return;
+    }
     var selectedDate = entry?.date ?? date ?? DateTime.now();
     var selectedType = entry?.type ?? CalendarEntryType.flight;
     final title = TextEditingController(text: entry?.title);
@@ -406,6 +410,7 @@ class _CalendarTabState extends State<CalendarTab> {
           entry?.barLabelPosition ?? CalendarBarLabelPosition.left,
       adjustmentId: id,
       originalEntryKey: entry == null ? null : originalKey,
+      manuallyEntered: entry.manuallyEntered,
     );
     final changes = [..._adjustments];
     final index = changes.indexWhere((change) => change.id == id);
@@ -421,6 +426,328 @@ class _CalendarTabState extends State<CalendarTab> {
     }
     await _adjustmentStorage.save(changes);
     await _restoreRosters();
+  }
+
+  Future<void> _addManualEntry(DateTime initialDate) async {
+    var date = initialDate;
+    var type = CalendarEntryType.flight;
+    var basis = 'local';
+    final name = TextEditingController();
+    final departure = TextEditingController();
+    final arrival = TextEditingController();
+    final start = TextEditingController();
+    final finish = TextEditingController();
+    final startOffset = TextEditingController(text: '+00:00');
+    final finishOffset = TextEditingController(text: '+00:00');
+    final report = TextEditingController();
+    final downroute = TextEditingController();
+    final notes = TextEditingController();
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final flightLike = _isFlightLike(type);
+          final timed = flightLike || _requiresDutyTimes(type);
+          return AlertDialog(
+            title: const Text('Add calendar entry'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<CalendarEntryType>(
+                    initialValue: type,
+                    decoration: const InputDecoration(labelText: 'Duty type'),
+                    items: CalendarEntryType.values
+                        .where((item) => item != CalendarEntryType.expiry)
+                        .map(
+                          (item) => DropdownMenuItem(
+                            value: item,
+                            child: Text(_typeLabel(item)),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) setDialogState(() => type = value);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: name,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: flightLike ? 'Callsign' : 'Duty name',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (flightLike) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: departure,
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: const InputDecoration(
+                              labelText: 'Departure',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: arrival,
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: const InputDecoration(
+                              labelText: 'Arrival',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (timed) ...[
+                    DropdownButtonFormField<String>(
+                      initialValue: basis,
+                      decoration: const InputDecoration(
+                        labelText: 'Times entered as',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'local',
+                          child: Text('Local time'),
+                        ),
+                        DropdownMenuItem(value: 'utc', child: Text('UTC')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) setDialogState(() => basis = value);
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: start,
+                            decoration: const InputDecoration(
+                              labelText: 'Start HH:mm',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: finish,
+                            decoration: const InputDecoration(
+                              labelText: 'Finish HH:mm',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: startOffset,
+                            decoration: const InputDecoration(
+                              labelText: 'Start UTC offset',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: finishOffset,
+                            decoration: const InputDecoration(
+                              labelText: 'Finish UTC offset',
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  if (type == CalendarEntryType.flight) ...[
+                    TextField(
+                      controller: report,
+                      decoration: const InputDecoration(
+                        labelText: 'Report time (optional)',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: downroute,
+                      decoration: const InputDecoration(
+                        labelText: 'Downroute rest (optional, e.g. 48H30)',
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  TextField(
+                    controller: notes,
+                    maxLines: 2,
+                    decoration: const InputDecoration(
+                      labelText: 'Notes (optional)',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Date'),
+                    subtitle: Text('${date.day}/${date.month}/${date.year}'),
+                    trailing: const Icon(Icons.calendar_today_outlined),
+                    onTap: () async {
+                      final value = await showDatePicker(
+                        context: context,
+                        initialDate: date,
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (value != null) setDialogState(() => date = value);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final missing = <String>[
+                    if (name.text.trim().isEmpty)
+                      flightLike ? 'callsign' : 'duty name',
+                    if (flightLike &&
+                        (departure.text.trim().isEmpty ||
+                            arrival.text.trim().isEmpty))
+                      'route',
+                    if (timed &&
+                        (start.text.trim().isEmpty ||
+                            finish.text.trim().isEmpty))
+                      'start and finish times',
+                  ];
+                  if (missing.isNotEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Required: ${missing.join(', ')}.'),
+                      ),
+                    );
+                    return;
+                  }
+                  Navigator.pop(context, true);
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+    if (saved != true || !mounted) return;
+    final flightLike = _isFlightLike(type);
+    final timed = flightLike || _requiresDutyTimes(type);
+    final title = flightLike
+        ? '${name.text.trim().toUpperCase()} ${departure.text.trim().toUpperCase()}–${arrival.text.trim().toUpperCase()}'
+        : name.text.trim();
+    final detailText = timed
+        ? _timedDetails(
+            basis: basis,
+            start: start.text,
+            finish: finish.text,
+            startOffset: startOffset.text,
+            finishOffset: finishOffset.text,
+            report: report.text,
+            downroute: downroute.text,
+            notes: notes.text,
+          )
+        : '${notes.text.trim().isEmpty ? 'Full-day duty' : notes.text.trim()}\nMANUALLY ENTERED';
+    final id = DateTime.now().microsecondsSinceEpoch.toString();
+    final showsBar = switch (type) {
+      CalendarEntryType.flight ||
+      CalendarEntryType.positioning ||
+      CalendarEntryType.standby ||
+      CalendarEntryType.reserve ||
+      CalendarEntryType.leave ||
+      CalendarEntryType.sickness => true,
+      CalendarEntryType.training ||
+      CalendarEntryType.expiry ||
+      CalendarEntryType.dayOff => false,
+    };
+    final entry = CalendarEntry(
+      date: date,
+      type: type,
+      title: title,
+      details: detailText,
+      barLabel: showsBar ? 'M · ${name.text.trim().toUpperCase()}' : null,
+      adjustmentId: id,
+      manuallyEntered: true,
+    );
+    final changes = [..._adjustments, CalendarAdjustment(id: id, entry: entry)];
+    await _adjustmentStorage.save(changes);
+    await _restoreRosters();
+  }
+
+  bool _isFlightLike(CalendarEntryType type) =>
+      type == CalendarEntryType.flight || type == CalendarEntryType.positioning;
+  bool _requiresDutyTimes(CalendarEntryType type) =>
+      type == CalendarEntryType.standby ||
+      type == CalendarEntryType.reserve ||
+      type == CalendarEntryType.training;
+
+  String _timedDetails({
+    required String basis,
+    required String start,
+    required String finish,
+    required String startOffset,
+    required String finishOffset,
+    required String report,
+    required String downroute,
+    required String notes,
+  }) {
+    final startPair = _localUtcPair(start, startOffset, basis);
+    final finishPair = _localUtcPair(finish, finishOffset, basis);
+    final reportPair = report.trim().isEmpty
+        ? null
+        : _localUtcPair(report, startOffset, basis);
+    return [
+      'Local ${startPair.$1}–${finishPair.$1}',
+      'UTC ${startPair.$2}Z–${finishPair.$2}Z',
+      if (reportPair != null)
+        'Report ${reportPair.$1} local / ${reportPair.$2}Z UTC',
+      if (downroute.trim().isNotEmpty) 'Downroute rest ${downroute.trim()}',
+      if (notes.trim().isNotEmpty) notes.trim(),
+      'MANUALLY ENTERED',
+    ].join('\n');
+  }
+
+  (String, String) _localUtcPair(
+    String value,
+    String offsetText,
+    String basis,
+  ) {
+    final parts = value.trim().split(':');
+    if (parts.length != 2) return (value.trim(), value.trim());
+    final offsetMatch = RegExp(
+      r'^([+-]?)(\d{1,2})(?::?(\d{2}))?$',
+    ).firstMatch(offsetText.trim());
+    final sign = offsetMatch?.group(1) == '-' ? -1 : 1;
+    final offset =
+        sign *
+        ((int.tryParse(offsetMatch?.group(2) ?? '') ?? 0) * 60 +
+            (int.tryParse(offsetMatch?.group(3) ?? '') ?? 0));
+    final entered =
+        (int.tryParse(parts[0]) ?? 0) * 60 + (int.tryParse(parts[1]) ?? 0);
+    final local = basis == 'local' ? entered : entered + offset;
+    final utc = basis == 'utc' ? entered : entered - offset;
+    String format(int minutes) {
+      final normal = minutes % 1440;
+      return '${(normal ~/ 60).toString().padLeft(2, '0')}:${(normal % 60).toString().padLeft(2, '0')}';
+    }
+
+    return (format(local), format(utc));
   }
 
   Future<void> _deleteEntry(CalendarEntry entry) async {
