@@ -2,6 +2,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../../briefing/models/flight_briefing.dart';
+import '../../briefing/services/ofp_parser.dart';
 
 class BriefingTab extends StatelessWidget {
   const BriefingTab({
@@ -133,13 +134,94 @@ class BriefingTab extends StatelessWidget {
   }
 
   Future<void> _addFlight(BuildContext context) async {
-    final number = TextEditingController(text: flight?.flightNumber);
-    final departure = TextEditingController();
-    final arrival = TextEditingController();
+    final method = await showDialog<String>(
+      context: context,
+      builder: (context) => SimpleDialog(
+        title: const Text('Add flight manually'),
+        children: [
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'type'),
+            child: const ListTile(
+              leading: Icon(Icons.keyboard_outlined),
+              title: Text('Type flight details'),
+              subtitle: Text('Enter each field yourself'),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(context, 'ofp'),
+            child: const ListTile(
+              leading: Icon(Icons.picture_as_pdf_outlined),
+              title: Text('Upload OFP'),
+              subtitle: Text(
+                'Decode the flight details from an operational flight plan',
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (!context.mounted || method == null) return;
+    if (method == 'ofp') {
+      await _addFromOfp(context);
+    } else {
+      await _showFlightForm(context);
+    }
+  }
+
+  Future<void> _addFromOfp(BuildContext context) async {
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+      );
+      if (file == null || !context.mounted) return;
+      final details = await const OfpParser().parse(await file.readAsBytes());
+      if (!context.mounted) return;
+      await _showFlightForm(context, details: details);
+    } on Object catch (error) {
+      if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('OFP could not be decoded'),
+          content: SelectableText('$error'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _showFlightForm(context);
+              },
+              child: const Text('Enter manually'),
+            ),
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _showFlightForm(
+    BuildContext context, {
+    OfpFlightDetails? details,
+  }) async {
+    final number = TextEditingController(
+      text: details?.flightNumber ?? flight?.flightNumber,
+    );
+    final departure = TextEditingController(text: details?.departure);
+    final arrival = TextEditingController(text: details?.arrival);
+    final departureTime = TextEditingController(text: details?.departureTime);
+    final arrivalTime = TextEditingController(text: details?.arrivalTime);
+    final aircraft = TextEditingController(text: details?.aircraftType);
+    final registration = TextEditingController(text: details?.registration);
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Add flight manually'),
+        title: Text(
+          details == null ? 'Enter flight details' : 'Confirm OFP details',
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -158,6 +240,48 @@ class BriefingTab extends StatelessWidget {
               controller: arrival,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(labelText: 'Arrival airport'),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: departureTime,
+                    decoration: const InputDecoration(
+                      labelText: 'Departure time',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: arrivalTime,
+                    decoration: const InputDecoration(
+                      labelText: 'Arrival time',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: aircraft,
+                    decoration: const InputDecoration(labelText: 'Aircraft'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: TextField(
+                    controller: registration,
+                    decoration: const InputDecoration(
+                      labelText: 'Registration',
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -179,11 +303,17 @@ class BriefingTab extends StatelessWidget {
         flightNumber: number.text.trim().toUpperCase(),
         route:
             '${departure.text.trim().toUpperCase()} → ${arrival.text.trim().toUpperCase()}',
-        departureTime: 'Manually added flight',
-        arrivalTime: 'Times pending flight package',
-        aircraftType: 'Aircraft pending',
-        registration: '',
-        planType: 'Documents not uploaded',
+        departureTime: departureTime.text.trim().isEmpty
+            ? 'Manually added flight'
+            : departureTime.text.trim(),
+        arrivalTime: arrivalTime.text.trim().isEmpty
+            ? 'Times pending flight package'
+            : arrivalTime.text.trim(),
+        aircraftType: aircraft.text.trim().isEmpty
+            ? 'Aircraft pending'
+            : aircraft.text.trim(),
+        registration: registration.text.trim(),
+        planType: details?.operation ?? 'Documents not uploaded',
         documents: const [],
       ),
       false,
