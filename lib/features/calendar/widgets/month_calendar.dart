@@ -231,6 +231,7 @@ class _DayCell extends StatelessWidget {
       alignment: switch (entry.barLabelPosition) {
         CalendarBarLabelPosition.left => Alignment.centerLeft,
         CalendarBarLabelPosition.center => Alignment.center,
+        CalendarBarLabelPosition.centerBoundary => Alignment.centerLeft,
         CalendarBarLabelPosition.right => Alignment.centerRight,
       },
       decoration: BoxDecoration(
@@ -240,19 +241,26 @@ class _DayCell extends StatelessWidget {
           right: Radius.circular(continuesToNext ? 0 : 7),
         ),
       ),
-      child: label != null
-          ? Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.clip,
-              softWrap: false,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
+      child: label == null
+          ? null
+          : FractionalTranslation(
+              translation:
+                  entry.barLabelPosition ==
+                      CalendarBarLabelPosition.centerBoundary
+                  ? const Offset(-0.5, 0)
+                  : Offset.zero,
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+                softWrap: false,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            )
-          : null,
+            ),
     );
   }
 

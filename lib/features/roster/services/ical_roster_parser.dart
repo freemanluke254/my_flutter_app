@@ -99,7 +99,8 @@ class IcalRosterParser {
     final tripDays = end.difference(start).inDays;
     final downrouteDay = tripDays < 3
         ? null
-        : start.add(Duration(days: (tripDays - 1) ~/ 2));
+        : start.add(Duration(days: tripDays ~/ 2));
+    final tripEndDate = end.subtract(const Duration(days: 1));
 
     final result = <CalendarEntry>[];
     for (
@@ -108,14 +109,10 @@ class IcalRosterParser {
       date = date.add(const Duration(days: 1))
     ) {
       final leg = legs[date.day];
-      final isFirstLeg = leg == orderedLegs.first;
-      final isLastLeg = leg == orderedLegs.last;
+      final isTripStart = _sameDate(date, start);
+      final isTripEnd = _sameDate(date, tripEndDate);
       final isDownrouteLabel =
-          leg == null &&
-          downrouteDay != null &&
-          date.year == downrouteDay.year &&
-          date.month == downrouteDay.month &&
-          date.day == downrouteDay.day;
+          downrouteDay != null && _sameDate(date, downrouteDay);
       result.add(
         CalendarEntry(
           date: date,
@@ -129,21 +126,30 @@ class IcalRosterParser {
               : 'Local ${leg.localPeriod}\nUTC ${leg.utcPeriod}',
           utcPeriod: leg?.utcPeriod,
           showDetails: leg != null,
-          barLabel: leg != null
-              ? leg.flightNumber
+          barLabel: isTripStart
+              ? orderedLegs.first.flightNumber
+              : isTripEnd
+              ? orderedLegs.last.flightNumber
               : isDownrouteLabel
               ? downrouteLabel
               : null,
-          barLabelPosition: isLastLeg
+          barLabelPosition: isTripEnd
               ? CalendarBarLabelPosition.right
-              : isFirstLeg
+              : isTripStart
               ? CalendarBarLabelPosition.left
+              : tripDays.isEven
+              ? CalendarBarLabelPosition.centerBoundary
               : CalendarBarLabelPosition.center,
         ),
       );
     }
     return result;
   }
+
+  bool _sameDate(DateTime first, DateTime second) =>
+      first.year == second.year &&
+      first.month == second.month &&
+      first.day == second.day;
 
   String _downrouteTime(
     DateTime month,

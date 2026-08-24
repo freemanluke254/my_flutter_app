@@ -11,7 +11,7 @@ enum CalendarEntryType {
   dayOff,
 }
 
-enum CalendarBarLabelPosition { left, center, right }
+enum CalendarBarLabelPosition { left, center, centerBoundary, right }
 
 class CalendarEntry {
   const CalendarEntry({
