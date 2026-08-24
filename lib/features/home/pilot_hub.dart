@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../flight_logbook_page.dart';
+import '../briefing/briefing_page.dart';
+import '../briefing/models/briefing_flight.dart';
 import '../commute/commute_reminder_page.dart';
 import '../library/operations_library_page.dart';
-import '../briefing/office_briefing_panel.dart';
-import '../briefing/b787_operational_workflow.dart';
 import '../planning/planning_compliance_page.dart';
-import '../briefing/operational_calculations_page.dart';
 
 class PilotHub extends StatefulWidget {
   const PilotHub({super.key});
@@ -19,7 +18,7 @@ class _PilotHubState extends State<PilotHub> {
   int _index = 0;
   final List<FlightEntry> _generatedEntries = [];
 
-  static const flight = _FlightDay(
+  static const flight = BriefingFlight(
     flightNumber: 'BA275',
     aircraft: 'Boeing 787-9',
     registration: 'G-ZBKM',
@@ -42,7 +41,7 @@ class _PilotHubState extends State<PilotHub> {
         onOpenBriefing: () => setState(() => _index = 1),
         onCompleteFlight: _completeFlight,
       ),
-      const _BriefingPage(flight: flight),
+      const BriefingPage(flight: flight),
       FlightLogbookPage(initialEntries: _generatedEntries),
       const OperationsLibraryPage(),
       const _MorePage(),
@@ -133,7 +132,7 @@ class _TodayFlightPage extends StatelessWidget {
     required this.onOpenBriefing,
     required this.onCompleteFlight,
   });
-  final _FlightDay flight;
+  final BriefingFlight flight;
   final VoidCallback onOpenBriefing;
   final VoidCallback onCompleteFlight;
 
@@ -278,7 +277,7 @@ class _TodayFlightPage extends StatelessWidget {
 
 class _FlightCard extends StatelessWidget {
   const _FlightCard({required this.flight, required this.onBriefing});
-  final _FlightDay flight;
+  final BriefingFlight flight;
   final VoidCallback onBriefing;
   @override
   Widget build(BuildContext context) => Container(
@@ -376,204 +375,6 @@ class _FlightCard extends StatelessWidget {
         ),
       ],
     ),
-  );
-}
-
-class _BriefingPage extends StatelessWidget {
-  const _BriefingPage({required this.flight});
-  final _FlightDay flight;
-  @override
-  Widget build(BuildContext context) => DefaultTabController(
-    length: 5,
-    child: Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 22, 20, 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${flight.flightNumber} briefing',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${flight.departure} → ${flight.arrival} · ${flight.registration}',
-                      style: const TextStyle(color: Color(0xFF6C756F)),
-                    ),
-                  ],
-                ),
-              ),
-              IconButton.filledTonal(
-                onPressed: () {},
-                tooltip: 'Upload flight plan',
-                icon: const Icon(Icons.upload_file_rounded),
-              ),
-            ],
-          ),
-        ),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 12),
-          child: TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'Overview'),
-              Tab(text: 'Weather'),
-              Tab(text: 'NOTAMs'),
-              Tab(text: 'Workflow'),
-              Tab(text: 'Calculations'),
-            ],
-          ),
-        ),
-        Expanded(
-          child: TabBarView(
-            children: [
-              _BriefingOverview(flight: flight),
-              const _WeatherBriefing(),
-              const _NotamBriefing(),
-              const B787OperationalWorkflow(),
-              const OperationalCalculationsPage(),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _BriefingOverview extends StatelessWidget {
-  const _BriefingOverview({required this.flight});
-  final _FlightDay flight;
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
-    children: [
-      OfficeBriefingPanel(reportTime: flight.reportTime),
-      const _OperationalWarning(),
-      const SizedBox(height: 14),
-      _BriefingSection(
-        title: 'Operational flight plan',
-        icon: Icons.route_outlined,
-        status: 'Not uploaded',
-        children: [
-          const Text(
-            'Upload the company OFP to populate route, alternates, fuel figures and planned times.',
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: null,
-            icon: Icon(Icons.upload_file_rounded),
-            label: Text('Connect document import'),
-          ),
-        ],
-      ),
-      const _BriefingSection(
-        title: 'Route snapshot',
-        icon: Icons.public_rounded,
-        status: 'Planned',
-        children: [
-          Text('LHR · CPT · DOGAL · 55N020W · 54N030W · 52N040W · NICSO · LAS'),
-          SizedBox(height: 8),
-          Text(
-            'Tracks and oceanic clearance must be checked against the current operational briefing.',
-            style: TextStyle(color: Color(0xFF6C756F), fontSize: 12),
-          ),
-        ],
-      ),
-      const _BriefingSection(
-        title: 'Fuel plan',
-        icon: Icons.local_gas_station_outlined,
-        status: 'Review',
-        children: [
-          _DataRow(label: 'Trip fuel', value: '48.2 t'),
-          _DataRow(label: 'Contingency', value: '2.4 t'),
-          _DataRow(label: 'Alternate', value: '3.1 t'),
-          _DataRow(label: 'Final reserve', value: '2.7 t'),
-          _DataRow(label: 'Block fuel', value: '58.9 t'),
-        ],
-      ),
-    ],
-  );
-}
-
-class _WeatherBriefing extends StatelessWidget {
-  const _WeatherBriefing();
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
-    children: const [
-      _OperationalWarning(),
-      SizedBox(height: 14),
-      _BriefingSection(
-        title: 'EGLL · METAR',
-        icon: Icons.cloud_outlined,
-        status: 'Sample',
-        children: [
-          SelectableText(
-            'EGLL 241350Z AUTO 24012KT 9999 SCT025 19/11 Q1018 NOSIG',
-          ),
-          SizedBox(height: 8),
-          Text(
-            'Observed 13:50Z · planned departure 16:05 local',
-            style: TextStyle(color: Color(0xFF6C756F)),
-          ),
-        ],
-      ),
-      _BriefingSection(
-        title: 'EGLL · TAF',
-        icon: Icons.timeline_rounded,
-        status: 'Sample',
-        children: [
-          SelectableText(
-            'TAF EGLL 241100Z 2412/2518 24012KT 9999 SCT025 TEMPO 2414/2420 6000 SHRA BKN018',
-          ),
-        ],
-      ),
-      _BriefingSection(
-        title: 'KLAS · METAR / TAF',
-        icon: Icons.wb_sunny_outlined,
-        status: 'Sample',
-        children: [
-          SelectableText('KLAS 241456Z 19008KT 10SM FEW120 37/06 A2990'),
-          SizedBox(height: 8),
-          Text(
-            'Forecast remains VMC around planned arrival. Confirm with approved source.',
-            style: TextStyle(color: Color(0xFF6C756F)),
-          ),
-        ],
-      ),
-    ],
-  );
-}
-
-class _NotamBriefing extends StatelessWidget {
-  const _NotamBriefing();
-  @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.fromLTRB(20, 18, 20, 110),
-    children: const [
-      _OperationalWarning(),
-      SizedBox(height: 14),
-      _BriefingSection(
-        title: 'NOTAM briefing',
-        icon: Icons.warning_amber_rounded,
-        status: 'Provider required',
-        children: [
-          Text(
-            'Connect an approved briefing source to retrieve, filter and acknowledge current NOTAMs for departure, destination, alternates and route.',
-          ),
-          SizedBox(height: 12),
-          _CheckRow(text: 'Departure and SID'),
-          _CheckRow(text: 'Destination and STAR'),
-          _CheckRow(text: 'Alternates'),
-          _CheckRow(text: 'En-route and oceanic'),
-        ],
-      ),
-    ],
   );
 }
 
@@ -805,35 +606,6 @@ class _SimpleFeaturePage extends StatelessWidget {
   );
 }
 
-class _FlightDay {
-  const _FlightDay({
-    required this.flightNumber,
-    required this.aircraft,
-    required this.registration,
-    required this.departure,
-    required this.departureName,
-    required this.departureTime,
-    required this.arrival,
-    required this.arrivalName,
-    required this.arrivalTime,
-    required this.blockTime,
-    required this.reportTime,
-    required this.gate,
-  });
-  final String flightNumber,
-      aircraft,
-      registration,
-      departure,
-      departureName,
-      departureTime,
-      arrival,
-      arrivalName,
-      arrivalTime,
-      blockTime,
-      reportTime,
-      gate;
-}
-
 class _AirportTime extends StatelessWidget {
   const _AirportTime({
     required this.code,
@@ -995,35 +767,6 @@ class _AdvisoryNote extends StatelessWidget {
   );
 }
 
-class _OperationalWarning extends StatelessWidget {
-  const _OperationalWarning();
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: const Color(0xFFFFE9D2),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: const Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(Icons.warning_amber_rounded, color: Color(0xFF8A551C)),
-        SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            'Prototype data — not for operational decision-making. Use approved company and aeronautical sources.',
-            style: TextStyle(
-              color: Color(0xFF6E451B),
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
 class _ControlledContentNotice extends StatelessWidget {
   const _ControlledContentNotice();
   @override
@@ -1083,39 +826,6 @@ class _BriefingSection extends StatelessWidget {
           ...children,
         ],
       ),
-    ),
-  );
-}
-
-class _DataRow extends StatelessWidget {
-  const _DataRow({required this.label, required this.value});
-  final String label, value;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Expanded(
-          child: Text(label, style: const TextStyle(color: Color(0xFF6C756F))),
-        ),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
-      ],
-    ),
-  );
-}
-
-class _CheckRow extends StatelessWidget {
-  const _CheckRow({required this.text});
-  final String text;
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(top: 8),
-    child: Row(
-      children: [
-        const Icon(Icons.circle_outlined, size: 18, color: Color(0xFF6C756F)),
-        const SizedBox(width: 9),
-        Text(text),
-      ],
     ),
   );
 }
