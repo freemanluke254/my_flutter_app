@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'features/auth/create_account_screen.dart';
+import 'features/landing/landing_screen.dart';
 
 class PilotApp extends StatelessWidget {
   const PilotApp({super.key});
@@ -25,6 +25,6 @@ class PilotApp extends StatelessWidget {
       ),
       useMaterial3: true,
     ),
-    home: const CreateAccountScreen(),
+    home: const LandingScreen(pilotName: 'Luke'),
   );
 }
