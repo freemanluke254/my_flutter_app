@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
-import 'b787_operational_workflow.dart';
 import 'models/briefing_flight.dart';
-import 'operational_calculations_page.dart';
+import 'tabs/briefing_calculations_tab.dart';
 import 'tabs/briefing_notams_tab.dart';
 import 'tabs/briefing_overview_tab.dart';
 import 'tabs/briefing_weather_tab.dart';
+import 'tabs/briefing_workflow_tab.dart';
 
 class BriefingPage extends StatelessWidget {
   const BriefingPage({super.key, required this.flight});
@@ -26,9 +26,8 @@ class BriefingPage extends StatelessWidget {
                   children: [
                     Text(
                       '${flight.flightNumber} briefing',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -65,8 +64,8 @@ class BriefingPage extends StatelessWidget {
               BriefingOverviewTab(flight: flight),
               const BriefingWeatherTab(),
               const BriefingNotamsTab(),
-              const B787OperationalWorkflow(),
-              const OperationalCalculationsPage(),
+              const BriefingWorkflowTab(),
+              const BriefingCalculationsTab(),
             ],
           ),
         ),

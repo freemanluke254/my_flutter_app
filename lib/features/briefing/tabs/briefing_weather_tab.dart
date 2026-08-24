@@ -16,7 +16,9 @@ class BriefingWeatherTab extends StatelessWidget {
         icon: Icons.cloud_outlined,
         status: 'Sample',
         children: [
-          SelectableText('EGLL 241350Z AUTO 24012KT 9999 SCT025 19/11 Q1018 NOSIG'),
+          SelectableText(
+            'EGLL 241350Z AUTO 24012KT 9999 SCT025 19/11 Q1018 NOSIG',
+          ),
           SizedBox(height: 8),
           Text(
             'Observed 13:50Z · planned departure 16:05 local',

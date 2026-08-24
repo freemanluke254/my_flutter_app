@@ -15,19 +15,19 @@ class BriefingOverviewTab extends StatelessWidget {
       OfficeBriefingPanel(reportTime: flight.reportTime),
       const BriefingOperationalWarning(),
       const SizedBox(height: 14),
-      const BriefingSectionCard(
+      BriefingSectionCard(
         title: 'Operational flight plan',
         icon: Icons.route_outlined,
         status: 'Not uploaded',
         children: [
-          Text(
+          const Text(
             'Upload the company OFP to populate route, alternates, fuel figures and planned times.',
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: null,
-            icon: Icon(Icons.upload_file_rounded),
-            label: Text('Connect document import'),
+            icon: const Icon(Icons.upload_file_rounded),
+            label: const Text('Connect document import'),
           ),
         ],
       ),
