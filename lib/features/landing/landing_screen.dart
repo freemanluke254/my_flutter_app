@@ -16,13 +16,14 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen> {
   int _selectedIndex = 0;
+  int _briefingRefreshToken = 0;
 
   @override
   Widget build(BuildContext context) {
     final tabs = [
       TodayTab(pilotName: widget.pilotName),
       const CalendarWorkspace(),
-      const BriefingWorkspace(),
+      BriefingWorkspace(refreshToken: _briefingRefreshToken),
       const LogbookTab(),
       const MoreTab(),
     ];
@@ -58,7 +59,10 @@ class _LandingScreenState extends State<LandingScreen> {
           : NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
+                setState(() {
+                  _selectedIndex = index;
+                  if (index == 2) _briefingRefreshToken++;
+                });
               },
               destinations: const [
                 NavigationDestination(

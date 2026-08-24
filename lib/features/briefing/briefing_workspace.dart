@@ -3,17 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../landing/tabs/briefing_tab.dart';
-import '../calendar/models/calendar_entry.dart';
-import '../roster/services/roster_storage.dart';
 import 'models/flight_briefing.dart';
 import 'services/briefing_storage.dart';
+import 'services/calendar_flight_source.dart';
 import 'tabs/calculations_tab.dart';
 import 'tabs/configuration_tab.dart';
 import 'tabs/documents_tab.dart';
 import 'tabs/weather_notams_tab.dart';
 
 class BriefingWorkspace extends StatefulWidget {
-  const BriefingWorkspace({super.key});
+  const BriefingWorkspace({this.refreshToken = 0, super.key});
+
+  final int refreshToken;
 
   @override
   State<BriefingWorkspace> createState() => _BriefingWorkspaceState();
@@ -23,12 +24,23 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   int _selectedIndex = 1;
   FlightBriefing? _flight;
   bool _active = false;
+  bool _calendarSuggested = false;
   final _briefingStorage = BriefingStorage();
+  final _calendarFlightSource = CalendarFlightSource();
 
   @override
   void initState() {
     super.initState();
     _loadNextFlight();
+  }
+
+  @override
+  void didUpdateWidget(covariant BriefingWorkspace oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshToken != oldWidget.refreshToken &&
+        (_flight == null || _calendarSuggested)) {
+      _loadNextFlight();
+    }
   }
 
   @override
@@ -87,6 +99,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   void _changeFlight(FlightBriefing flight, bool active) => setState(() {
     _flight = flight;
     _active = active;
+    _calendarSuggested = false;
     unawaited(_briefingStorage.saveCurrent(flight, active));
   });
 
@@ -103,6 +116,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       setState(() {
         _flight = null;
         _active = false;
+        _calendarSuggested = false;
       });
     }
   }
@@ -119,40 +133,13 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         }
         return;
       }
-      final rosters = await RosterStorage().load();
-      final flights =
-          rosters
-              .expand((roster) => roster.entries)
-              .where(
-                (entry) =>
-                    entry.type == CalendarEntryType.flight &&
-                    entry.showDetails &&
-                    !entry.date.isBefore(
-                      DateTime(
-                        DateTime.now().year,
-                        DateTime.now().month,
-                        DateTime.now().day,
-                      ),
-                    ),
-              )
-              .toList()
-            ..sort((a, b) => a.date.compareTo(b.date));
-      if (flights.isEmpty || !mounted) return;
-      final entry = flights.first;
-      final parts = entry.title.split(' ');
-      final nextFlight = FlightBriefing(
-        flightNumber: parts.first,
-        route: parts.skip(1).join(' '),
-        departureTime:
-            '${entry.date.day}/${entry.date.month}/${entry.date.year} · ${entry.utcPeriod ?? 'Time pending'}',
-        arrivalTime: 'From roster',
-        aircraftType: 'Aircraft pending flight package',
-        registration: '',
-        planType: 'Upload flight documents',
-        documents: const [],
-      );
-      setState(() => _flight = nextFlight);
-      await _briefingStorage.saveCurrent(nextFlight, false);
+      final nextFlight = await _calendarFlightSource.loadNextFlight();
+      if (!mounted) return;
+      setState(() {
+        _flight = nextFlight;
+        _active = false;
+        _calendarSuggested = nextFlight != null;
+      });
     } on Object {
       /* No stored roster is a valid state. */
     }
