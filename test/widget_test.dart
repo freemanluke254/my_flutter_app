@@ -73,22 +73,31 @@ void main() {
     expect(find.text('Good afternoon, Luke'), findsOneWidget);
   });
 
-  testWidgets('learning page filters and expands definitions', (tester) async {
+  testWidgets('operations library searches and expands indexed material', (
+    tester,
+  ) async {
     await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
 
     await tester.tap(find.byIcon(Icons.school_outlined));
     await tester.pumpAndSettle();
-    expect(find.text('Knowledge centre'), findsOneWidget);
-    expect(find.text('Reduced contingency fuel'), findsOneWidget);
+    expect(find.text('Operations library'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField), 'RCF');
     await tester.pump();
-    expect(find.text('Reduced contingency fuel'), findsOneWidget);
-    expect(find.text('Boeing 787 fuel system'), findsNothing);
+    await tester.scrollUntilVisible(
+      find.text('Fuel policy and in-flight fuel management'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      find.text('Fuel policy and in-flight fuel management'),
+      findsOneWidget,
+    );
+    expect(find.text('787 limitations'), findsNothing);
 
-    await tester.tap(find.text('Reduced contingency fuel'));
+    await tester.tap(find.text('Fuel policy and in-flight fuel management'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('statistical contingency fuel'), findsOneWidget);
+    expect(find.textContaining('Planning fuel structure'), findsOneWidget);
   });
 
   testWidgets('logbook page opens the compliant flight entry form', (

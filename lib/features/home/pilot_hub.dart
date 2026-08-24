@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../flight_logbook_page.dart';
 import '../commute/commute_reminder_page.dart';
+import '../library/operations_library_page.dart';
 import '../briefing/office_briefing_panel.dart';
 import '../briefing/b787_operational_workflow.dart';
 import '../planning/planning_compliance_page.dart';
@@ -43,7 +44,7 @@ class _PilotHubState extends State<PilotHub> {
       ),
       const _BriefingPage(flight: flight),
       FlightLogbookPage(initialEntries: _generatedEntries),
-      const _LearningCentrePage(),
+      const OperationsLibraryPage(),
       const _MorePage(),
     ];
 
@@ -76,7 +77,7 @@ class _PilotHubState extends State<PilotHub> {
           NavigationDestination(
             icon: Icon(Icons.school_outlined),
             selectedIcon: Icon(Icons.school_rounded),
-            label: 'Learn',
+            label: 'Library',
           ),
           NavigationDestination(
             icon: Icon(Icons.grid_view_outlined),
@@ -574,136 +575,6 @@ class _NotamBriefing extends StatelessWidget {
       ),
     ],
   );
-}
-
-class _LearningCentrePage extends StatefulWidget {
-  const _LearningCentrePage();
-  @override
-  State<_LearningCentrePage> createState() => _LearningCentrePageState();
-}
-
-class _LearningCentrePageState extends State<_LearningCentrePage> {
-  String query = '';
-  static const topics = [
-    (
-      'RCF',
-      'Reduced contingency fuel',
-      'Fuel & Flight Planning',
-      'Explains statistical contingency fuel, eligibility, monitoring and operational considerations.',
-    ),
-    (
-      '787 fuel system',
-      'Boeing 787 fuel system',
-      'Aircraft Systems',
-      'Tank arrangement, pumps, transfer logic, indications and non-normal considerations.',
-    ),
-    (
-      'NAT HLA',
-      'North Atlantic operations',
-      'Operations',
-      'Oceanic clearance, datalink, plotting, navigation checks and contingency procedures.',
-    ),
-    (
-      'Memory items',
-      '787 memory items',
-      'Procedures',
-      'Company-controlled quick reference for immediate action procedures.',
-    ),
-    (
-      'ETOPS',
-      'Extended diversion time operations',
-      'Operations',
-      'Planning, entry conditions, critical fuel scenarios and diversion decision support.',
-    ),
-  ];
-  @override
-  Widget build(BuildContext context) {
-    final filtered = topics
-        .where(
-          (topic) => '${topic.$1} ${topic.$2} ${topic.$3} ${topic.$4}'
-              .toLowerCase()
-              .contains(query.toLowerCase()),
-        )
-        .toList();
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 110),
-      children: [
-        Text(
-          'Knowledge centre',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Aircraft systems, procedures and operational concepts',
-          style: TextStyle(color: Color(0xFF6C756F)),
-        ),
-        const SizedBox(height: 20),
-        TextField(
-          onChanged: (value) => setState(() => query = value),
-          decoration: InputDecoration(
-            hintText: 'Search RCF, fuel system, NAT HLA…',
-            prefixIcon: const Icon(Icons.search_rounded),
-            filled: true,
-            fillColor: const Color(0xFFFBFAF6),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(17),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-        const _ControlledContentNotice(),
-        const SizedBox(height: 18),
-        ...filtered.map(
-          (topic) => Card(
-            elevation: 0,
-            color: const Color(0xFFFBFAF6),
-            child: ExpansionTile(
-              leading: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDCEADD),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(
-                  Icons.school_outlined,
-                  color: Color(0xFF28634A),
-                ),
-              ),
-              title: Text(
-                topic.$2,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              subtitle: Text('${topic.$1} · ${topic.$3}'),
-              childrenPadding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
-              children: [
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(topic.$4, style: const TextStyle(height: 1.5)),
-                ),
-                const SizedBox(height: 10),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Connect approved company manuals to display controlled procedures and revision status.',
-                    style: TextStyle(color: Color(0xFF6C756F), fontSize: 12),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (filtered.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(32),
-            child: Center(child: Text('No matching learning topic yet.')),
-          ),
-      ],
-    );
-  }
 }
 
 class _MorePage extends StatelessWidget {
