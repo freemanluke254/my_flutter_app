@@ -57,6 +57,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       ConfigurationTab(
         flight: _flight,
         onUploadDocuments: _uploadDocuments,
+        onReuploadDocuments: _reuploadDocuments,
+        onClearAllFields: _clearConfiguration,
         onFlightChanged: (flight) => _changeFlight(flight, _active),
       ),
       BriefingTab(
@@ -396,6 +398,43 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         ],
       ),
     );
+  }
+
+  Future<void> _reuploadDocuments() async {
+    await _clearConfiguration();
+    if (!mounted) return;
+    await _uploadDocuments();
+  }
+
+  Future<void> _clearConfiguration() async {
+    final current = _flight;
+    if (current == null) return;
+    final base = _upcomingFlights.where((candidate) {
+      if (candidate.flightNumber != current.flightNumber) return false;
+      final first = candidate.flightDate;
+      final second = current.flightDate;
+      if (first == null || second == null) return true;
+      return first.year == second.year &&
+          first.month == second.month &&
+          first.day == second.day;
+    }).firstOrNull;
+    final cleared =
+        base ??
+        FlightBriefing(
+          flightNumber: current.flightNumber,
+          route: current.route,
+          departureTime: current.departureTime,
+          arrivalTime: current.arrivalTime,
+          aircraftType: 'Aircraft pending flight package',
+          registration: '',
+          planType: 'Upload flight documents',
+          callsign: current.callsign,
+          reportTime: current.reportTime,
+          scheduledDepartureUtc: current.scheduledDepartureUtc,
+          flightDate: current.flightDate,
+          documents: const [],
+        );
+    _changeFlight(cleared, false);
   }
 
   List<String> _filenameValidationIssues(

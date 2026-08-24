@@ -6,11 +6,15 @@ class ConfigurationTab extends StatefulWidget {
   const ConfigurationTab({
     required this.flight,
     required this.onUploadDocuments,
+    required this.onReuploadDocuments,
+    required this.onClearAllFields,
     required this.onFlightChanged,
     super.key,
   });
   final FlightBriefing? flight;
   final Future<void> Function() onUploadDocuments;
+  final Future<void> Function() onReuploadDocuments;
+  final Future<void> Function() onClearAllFields;
   final ValueChanged<FlightBriefing> onFlightChanged;
   @override
   State<ConfigurationTab> createState() => _ConfigurationTabState();
@@ -43,12 +47,15 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   @override
   Widget build(BuildContext context) {
     final flight = widget.flight;
+    final hasUploadedPackage = flight?.documents.isNotEmpty == true;
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
         Text(
           flight == null
               ? 'Upload flight plan documents'
+              : hasUploadedPackage
+              ? 'Displaying config details for ${flight.flightNumber}'
               : 'Upload flight plan documents for ${flight.flightNumber}',
           style: Theme.of(
             context,
@@ -69,12 +76,14 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             ),
           )
         else ...[
-          FilledButton.icon(
-            onPressed: widget.onUploadDocuments,
-            icon: const Icon(Icons.upload_file_rounded),
-            label: const Text('Upload OFP and flight documents'),
-          ),
-          const SizedBox(height: 14),
+          if (!hasUploadedPackage) ...[
+            FilledButton.icon(
+              onPressed: widget.onUploadDocuments,
+              icon: const Icon(Icons.upload_file_rounded),
+              label: const Text('Upload OFP and flight documents'),
+            ),
+            const SizedBox(height: 14),
+          ],
           _FlightPlanHeader(flight: flight),
           const SizedBox(height: 14),
           _section(
@@ -165,6 +174,23 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             icon: const Icon(Icons.save_outlined),
             label: const Text('Save flight setup'),
           ),
+          if (hasUploadedPackage) ...[
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: _confirmReupload,
+              icon: const Icon(Icons.replay_rounded),
+              label: const Text('Reupload flight plan documents'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: _confirmClearAll,
+              icon: const Icon(Icons.delete_sweep_outlined),
+              label: const Text('Clear all fields'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFB93B3B),
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
         ],
       ],
@@ -258,6 +284,56 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       context,
     ).showSnackBar(const SnackBar(content: Text('Flight setup saved.')));
   }
+
+  Future<void> _confirmReupload() async {
+    final confirmed = await _confirmReset(
+      title: 'Reupload flight plan documents?',
+      message:
+          'Are you sure? This will clear all current configuration data before you select a new flight package.',
+      action: 'Continue',
+    );
+    if (confirmed) await widget.onReuploadDocuments();
+  }
+
+  Future<void> _confirmClearAll() async {
+    final confirmed = await _confirmReset(
+      title: 'Clear all fields?',
+      message:
+          'Are you sure? This will clear all current data and documents. You will need to upload the flight plan documents again.',
+      action: 'Clear all',
+    );
+    if (confirmed) await widget.onClearAllFields();
+  }
+
+  Future<bool> _confirmReset({
+    required String title,
+    required String message,
+    required String action,
+  }) async =>
+      await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: const Icon(
+            Icons.warning_amber_rounded,
+            color: Color(0xFFB93B3B),
+            size: 44,
+          ),
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(action),
+            ),
+          ],
+        ),
+      ) ??
+      false;
 }
 
 class _FlightPlanHeader extends StatelessWidget {
