@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'flight_logbook_page.dart';
+
 void main() => runApp(const FocusApp());
 
 class FocusApp extends StatelessWidget {
@@ -446,7 +448,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-  static const _pages = ['Today', 'Learn', 'Plan', 'Insights', 'Profile'];
+  static const _pages = ['Today', 'Learn', 'Logbook', 'Insights', 'Profile'];
 
   @override
   Widget build(BuildContext context) {
@@ -479,9 +481,9 @@ class _HomeScreenState extends State<HomeScreen> {
             label: 'Learn',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month),
-            label: 'Plan',
+            icon: Icon(Icons.flight_takeoff_outlined),
+            selectedIcon: Icon(Icons.flight_takeoff_rounded),
+            label: 'Logbook',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
@@ -501,6 +503,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildPage() {
     if (_selectedIndex == 0) return const _TodayPage();
     if (_selectedIndex == 1) return const LearningPage();
+    if (_selectedIndex == 2) return const FlightLogbookPage();
     return _PlaceholderPage(title: _pages[_selectedIndex]);
   }
 
