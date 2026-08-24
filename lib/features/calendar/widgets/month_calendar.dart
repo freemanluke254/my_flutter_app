@@ -175,7 +175,31 @@ class _DayCell extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 7),
-          ...entries.take(2).map(_buildDutyBar),
+          ...entries
+              .where((entry) => entry.displaysAsBar)
+              .take(2)
+              .map(_buildDutyBar),
+          if (entries.any((entry) => !entry.displaysAsBar))
+            Wrap(
+              spacing: 3,
+              children: entries
+                  .where((entry) => !entry.displaysAsBar)
+                  .take(3)
+                  .map(
+                    (entry) => Tooltip(
+                      message: entry.title,
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: entry.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
         ],
       ),
     ),
@@ -189,13 +213,18 @@ class _DayCell extends StatelessWidget {
         _hasMatchingEntry(entry, previousDate);
     final continuesToNext =
         date.weekday != DateTime.sunday && _hasMatchingEntry(entry, nextDate);
-    final showLabel = !continuesFromPrevious;
+    final label =
+        entry.barLabel ?? (!continuesFromPrevious ? _shortLabel(entry) : null);
     return Container(
       height: 14,
       width: double.infinity,
       margin: const EdgeInsets.only(bottom: 3),
       padding: const EdgeInsets.symmetric(horizontal: 3),
-      alignment: Alignment.centerLeft,
+      alignment: switch (entry.barLabelPosition) {
+        CalendarBarLabelPosition.left => Alignment.centerLeft,
+        CalendarBarLabelPosition.center => Alignment.center,
+        CalendarBarLabelPosition.right => Alignment.centerRight,
+      },
       decoration: BoxDecoration(
         color: entry.color,
         borderRadius: BorderRadius.horizontal(
@@ -203,9 +232,9 @@ class _DayCell extends StatelessWidget {
           right: Radius.circular(continuesToNext ? 0 : 5),
         ),
       ),
-      child: showLabel
+      child: label != null
           ? Text(
-              _shortLabel(entry),
+              label,
               maxLines: 1,
               overflow: TextOverflow.clip,
               softWrap: false,

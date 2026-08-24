@@ -13,4 +13,13 @@ void main() {
   test('unknown duty codes remain available for manual review', () {
     expect(DutyCode.fromCode('UNKNOWN'), isNull);
   });
+
+  test('only operational and absence periods use calendar bars', () {
+    expect(DutyCode.fromCode('RSV')!.calendarType, CalendarEntryType.reserve);
+    expect(
+      DutyCode.fromCode('RSV')!.calendarType == CalendarEntryType.reserve,
+      isTrue,
+    );
+    expect(DutyCode.fromCode('RDO')!.calendarType, CalendarEntryType.dayOff);
+  });
 }

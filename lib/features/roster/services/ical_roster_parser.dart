@@ -81,6 +81,7 @@ class IcalRosterParser {
     for (final match in pattern.allMatches(description)) {
       final day = int.parse(match.group(1)!);
       legs[day] = _RosterLeg(
+        day: day,
         flightNumber: '${match.group(2)!.toUpperCase()}${match.group(3)}',
         departure: match.group(4)!.toUpperCase(),
         arrival: match.group(5)!.toUpperCase(),
@@ -90,6 +91,16 @@ class IcalRosterParser {
     }
     if (legs.isEmpty) return const [];
 
+    final orderedLegs = legs.values.toList()
+      ..sort((first, second) => first.day.compareTo(second.day));
+    final downrouteLabel = orderedLegs.length < 2
+        ? null
+        : _downrouteTime(start, orderedLegs.first, orderedLegs.last);
+    final tripDays = end.difference(start).inDays;
+    final downrouteDay = tripDays < 3
+        ? null
+        : start.add(Duration(days: (tripDays - 1) ~/ 2));
+
     final result = <CalendarEntry>[];
     for (
       var date = start;
@@ -97,6 +108,14 @@ class IcalRosterParser {
       date = date.add(const Duration(days: 1))
     ) {
       final leg = legs[date.day];
+      final isFirstLeg = leg == orderedLegs.first;
+      final isLastLeg = leg == orderedLegs.last;
+      final isDownrouteLabel =
+          leg == null &&
+          downrouteDay != null &&
+          date.year == downrouteDay.year &&
+          date.month == downrouteDay.month &&
+          date.day == downrouteDay.day;
       result.add(
         CalendarEntry(
           date: date,
@@ -110,11 +129,47 @@ class IcalRosterParser {
               : 'Local ${leg.localPeriod}\nUTC ${leg.utcPeriod}',
           utcPeriod: leg?.utcPeriod,
           showDetails: leg != null,
+          barLabel: leg != null
+              ? leg.flightNumber
+              : isDownrouteLabel
+              ? downrouteLabel
+              : null,
+          barLabelPosition: isLastLeg
+              ? CalendarBarLabelPosition.right
+              : isFirstLeg
+              ? CalendarBarLabelPosition.left
+              : CalendarBarLabelPosition.center,
         ),
       );
     }
     return result;
   }
+
+  String _downrouteTime(
+    DateTime month,
+    _RosterLeg outbound,
+    _RosterLeg inbound,
+  ) {
+    final outboundStart = _utcDateTime(month, outbound.day, outbound.utcStart);
+    var outboundArrival = _utcDateTime(month, outbound.day, outbound.utcEnd);
+    if (!outboundArrival.isAfter(outboundStart)) {
+      outboundArrival = outboundArrival.add(const Duration(days: 1));
+    }
+    final inboundDeparture = _utcDateTime(month, inbound.day, inbound.utcStart);
+    final minutes = inboundDeparture.difference(outboundArrival).inMinutes;
+    if (minutes < 0) return 'DOWNROUTE';
+    final hours = minutes ~/ 60;
+    final remainder = minutes % 60;
+    return '${hours}H${remainder.toString().padLeft(2, '0')}';
+  }
+
+  DateTime _utcDateTime(DateTime month, int day, String time) => DateTime.utc(
+    month.year,
+    month.month,
+    day,
+    int.parse(time.substring(0, 2)),
+    int.parse(time.substring(2, 4)),
+  );
 
   DateTime? _date(String? value) {
     if (value == null || value.length < 8) return null;
@@ -132,6 +187,7 @@ class IcalRosterParser {
 
 class _RosterLeg {
   const _RosterLeg({
+    required this.day,
     required this.flightNumber,
     required this.departure,
     required this.arrival,
@@ -139,9 +195,13 @@ class _RosterLeg {
     required this.utcPeriod,
   });
 
+  final int day;
   final String flightNumber;
   final String departure;
   final String arrival;
   final String localPeriod;
   final String utcPeriod;
+
+  String get utcStart => utcPeriod.substring(0, 4);
+  String get utcEnd => utcPeriod.substring(6, 10);
 }

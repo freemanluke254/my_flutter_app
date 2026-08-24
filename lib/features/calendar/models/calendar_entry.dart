@@ -11,6 +11,8 @@ enum CalendarEntryType {
   dayOff,
 }
 
+enum CalendarBarLabelPosition { left, center, right }
+
 class CalendarEntry {
   const CalendarEntry({
     required this.date,
@@ -20,6 +22,8 @@ class CalendarEntry {
     this.continuityId,
     this.utcPeriod,
     this.showDetails = true,
+    this.barLabel,
+    this.barLabelPosition = CalendarBarLabelPosition.left,
   });
 
   final DateTime date;
@@ -29,8 +33,21 @@ class CalendarEntry {
   final String? continuityId;
   final String? utcPeriod;
   final bool showDetails;
+  final String? barLabel;
+  final CalendarBarLabelPosition barLabelPosition;
 
   String get continuityKey => continuityId ?? '${type.name}:$title';
+
+  bool get displaysAsBar => switch (type) {
+    CalendarEntryType.flight ||
+    CalendarEntryType.standby ||
+    CalendarEntryType.reserve ||
+    CalendarEntryType.leave ||
+    CalendarEntryType.sickness => true,
+    CalendarEntryType.training ||
+    CalendarEntryType.expiry ||
+    CalendarEntryType.dayOff => false,
+  };
 
   Color get color => switch (type) {
     CalendarEntryType.flight => const Color(0xFF28634A),
