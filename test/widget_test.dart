@@ -1,12 +1,34 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:trying_flutter/main.dart';
+import 'package:trying_flutter/app.dart';
 
 void main() {
-  testWidgets('fresh app opens the start page', (tester) async {
+  testWidgets('create account opens and navigates to sign in', (tester) async {
     await tester.pumpWidget(const PilotApp());
 
-    expect(find.text('Pilot App'), findsOneWidget);
-    expect(find.text('Fresh start'), findsOneWidget);
-    expect(find.text('Ready to build one page at a time.'), findsOneWidget);
+    expect(find.text('Create your account'), findsOneWidget);
+
+    await tester.tap(find.text('Already have an account? Sign in'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome back'), findsOneWidget);
+  });
+
+  testWidgets('valid account creation opens the landing screen', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const PilotApp());
+
+    await tester.enterText(find.byType(TextFormField).at(0), 'Luke');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'luke@example.com',
+    );
+    await tester.enterText(find.byType(TextFormField).at(2), 'password123');
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Welcome aboard, Luke'), findsOneWidget);
+    expect(find.text('Ready for your next flight'), findsOneWidget);
   });
 }
