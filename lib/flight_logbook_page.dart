@@ -9,15 +9,28 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 class FlightLogbookPage extends StatefulWidget {
-  const FlightLogbookPage({super.key});
+  const FlightLogbookPage({super.key, this.initialEntries = const []});
+
+  final List<FlightEntry> initialEntries;
 
   @override
   State<FlightLogbookPage> createState() => _FlightLogbookPageState();
 }
 
 class _FlightLogbookPageState extends State<FlightLogbookPage> {
-  final List<FlightEntry> _entries = [];
+  late final List<FlightEntry> _entries = [...widget.initialEntries];
   String _search = '';
+
+  @override
+  void didUpdateWidget(covariant FlightLogbookPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    for (final entry in widget.initialEntries) {
+      if (_entries.every((existing) => existing.source != entry.source)) {
+        _entries.add(entry);
+      }
+    }
+    _entries.sort((a, b) => a.date.compareTo(b.date));
+  }
 
   Iterable<FlightEntry> get _visibleEntries {
     final query = _search.trim().toLowerCase();
