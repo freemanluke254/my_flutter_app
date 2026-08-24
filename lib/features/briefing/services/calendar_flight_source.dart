@@ -14,6 +14,11 @@ class CalendarFlightSource {
   final CalendarAdjustmentStorage _adjustmentStorage;
 
   Future<FlightBriefing?> loadNextFlight() async {
+    final flights = await loadUpcomingFlights();
+    return flights.isEmpty ? null : flights.first;
+  }
+
+  Future<List<FlightBriefing>> loadUpcomingFlights() async {
     final rosters = await _rosterStorage.load();
     final adjustments = await _adjustmentStorage.load();
     final rosterEntries = rosters.expand((roster) => roster.entries).toList();
@@ -30,8 +35,7 @@ class CalendarFlightSource {
             )
             .toList()
           ..sort((first, second) => first.date.compareTo(second.date));
-    if (flights.isEmpty) return null;
-    return _toBriefing(flights.first);
+    return flights.map(_toBriefing).toList();
   }
 
   FlightBriefing _toBriefing(CalendarEntry entry) {

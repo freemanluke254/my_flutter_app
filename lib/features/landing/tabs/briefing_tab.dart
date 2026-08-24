@@ -13,6 +13,7 @@ class BriefingTab extends StatelessWidget {
     required this.onFlightChanged,
     required this.onSaveFlight,
     required this.onClearFlight,
+    required this.onCloseFlight,
     super.key,
   });
 
@@ -21,6 +22,7 @@ class BriefingTab extends StatelessWidget {
   final void Function(FlightBriefing flight, bool active) onFlightChanged;
   final Future<void> Function() onSaveFlight;
   final Future<void> Function() onClearFlight;
+  final Future<void> Function() onCloseFlight;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -81,6 +83,14 @@ class BriefingTab extends StatelessWidget {
             ),
           ),
         ),
+        if (isActive) ...[
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => _close(context),
+            icon: const Icon(Icons.task_alt_rounded),
+            label: const Text('Close completed flight'),
+          ),
+        ],
       ],
     ],
   );
@@ -98,7 +108,7 @@ class BriefingTab extends StatelessWidget {
         ),
         title: const Text('Flight saved'),
         content: const Text(
-          'This flight is stored and ready to be added to the pilot logbook after completion.',
+          'This flight and its briefing progress are stored. It will be sent to the logbook when you close the completed flight.',
         ),
         actions: [
           FilledButton(
@@ -133,6 +143,39 @@ class BriefingTab extends StatelessWidget {
         ) ??
         false;
     if (confirmed) await onClearFlight();
+  }
+
+  Future<void> _close(BuildContext context) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            icon: const Icon(Icons.task_alt_rounded, size: 44),
+            title: const Text('Close this flight?'),
+            content: const Text(
+              'The flight data will be sent to the logbook. Uploaded flight documents will then be removed from this device to release storage.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Close flight'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    await onCloseFlight();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Flight closed and document data offloaded.'),
+      ),
+    );
   }
 
   Future<void> _addFlight(BuildContext context) async {

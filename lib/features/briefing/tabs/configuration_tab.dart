@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../models/flight_briefing.dart';
+
 class ConfigurationTab extends StatelessWidget {
-  const ConfigurationTab({super.key});
+  const ConfigurationTab({
+    required this.flight,
+    required this.onUploadDocuments,
+    super.key,
+  });
+
+  final FlightBriefing? flight;
+  final Future<void> Function() onUploadDocuments;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -19,15 +28,49 @@ class ConfigurationTab extends StatelessWidget {
         style: TextStyle(color: Color(0xFF667069)),
       ),
       const SizedBox(height: 20),
-      const _ConfigurationItem(
+      if (flight == null)
+        const Card(
+          elevation: 0,
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('Select a flight in Upcoming Flights first.'),
+          ),
+        )
+      else ...[
+        Card(
+          elevation: 0,
+          color: const Color(0xFFE6EEF7),
+          child: ListTile(
+            leading: const Icon(
+              Icons.flight_takeoff_rounded,
+              color: Color(0xFF244A73),
+            ),
+            title: Text(
+              '${flight!.flightNumber}  ${flight!.route}',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+            subtitle: const Text('Selected flight'),
+          ),
+        ),
+        const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: onUploadDocuments,
+          icon: const Icon(Icons.upload_file_rounded),
+          label: const Text('Upload OFP and flight documents'),
+        ),
+        const SizedBox(height: 18),
+      ],
+      _ConfigurationItem(
         icon: Icons.airplanemode_active_rounded,
         title: 'Aircraft',
-        value: 'B787-9 · From imported OFP',
+        value: flight?.aircraftType ?? 'Select a flight',
       ),
-      const _ConfigurationItem(
+      _ConfigurationItem(
         icon: Icons.badge_outlined,
         title: 'Registration',
-        value: 'Read from imported OFP',
+        value: flight?.registration.isNotEmpty == true
+            ? flight!.registration
+            : 'Read from imported OFP',
       ),
       const _ConfigurationItem(
         icon: Icons.route_outlined,

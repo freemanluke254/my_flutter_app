@@ -30,7 +30,7 @@ class DocumentsTab extends StatelessWidget {
           elevation: 0,
           child: Padding(
             padding: EdgeInsets.all(24),
-            child: Text('Upload flight documents from the Briefing tab.'),
+            child: Text('Upload flight documents from the Config tab.'),
           ),
         )
       else
