@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../flight_logbook_page.dart';
+import '../commute/commute_reminder_page.dart';
 import '../planning/planning_compliance_page.dart';
 
 class PilotHub extends StatefulWidget {
@@ -197,6 +198,8 @@ class _TodayFlightPage extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             _FlightCard(flight: flight, onBriefing: onOpenBriefing),
+            const SizedBox(height: 18),
+            CommuteTodayCard(signOn: DateTime(2026, 8, 24, 14, 20)),
             const SizedBox(height: 22),
             Text(
               'Weather at flight time',
@@ -764,6 +767,12 @@ class _MorePage extends StatelessWidget {
         title: 'Planning & compliance',
         subtitle: 'Expiry dates, deadlines and personal reminder rules',
         onTap: () => _open(context, const PlanningCompliancePage()),
+      ),
+      _FeatureTile(
+        icon: Icons.commute_rounded,
+        title: 'Commute assistant',
+        subtitle: 'Leave-time calculations and optional duty reminders',
+        onTap: () => _open(context, const CommuteReminderPage()),
       ),
       _FeatureTile(
         icon: Icons.calendar_month_outlined,

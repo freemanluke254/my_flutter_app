@@ -3,8 +3,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trying_flutter/main.dart';
 import 'package:trying_flutter/features/planning/planning_compliance_page.dart';
+import 'package:trying_flutter/features/commute/commute_reminder_page.dart';
 
 void main() {
+  test('commute timing includes travel, arrival buffer and reminder lead', () {
+    const settings = CommuteSettings(
+      enabled: true,
+      homeAddress: 'Home',
+      workAddress: 'Work',
+      mode: 'Driving',
+      arrivalBufferMinutes: 60,
+      reminderLeadMinutes: 30,
+      fallbackTravelMinutes: 160,
+    );
+    final signOn = DateTime(2026, 9, 1, 10);
+
+    expect(settings.leaveTime(signOn), DateTime(2026, 9, 1, 6, 20));
+    expect(settings.reminderTime(signOn), DateTime(2026, 9, 1, 5, 50));
+  });
+
   testWidgets('create account validates empty fields', (tester) async {
     await tester.pumpWidget(const FocusApp());
 
