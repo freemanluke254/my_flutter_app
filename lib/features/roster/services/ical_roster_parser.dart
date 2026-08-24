@@ -35,6 +35,19 @@ class IcalRosterParser {
           ? summary
           : '${dutyCode.code} · ${dutyCode.name}';
 
+      if (type == CalendarEntryType.flight) {
+        final flightEntries = _flightTripEntries(
+          start: start,
+          end: end,
+          summary: summary,
+          description: description,
+        );
+        if (flightEntries.isNotEmpty) {
+          entries.addAll(flightEntries);
+          continue;
+        }
+      }
+
       for (
         var date = start;
         date.isBefore(end);
@@ -54,6 +67,55 @@ class IcalRosterParser {
     return entries;
   }
 
+  List<CalendarEntry> _flightTripEntries({
+    required DateTime start,
+    required DateTime end,
+    required String summary,
+    required String description,
+  }) {
+    final pattern = RegExp(
+      r'Duty #\d+:\s*(\d{1,2})\s+\w+:\s*([A-Z]{2})\s*(\d+)\s+([A-Z]{3})-([A-Z]{3})\s+LOCAL:\s*(\d{4})-(\d{4})\s+\(UTC:\s*(\d{4})-(\d{4})\)',
+      caseSensitive: false,
+    );
+    final legs = <int, _RosterLeg>{};
+    for (final match in pattern.allMatches(description)) {
+      final day = int.parse(match.group(1)!);
+      legs[day] = _RosterLeg(
+        flightNumber: '${match.group(2)!.toUpperCase()}${match.group(3)}',
+        departure: match.group(4)!.toUpperCase(),
+        arrival: match.group(5)!.toUpperCase(),
+        localPeriod: '${match.group(6)}–${match.group(7)}',
+        utcPeriod: '${match.group(8)}Z–${match.group(9)}Z',
+      );
+    }
+    if (legs.isEmpty) return const [];
+
+    final result = <CalendarEntry>[];
+    for (
+      var date = start;
+      date.isBefore(end);
+      date = date.add(const Duration(days: 1))
+    ) {
+      final leg = legs[date.day];
+      result.add(
+        CalendarEntry(
+          date: date,
+          type: CalendarEntryType.flight,
+          continuityId: summary,
+          title: leg == null
+              ? 'Away from home'
+              : '${leg.flightNumber} ${leg.departure}–${leg.arrival}',
+          details: leg == null
+              ? 'Away between rostered sectors.'
+              : 'Local ${leg.localPeriod}\nUTC ${leg.utcPeriod}',
+          utcPeriod: leg?.utcPeriod,
+          showDetails: leg != null,
+        ),
+      );
+    }
+    return result;
+  }
+
   DateTime? _date(String? value) {
     if (value == null || value.length < 8) return null;
     return DateTime.tryParse(
@@ -66,4 +128,20 @@ class IcalRosterParser {
       .replaceAll(r'\,', ',')
       .replaceAll(r'\;', ';')
       .replaceAll(r'\\', r'\');
+}
+
+class _RosterLeg {
+  const _RosterLeg({
+    required this.flightNumber,
+    required this.departure,
+    required this.arrival,
+    required this.localPeriod,
+    required this.utcPeriod,
+  });
+
+  final String flightNumber;
+  final String departure;
+  final String arrival;
+  final String localPeriod;
+  final String utcPeriod;
 }

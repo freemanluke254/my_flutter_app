@@ -17,12 +17,20 @@ class CalendarEntry {
     required this.type,
     required this.title,
     required this.details,
+    this.continuityId,
+    this.utcPeriod,
+    this.showDetails = true,
   });
 
   final DateTime date;
   final CalendarEntryType type;
   final String title;
   final String details;
+  final String? continuityId;
+  final String? utcPeriod;
+  final bool showDetails;
+
+  String get continuityKey => continuityId ?? '${type.name}:$title';
 
   Color get color => switch (type) {
     CalendarEntryType.flight => const Color(0xFF28634A),

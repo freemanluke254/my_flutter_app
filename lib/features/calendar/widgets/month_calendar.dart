@@ -105,6 +105,7 @@ class MonthCalendar extends StatelessWidget {
               return _DayCell(
                 date: date,
                 entries: dateEntries,
+                allEntries: entries,
                 selected: selectedDate != null && _sameDay(selectedDate!, date),
                 onTap: () => onDateSelected(date),
               );
@@ -143,12 +144,14 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.date,
     required this.entries,
+    required this.allEntries,
     required this.selected,
     required this.onTap,
   });
 
   final DateTime date;
   final List<CalendarEntry> entries;
+  final List<CalendarEntry> allEntries;
   final bool selected;
   final VoidCallback onTap;
 
@@ -157,39 +160,81 @@ class _DayCell extends StatelessWidget {
     onTap: onTap,
     borderRadius: BorderRadius.circular(10),
     child: Container(
-      margin: const EdgeInsets.all(2),
+      margin: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
         color: selected ? const Color(0xFFDCEADD) : null,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const SizedBox(height: 8),
           Text(
             '${date.day}',
             style: TextStyle(
               fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
-          Wrap(
-            spacing: 2,
-            children: entries
-                .take(3)
-                .map(
-                  (entry) => Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: entry.color,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
+          const SizedBox(height: 7),
+          ...entries.take(2).map(_buildDutyBar),
         ],
       ),
     ),
   );
+
+  Widget _buildDutyBar(CalendarEntry entry) {
+    final previousDate = date.subtract(const Duration(days: 1));
+    final nextDate = date.add(const Duration(days: 1));
+    final continuesFromPrevious =
+        date.weekday != DateTime.monday &&
+        _hasMatchingEntry(entry, previousDate);
+    final continuesToNext =
+        date.weekday != DateTime.sunday && _hasMatchingEntry(entry, nextDate);
+    final showLabel = !continuesFromPrevious;
+    return Container(
+      height: 14,
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 3),
+      alignment: Alignment.centerLeft,
+      decoration: BoxDecoration(
+        color: entry.color,
+        borderRadius: BorderRadius.horizontal(
+          left: Radius.circular(continuesFromPrevious ? 0 : 5),
+          right: Radius.circular(continuesToNext ? 0 : 5),
+        ),
+      ),
+      child: showLabel
+          ? Text(
+              _shortLabel(entry),
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+              softWrap: false,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 8,
+                fontWeight: FontWeight.w800,
+              ),
+            )
+          : null,
+    );
+  }
+
+  bool _hasMatchingEntry(CalendarEntry entry, DateTime targetDate) =>
+      allEntries.any(
+        (candidate) =>
+            candidate.continuityKey == entry.continuityKey &&
+            candidate.date.year == targetDate.year &&
+            candidate.date.month == targetDate.month &&
+            candidate.date.day == targetDate.day,
+      );
+
+  String _shortLabel(CalendarEntry entry) {
+    if (entry.type == CalendarEntryType.flight) {
+      final flightNumber = entry.title.split(' ').first;
+      return entry.utcPeriod == null
+          ? flightNumber
+          : '$flightNumber ${entry.utcPeriod!.split('–').first}';
+    }
+    return entry.title.split(' ·').first;
+  }
 }

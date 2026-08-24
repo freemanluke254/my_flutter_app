@@ -74,11 +74,6 @@ class _CalendarTabState extends State<CalendarTab> {
   );
 
   Widget _buildLoadedCalendar(BuildContext context) {
-    final selectedEntries = _selectedDate == null
-        ? const <CalendarEntry>[]
-        : _entries
-              .where((entry) => _sameDay(entry.date, _selectedDate!))
-              .toList();
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -101,7 +96,7 @@ class _CalendarTabState extends State<CalendarTab> {
         ),
         const SizedBox(height: 5),
         const Text(
-          'Select a day to see duties and expiry dates.',
+          'Select a day to see details. Continuous flight bars show the full period you are away from home.',
           style: TextStyle(color: Color(0xFF667069)),
         ),
         const SizedBox(height: 16),
@@ -109,25 +104,41 @@ class _CalendarTabState extends State<CalendarTab> {
           month: _visibleMonth,
           entries: _entries,
           selectedDate: _selectedDate,
-          onDateSelected: (date) => setState(() => _selectedDate = date),
+          onDateSelected: _showDateDetails,
           onPreviousMonth: () => _changeMonth(-1),
           onNextMonth: () => _changeMonth(1),
         ),
-        const SizedBox(height: 18),
-        Text(
-          _selectedDate == null
-              ? 'Select a date'
-              : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 8),
-        if (_selectedDate == null)
-          const _DayMessage('Tap a date in the calendar to view its details.')
-        else if (selectedEntries.isEmpty)
-          const _DayMessage('No duty or expiry recorded on this day.')
-        else
-          ...selectedEntries.map((entry) => _EntryTile(entry: entry)),
       ],
+    );
+  }
+
+  Future<void> _showDateDetails(DateTime date) async {
+    setState(() => _selectedDate = date);
+    final entries = _entries
+        .where((entry) => _sameDay(entry.date, date) && entry.showDetails)
+        .toList();
+    await showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('${date.day}/${date.month}/${date.year}'),
+        content: SizedBox(
+          width: 420,
+          child: entries.isEmpty
+              ? const Text('No flight or duty details for this date.')
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: entries
+                      .map((entry) => _EntryTile(entry: entry))
+                      .toList(),
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -198,20 +209,5 @@ class _EntryTile extends StatelessWidget {
       ),
       subtitle: Text(entry.details),
     ),
-  );
-}
-
-class _DayMessage extends StatelessWidget {
-  const _DayMessage(this.message);
-  final String message;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Text(message, style: const TextStyle(color: Color(0xFF667069))),
   );
 }
