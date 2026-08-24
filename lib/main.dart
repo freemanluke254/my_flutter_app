@@ -1,122 +1,487 @@
 import 'package:flutter/material.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const FocusApp());
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class FocusApp extends StatelessWidget {
+  const FocusApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    const ink = Color(0xFF17211B);
+    const green = Color(0xFF28634A);
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Sage',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFF5F3EC),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: green,
+          primary: green,
+          surface: const Color(0xFFFBFAF6),
+        ),
+        textTheme: ThemeData.light().textTheme.apply(
+          bodyColor: ink,
+          displayColor: ink,
+          fontFamily: 'Georgia',
+        ),
       ),
-      home: const MyHomePage(title: 'My First iOS Flutter App 2'),
+      home: const HomeScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+  static const _pages = ['Today', 'Plan', 'Insights', 'Profile'];
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+      body: SafeArea(
+        child: _selectedIndex == 0
+            ? const _TodayPage()
+            : _PlaceholderPage(title: _pages[_selectedIndex]),
       ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTask,
+        backgroundColor: const Color(0xFF28634A),
+        foregroundColor: Colors.white,
+        elevation: 2,
+        child: const Icon(Icons.add_rounded),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _selectedIndex,
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
+        backgroundColor: const Color(0xFFFBFAF6),
+        indicatorColor: const Color(0xFFDCEADD),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.today_outlined),
+            selectedIcon: Icon(Icons.today),
+            label: 'Today',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Plan',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Insights',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddTask() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          24,
+          8,
+          24,
+          MediaQuery.viewInsetsOf(context).bottom + 32,
+        ),
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: .center,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('You have pushed the button this many times:'),
             Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
+              'Add a new task',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 18),
+            const TextField(
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'What needs doing?',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Add to today'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+    );
+  }
+}
+
+class _TodayPage extends StatefulWidget {
+  const _TodayPage();
+  @override
+  State<_TodayPage> createState() => _TodayPageState();
+}
+
+class _TodayPageState extends State<_TodayPage> {
+  final Set<int> _done = {1};
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+          sliver: SliverList.list(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 46,
+                    height: 46,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFE2B878),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: const Text(
+                      'LF',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF4A3519),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton.filledTonal(
+                    onPressed: () {},
+                    icon: const Icon(Icons.notifications_none_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+              Text(
+                'MONDAY, 24 AUGUST',
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  letterSpacing: 1.5,
+                  color: const Color(0xFF6C756F),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Good morning, Luke.',
+                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  height: 1.08,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Here’s a gentle plan for a focused day.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF6C756F)),
+              ),
+              const SizedBox(height: 28),
+              const _FocusCard(),
+              const SizedBox(height: 30),
+              Row(
+                children: [
+                  Text(
+                    'Today’s tasks',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${_done.length} of 3 done',
+                    style: const TextStyle(
+                      color: Color(0xFF6C756F),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _TaskTile(
+                index: 0,
+                title: 'Review project direction',
+                meta: '9:30 AM  ·  Work',
+                icon: Icons.arrow_outward_rounded,
+                done: _done.contains(0),
+                onTap: _toggle,
+              ),
+              _TaskTile(
+                index: 1,
+                title: 'Morning walk',
+                meta: '30 min  ·  Personal',
+                icon: Icons.directions_walk_rounded,
+                done: _done.contains(1),
+                onTap: _toggle,
+              ),
+              _TaskTile(
+                index: 2,
+                title: 'Sketch onboarding ideas',
+                meta: '2:00 PM  ·  Creative',
+                icon: Icons.draw_outlined,
+                done: _done.contains(2),
+                onTap: _toggle,
+              ),
+              const SizedBox(height: 26),
+              const _QuoteCard(),
+              const SizedBox(height: 110),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _toggle(int index) => setState(
+    () => _done.contains(index) ? _done.remove(index) : _done.add(index),
+  );
+}
+
+class _FocusCard extends StatelessWidget {
+  const _FocusCard();
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF28634A),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x3028634A),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'DAILY FOCUS',
+                  style: TextStyle(
+                    color: Color(0xFFBFD8C8),
+                    letterSpacing: 1.4,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Make space for\nwhat matters.',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 25,
+                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0x66FFFFFF)),
+                  ),
+                  onPressed: () {},
+                  icon: const Icon(Icons.play_arrow_rounded, size: 18),
+                  label: const Text('Start 25 min'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          const SizedBox(
+            width: 82,
+            height: 82,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: .72,
+                  strokeWidth: 8,
+                  backgroundColor: Color(0xFF477963),
+                  color: Color(0xFFE2B878),
+                ),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '72%',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'ready',
+                      style: TextStyle(color: Color(0xFFBFD8C8), fontSize: 11),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _TaskTile extends StatelessWidget {
+  const _TaskTile({
+    required this.index,
+    required this.title,
+    required this.meta,
+    required this.icon,
+    required this.done,
+    required this.onTap,
+  });
+  final int index;
+  final String title;
+  final String meta;
+  final IconData icon;
+  final bool done;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: const Color(0xFFFBFAF6),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () => onTap(index),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE9E7DE),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, color: const Color(0xFF28634A)),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                          decoration: done ? TextDecoration.lineThrough : null,
+                          color: done ? const Color(0xFF8B918C) : null,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        meta,
+                        style: const TextStyle(
+                          color: Color(0xFF7A827C),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  done ? Icons.check_circle_rounded : Icons.circle_outlined,
+                  color: done
+                      ? const Color(0xFF28634A)
+                      : const Color(0xFFADB1AD),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuoteCard extends StatelessWidget {
+  const _QuoteCard();
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: const Color(0xFFECE1CD),
+      borderRadius: BorderRadius.circular(22),
+    ),
+    child: const Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(Icons.format_quote_rounded, color: Color(0xFF8D6335)),
+        SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            'Small steps, taken with intention, create meaningful change.',
+            style: TextStyle(
+              fontSize: 16,
+              height: 1.45,
+              color: Color(0xFF55432E),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PlaceholderPage extends StatelessWidget {
+  const _PlaceholderPage({required this.title});
+  final String title;
+  @override
+  Widget build(BuildContext context) => Center(
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.spa_outlined, size: 56, color: Color(0xFF28634A)),
+        const SizedBox(height: 16),
+        Text(
+          title,
+          style: Theme.of(
+            context,
+          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'This space is ready for your next idea.',
+          style: TextStyle(color: Color(0xFF6C756F)),
+        ),
+      ],
+    ),
+  );
 }
