@@ -24,6 +24,8 @@ class CalendarEntry {
     this.showDetails = true,
     this.barLabel,
     this.barLabelPosition = CalendarBarLabelPosition.left,
+    this.adjustmentId,
+    this.originalEntryKey,
   });
 
   final DateTime date;
@@ -35,6 +37,10 @@ class CalendarEntry {
   final bool showDetails;
   final String? barLabel;
   final CalendarBarLabelPosition barLabelPosition;
+  final String? adjustmentId;
+  final String? originalEntryKey;
+
+  String get entryKey => '${date.toIso8601String()}|${type.name}|$title';
 
   String get continuityKey => continuityId ?? '${type.name}:$title';
 

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../calendar/models/calendar_entry.dart';
 import '../../calendar/models/roster_view_mode.dart';
 import '../../calendar/services/expiry_storage.dart';
+import '../../calendar/services/calendar_adjustment_storage.dart';
 import '../../calendar/widgets/month_calendar.dart';
 import '../../calendar/widgets/period_calendar.dart';
 import '../../roster/services/roster_storage.dart';
@@ -24,6 +25,8 @@ class CalendarTab extends StatefulWidget {
 class _CalendarTabState extends State<CalendarTab> {
   final _storage = RosterStorage();
   final _expiryStorage = ExpiryStorage();
+  final _adjustmentStorage = CalendarAdjustmentStorage();
+  List<CalendarAdjustment> _adjustments = const [];
   bool _loading = true;
   bool _rosterLoaded = false;
   DateTime _visibleMonth = DateTime(2026, 8);
@@ -114,6 +117,12 @@ class _CalendarTabState extends State<CalendarTab> {
                 ),
               ),
             ),
+            FilledButton.icon(
+              onPressed: () =>
+                  _editEntry(date: _selectedDate ?? DateTime.now()),
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add entry'),
+            ),
           ],
         ),
         const SizedBox(height: 5),
@@ -161,7 +170,19 @@ class _CalendarTabState extends State<CalendarTab> {
               : Column(
                   mainAxisSize: MainAxisSize.min,
                   children: entries
-                      .map((entry) => _EntryTile(entry: entry))
+                      .map(
+                        (entry) => _EntryTile(
+                          entry: entry,
+                          onEdit: () {
+                            Navigator.pop(context);
+                            _editEntry(entry: entry);
+                          },
+                          onDelete: () {
+                            Navigator.pop(context);
+                            _deleteEntry(entry);
+                          },
+                        ),
+                      )
                       .toList(),
                 ),
         ),
@@ -182,6 +203,7 @@ class _CalendarTabState extends State<CalendarTab> {
         ..sort((first, second) => first.date.compareTo(second.date));
       final entries = [...rosterEntries];
       final expiries = await _expiryStorage.load();
+      final adjustments = await _adjustmentStorage.load();
       final savedView = (await SharedPreferences.getInstance()).getString(
         'roster_view_mode',
       );
@@ -208,10 +230,12 @@ class _CalendarTabState extends State<CalendarTab> {
         ),
       );
       entries.sort((first, second) => first.date.compareTo(second.date));
+      final adjustedEntries = _adjustmentStorage.apply(entries, adjustments);
       if (!mounted) return;
       setState(() {
         _loading = false;
-        _entries = entries;
+        _entries = adjustedEntries;
+        _adjustments = adjustments;
         _viewMode =
             RosterViewMode.values
                 .where((mode) => mode.name == savedView)
@@ -233,6 +257,181 @@ class _CalendarTabState extends State<CalendarTab> {
       setState(() => _loading = false);
     }
   }
+
+  Future<void> _editEntry({CalendarEntry? entry, DateTime? date}) async {
+    var selectedDate = entry?.date ?? date ?? DateTime.now();
+    var selectedType = entry?.type ?? CalendarEntryType.flight;
+    final title = TextEditingController(text: entry?.title);
+    final details = TextEditingController(text: entry?.details);
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            entry == null ? 'Add calendar entry' : 'Amend calendar entry',
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<CalendarEntryType>(
+                  initialValue: selectedType,
+                  decoration: const InputDecoration(labelText: 'Duty type'),
+                  items: CalendarEntryType.values
+                      .where((type) => type != CalendarEntryType.expiry)
+                      .map(
+                        (type) => DropdownMenuItem(
+                          value: type,
+                          child: Text(_typeLabel(type)),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setDialogState(() => selectedType = value);
+                    }
+                  },
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: title,
+                  decoration: const InputDecoration(
+                    labelText: 'Duty, flight number or route',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: details,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: 'Times and details',
+                  ),
+                ),
+                const SizedBox(height: 10),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Date'),
+                  subtitle: Text(
+                    '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                  ),
+                  trailing: const Icon(Icons.calendar_today_outlined),
+                  onTap: () async {
+                    final chosen = await showDatePicker(
+                      context: context,
+                      initialDate: selectedDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (chosen != null) {
+                      setDialogState(() => selectedDate = chosen);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (title.text.trim().isNotEmpty) Navigator.pop(context, true);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (saved != true) return;
+    final id =
+        entry?.adjustmentId ?? DateTime.now().microsecondsSinceEpoch.toString();
+    final originalKey = entry?.originalEntryKey ?? entry?.entryKey;
+    final amended = CalendarEntry(
+      date: selectedDate,
+      type: selectedType,
+      title: title.text.trim(),
+      details: details.text.trim().isEmpty
+          ? 'Manually entered'
+          : details.text.trim(),
+      barLabel: selectedType == CalendarEntryType.flight
+          ? title.text.trim().split(' ').first
+          : null,
+      adjustmentId: id,
+      originalEntryKey: entry == null ? null : originalKey,
+    );
+    final changes = [..._adjustments];
+    final index = changes.indexWhere((change) => change.id == id);
+    final change = CalendarAdjustment(
+      id: id,
+      originalEntryKey: entry == null ? null : originalKey,
+      entry: amended,
+    );
+    if (index < 0) {
+      changes.add(change);
+    } else {
+      changes[index] = change;
+    }
+    await _adjustmentStorage.save(changes);
+    await _restoreRosters();
+  }
+
+  Future<void> _deleteEntry(CalendarEntry entry) async {
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Delete calendar entry?'),
+            content: Text(entry.title),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!confirmed) return;
+    final changes = [..._adjustments];
+    if (entry.adjustmentId != null && entry.originalEntryKey == null) {
+      changes.removeWhere((change) => change.id == entry.adjustmentId);
+    } else {
+      final id =
+          entry.adjustmentId ??
+          DateTime.now().microsecondsSinceEpoch.toString();
+      final originalKey = entry.originalEntryKey ?? entry.entryKey;
+      final index = changes.indexWhere((change) => change.id == id);
+      final deletion = CalendarAdjustment(
+        id: id,
+        originalEntryKey: originalKey,
+      );
+      if (index < 0) {
+        changes.add(deletion);
+      } else {
+        changes[index] = deletion;
+      }
+    }
+    await _adjustmentStorage.save(changes);
+    await _restoreRosters();
+  }
+
+  String _typeLabel(CalendarEntryType type) => switch (type) {
+    CalendarEntryType.flight => 'Flight',
+    CalendarEntryType.standby => 'Home standby',
+    CalendarEntryType.reserve => 'Reserve',
+    CalendarEntryType.training => 'Training or check',
+    CalendarEntryType.leave => 'Leave',
+    CalendarEntryType.sickness => 'Sickness',
+    CalendarEntryType.expiry => 'Expiry',
+    CalendarEntryType.dayOff => 'Day off',
+  };
 
   void _changeMonth(int difference) {
     setState(() {
@@ -266,8 +465,10 @@ class _CalendarTabState extends State<CalendarTab> {
 }
 
 class _EntryTile extends StatelessWidget {
-  const _EntryTile({required this.entry});
+  const _EntryTile({required this.entry, this.onEdit, this.onDelete});
   final CalendarEntry entry;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -284,6 +485,23 @@ class _EntryTile extends StatelessWidget {
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       subtitle: Text(entry.details),
+      trailing: onEdit == null
+          ? null
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  onPressed: onEdit,
+                  tooltip: 'Amend',
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  onPressed: onDelete,
+                  tooltip: 'Delete',
+                  icon: const Icon(Icons.delete_outline_rounded),
+                ),
+              ],
+            ),
     ),
   );
 }

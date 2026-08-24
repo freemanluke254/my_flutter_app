@@ -179,25 +179,61 @@ class BriefingTab extends StatelessWidget {
       if (file == null || !context.mounted) return;
       final details = await const OfpParser().parse(await file.readAsBytes());
       if (!context.mounted) return;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF28634A),
+            size: 46,
+          ),
+          title: const Text('OFP loaded successfully'),
+          content: Text(
+            'OFP Plan ID ${details.planId} successfully loaded.',
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Check details'),
+            ),
+          ],
+        ),
+      );
+      if (!context.mounted) return;
       await _showFlightForm(context, details: details);
     } on Object catch (error) {
       if (!context.mounted) return;
       await showDialog<void>(
         context: context,
+        barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          title: const Text('OFP could not be decoded'),
-          content: SelectableText('$error'),
+          icon: const Icon(
+            Icons.error_outline_rounded,
+            color: Color(0xFFB93B3B),
+            size: 46,
+          ),
+          title: const Text('OFP load unsuccessful'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Reason:'),
+              const SizedBox(height: 6),
+              SelectableText('$error', textAlign: TextAlign.center),
+            ],
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Close'),
+              child: const Text('Cancel'),
             ),
             FilledButton(
               onPressed: () {
                 Navigator.pop(dialogContext);
-                _showFlightForm(context);
+                _addFromOfp(context);
               },
-              child: const Text('Enter manually'),
+              child: const Text('Try again'),
             ),
           ],
         ),
@@ -218,74 +254,95 @@ class BriefingTab extends StatelessWidget {
     final arrivalTime = TextEditingController(text: details?.arrivalTime);
     final aircraft = TextEditingController(text: details?.aircraftType);
     final registration = TextEditingController(text: details?.registration);
+    final callsign = TextEditingController(
+      text: details?.callsign ?? flight?.callsign,
+    );
+    final reportTime = TextEditingController(text: flight?.reportTime);
     final saved = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
           details == null ? 'Enter flight details' : 'Confirm OFP details',
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: number,
-              decoration: const InputDecoration(labelText: 'Flight number'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: departure,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Departure airport'),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: arrival,
-              textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Arrival airport'),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: departureTime,
-                    decoration: const InputDecoration(
-                      labelText: 'Departure time',
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: number,
+                decoration: const InputDecoration(labelText: 'Flight number'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: callsign,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(labelText: 'Callsign'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: departure,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(
+                  labelText: 'Departure airport',
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: arrival,
+                textCapitalization: TextCapitalization.characters,
+                decoration: const InputDecoration(labelText: 'Arrival airport'),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: departureTime,
+                      decoration: const InputDecoration(
+                        labelText: 'Departure time',
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: arrivalTime,
-                    decoration: const InputDecoration(
-                      labelText: 'Arrival time',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: arrivalTime,
+                      decoration: const InputDecoration(
+                        labelText: 'Arrival time',
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: aircraft,
-                    decoration: const InputDecoration(labelText: 'Aircraft'),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: registration,
-                    decoration: const InputDecoration(
-                      labelText: 'Registration',
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: aircraft,
+                      decoration: const InputDecoration(labelText: 'Aircraft'),
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: registration,
+                      decoration: const InputDecoration(
+                        labelText: 'Registration',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: reportTime,
+                decoration: const InputDecoration(
+                  labelText: 'Report time (optional)',
                 ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -293,7 +350,29 @@ class BriefingTab extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () {
+              final missing = <String>[
+                if (number.text.trim().isEmpty) 'flight number',
+                if (callsign.text.trim().isEmpty) 'callsign',
+                if (departure.text.trim().isEmpty ||
+                    arrival.text.trim().isEmpty)
+                  'route',
+                if (departureTime.text.trim().isEmpty) 'departure time',
+                if (arrivalTime.text.trim().isEmpty) 'arrival time',
+                if (aircraft.text.trim().isEmpty) 'aircraft type',
+              ];
+              if (missing.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Check required details: ${missing.join(', ')}.',
+                    ),
+                  ),
+                );
+                return;
+              }
+              Navigator.pop(context, true);
+            },
             child: const Text('Add flight'),
           ),
         ],
@@ -316,6 +395,9 @@ class BriefingTab extends StatelessWidget {
             : aircraft.text.trim(),
         registration: registration.text.trim(),
         planType: details?.operation ?? 'Documents not uploaded',
+        callsign: callsign.text.trim().toUpperCase(),
+        planId: details?.planId ?? flight?.planId ?? '',
+        reportTime: reportTime.text.trim(),
         documents: const [],
       ),
       false,
@@ -345,6 +427,9 @@ class BriefingTab extends StatelessWidget {
       aircraftType: current?.aircraftType ?? 'Aircraft pending OFP decoding',
       registration: current?.registration ?? '',
       planType: 'Active flight package',
+      callsign: current?.callsign ?? '',
+      planId: current?.planId ?? '',
+      reportTime: current?.reportTime ?? '',
       documents: documents.entries
           .map(
             (item) => BriefingDocument(
@@ -410,7 +495,7 @@ class _FlightCard extends StatelessWidget {
     final route = flight.route.split(RegExp(r'\s*[→–-]\s*'));
     final duty = DayDuty.flight(
       title: flight.flightNumber,
-      reportTime: 'TBC',
+      reportTime: flight.reportTime.isEmpty ? 'Optional' : flight.reportTime,
       startTime: flight.departureTime,
       endTime: flight.arrivalTime,
       departure: route.isNotEmpty && route.first.isNotEmpty
