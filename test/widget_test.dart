@@ -159,6 +159,12 @@ void main() {
       find.text('Flight deck arrival & preliminary setup'),
       findsOneWidget,
     );
+    await tester.fling(
+      find.byType(ListView).last,
+      const Offset(0, -4000),
+      3000,
+    );
+    await tester.pumpAndSettle();
     expect(
       find.textContaining('Before Start boundary reached'),
       findsOneWidget,

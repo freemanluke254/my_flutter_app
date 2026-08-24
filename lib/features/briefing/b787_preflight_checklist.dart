@@ -26,6 +26,18 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'Both',
         ),
         _ProcedureItem(
+          'controlled_preflight',
+          'Planning complete; operational preflight started in a controlled environment with interruptions managed',
+          'Both',
+          source: 'OMB 2.2.2.1',
+        ),
+        _ProcedureItem(
+          'crew_roles',
+          'PF, PM, APIC and any additional-crew support roles agreed; operating-seat cross-check tasks protected',
+          'Captain',
+          source: 'OMB 2.2.4',
+        ),
+        _ProcedureItem(
           'efb_setup',
           'Portable EFB mounted, powered and flight applications configured',
           'Both',
@@ -42,8 +54,9 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
         ),
         _ProcedureItem(
           'tech_log',
-          'Electronic technical log and maintenance release reviewed',
+          'Open, deferred, closed and cabin defects reviewed with technical notices and servicing data',
           'Captain',
+          source: 'OMB 2.3.13',
         ),
         _ProcedureItem(
           'status',
@@ -72,6 +85,12 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'Both',
         ),
         _ProcedureItem(
+          'actual_aircraft_status',
+          'Planning defects checked against the actual aircraft technical status on arrival',
+          'Both',
+          source: 'OMB 2.2.2.2',
+        ),
+        _ProcedureItem(
           'atis_obtained',
           'Current ATIS obtained and recorded below',
           'F/O',
@@ -85,6 +104,18 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'rtow_crosscheck',
           'Aircraft, runway/intersection, weather, NOTAM and MEL/CDL inputs independently checked',
           'Both',
+        ),
+        _ProcedureItem(
+          'declared_distances',
+          'Runway and intersection declared distances verified against current ATIS and NOTAM information',
+          'Both',
+          source: 'OMB 2.3.11',
+        ),
+        _ProcedureItem(
+          'raim_review',
+          'OFP RAIM remarks reviewed where an RNAV or RNP operation is planned',
+          'Both',
+          source: 'OMB 2.2.2.4',
         ),
         _ProcedureItem(
           'loadsheet_init',
@@ -116,6 +147,18 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'oxygen_instruments',
           'Oxygen, flight instruments, displays and alert status checked',
           'Both',
+        ),
+        _ProcedureItem(
+          'ground_restrictions',
+          'Local ground-power, PCA and APU restrictions reviewed and applied',
+          'Both',
+          source: 'OMB 2.3.2',
+        ),
+        _ProcedureItem(
+          'manned_lights',
+          'Navigation-light requirement while the aircraft is manned confirmed',
+          'Both',
+          source: 'OMB 2.3.5',
         ),
         _ProcedureItem(
           'controls_position',
@@ -154,6 +197,12 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'PF/PM',
         ),
         _ProcedureItem(
+          'rnav_procedure_check',
+          'Published procedure and FMC track, distance, altitude and constraint data compared; required RNP and navigation serviceability confirmed',
+          'PF/PM',
+          source: 'OMB 2.2.2.4',
+        ),
+        _ProcedureItem(
           'distance_rnp',
           'Planned distance, RNP, reserves, cruise altitude and cost index checked',
           'PF/PM',
@@ -162,6 +211,12 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'winds',
           'Climb, cruise and descent winds loaded and checked for reasonableness',
           'PF/PM',
+        ),
+        _ProcedureItem(
+          'drag_fuel_flow',
+          'DRAG/FF entries checked against the OFP performance decrement and applicable MEL correction',
+          'PF/PM',
+          source: 'OMB 2.3.12',
         ),
         _ProcedureItem(
           'efb_initialise',
@@ -181,8 +236,9 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
       items: [
         _ProcedureItem(
           'door_synoptic',
-          'Door synoptic checked before leaving the flight deck',
+          'Door synoptic checked before leaving the flight deck and compared with actual door status',
           'Inspector',
+          source: 'OMB 2.3.9',
         ),
         _ProcedureItem(
           'general_external',
@@ -241,6 +297,12 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
           'Both',
         ),
         _ProcedureItem(
+          'prelim_perf_basis',
+          'Preliminary performance basis checked using final ZFW, ramp fuel and the operator-prescribed CG assumption',
+          'Both',
+          source: 'OMB 2.3.11',
+        ),
+        _ProcedureItem(
           'installed_efb_prep',
           'Installed EFB take-off page prepared with runway, NOTAM, MEL/CDL, rating and flap',
           'Both',
@@ -251,6 +313,18 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
       title: 'Joint departure preparation',
       reference: 'FCOM NP.21.41–47',
       items: [
+        _ProcedureItem(
+          'independent_tEM_review',
+          'Both pilots independently reviewed weather, NOTAMs, airfield information and the FMC route before briefing',
+          'Both',
+          source: 'OMB 2.2.3',
+        ),
+        _ProcedureItem(
+          'threat_brief',
+          'Concise threat-based briefing completed with mitigations, role clarity and an understanding check',
+          'PF leads',
+          source: 'OMB 2.2.3',
+        ),
         _ProcedureItem(
           'takeoff_brief',
           'Taxi, departure, take-off and applicable emergency-turn briefing completed',
@@ -273,13 +347,15 @@ class _B787PreflightChecklistState extends State<B787PreflightChecklist> {
         ),
         _ProcedureItem(
           'flight_acceptance',
-          'Aircraft flight acceptance completed and synchronisation confirmed',
+          'Aircraft accepted only after engineering release; electronic log synchronisation confirmed',
           'Both',
+          source: 'OMB 2.3.13',
         ),
         _ProcedureItem(
           'final_loadsheet',
-          'Final loadsheet independently checked; required figures recorded and signed',
+          'Final loadsheet independently checked for gross errors, weights/index, passenger count, LMCs and required signatures',
           'Both',
+          source: 'OMB 2.3.11.3',
         ),
         _ProcedureItem(
           'final_performance',
@@ -484,8 +560,8 @@ class _ProcedureStage {
 }
 
 class _ProcedureItem {
-  const _ProcedureItem(this.id, this.label, this.owner);
-  final String id, label, owner;
+  const _ProcedureItem(this.id, this.label, this.owner, {this.source = 'FCOM'});
+  final String id, label, owner, source;
 }
 
 class _StageCard extends StatelessWidget {
@@ -542,7 +618,10 @@ class _StageCard extends StatelessWidget {
                       : null,
                 ),
               ),
-              subtitle: Text(item.owner, style: const TextStyle(fontSize: 11)),
+              subtitle: Text(
+                '${item.owner} · ${item.source}',
+                style: const TextStyle(fontSize: 11),
+              ),
               controlAffinity: ListTileControlAffinity.leading,
             ),
           ),
@@ -670,7 +749,7 @@ class _ManualNotice extends StatelessWidget {
       borderRadius: BorderRadius.circular(13),
     ),
     child: const Text(
-      'Study and workflow aid derived from the attached operator FCOM revision. It is not an approved electronic checklist. Use the current FCOM, QRH, EFB, MEL and company procedures as controlling sources.',
+      'Study and workflow aid cross-referenced to the attached FCOM and B787-9 Operations Manual Part B, Rev 20 (2 Apr 2026). FCOM and OMB prompts are labelled separately. This is not an approved electronic checklist: verify current revisions and use the AFM, FCOM, QRH, EFB, MEL and company procedures in their prescribed hierarchy.',
       style: TextStyle(
         color: Color(0xFF6E451B),
         fontWeight: FontWeight.w600,
