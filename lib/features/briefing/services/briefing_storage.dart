@@ -5,14 +5,20 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/flight_briefing.dart';
 
 class StoredFlightBriefing {
-  const StoredFlightBriefing({required this.flight, required this.active});
+  const StoredFlightBriefing({
+    required this.flight,
+    required this.active,
+    required this.selectedByUser,
+  });
   final FlightBriefing flight;
   final bool active;
+  final bool selectedByUser;
 }
 
 class BriefingStorage {
   static const _currentKey = 'current_flight_briefing_v1';
   static const _savedKey = 'saved_flight_briefings_v1';
+  static const _closedKey = 'closed_calendar_flights_v1';
 
   Future<StoredFlightBriefing?> loadCurrent() async {
     final source = (await SharedPreferences.getInstance()).getString(
@@ -26,19 +32,44 @@ class BriefingStorage {
         (json['flight']! as Map<Object?, Object?>).cast<String, Object?>(),
       ),
       active: json['active'] as bool? ?? false,
+      selectedByUser: json['selectedByUser'] as bool? ?? false,
     );
   }
 
-  Future<void> saveCurrent(FlightBriefing flight, bool active) async {
+  Future<void> saveCurrent(
+    FlightBriefing flight,
+    bool active, {
+    bool selectedByUser = true,
+  }) async {
     await (await SharedPreferences.getInstance()).setString(
       _currentKey,
-      jsonEncode({'active': active, 'flight': _flightToJson(flight)}),
+      jsonEncode({
+        'active': active,
+        'selectedByUser': selectedByUser,
+        'flight': _flightToJson(flight),
+      }),
     );
   }
 
   Future<void> clearCurrent() async {
     await (await SharedPreferences.getInstance()).remove(_currentKey);
   }
+
+  Future<Set<String>> loadClosedFlightKeys() async =>
+      (await SharedPreferences.getInstance())
+          .getStringList(_closedKey)
+          ?.toSet() ??
+      <String>{};
+
+  Future<void> markFlightClosed(FlightBriefing flight) async {
+    final preferences = await SharedPreferences.getInstance();
+    final keys = preferences.getStringList(_closedKey)?.toSet() ?? <String>{};
+    keys.add(flightKey(flight));
+    await preferences.setStringList(_closedKey, keys.toList());
+  }
+
+  String flightKey(FlightBriefing flight) =>
+      '${flight.flightNumber.toUpperCase()}|${flight.flightDate?.toIso8601String() ?? flight.departureTime}';
 
   Future<void> archiveForLogbook(FlightBriefing flight) async {
     final preferences = await SharedPreferences.getInstance();

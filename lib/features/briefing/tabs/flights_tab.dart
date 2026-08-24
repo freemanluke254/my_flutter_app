@@ -74,5 +74,9 @@ class FlightsTab extends StatelessWidget {
   bool _sameFlight(FlightBriefing first, FlightBriefing? second) =>
       second != null &&
       first.flightNumber == second.flightNumber &&
-      first.departureTime == second.departureTime;
+      (first.flightDate != null && second.flightDate != null
+          ? first.flightDate!.year == second.flightDate!.year &&
+                first.flightDate!.month == second.flightDate!.month &&
+                first.flightDate!.day == second.flightDate!.day
+          : first.departureTime == second.departureTime);
 }

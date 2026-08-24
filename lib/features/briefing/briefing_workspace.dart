@@ -191,6 +191,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       documents: const [],
     );
     await _briefingStorage.archiveForLogbook(logbookFlight);
+    await _briefingStorage.markFlightClosed(flight);
     await _briefingStorage.clearCurrent();
     if (!mounted) return;
     setState(() {
@@ -360,9 +361,16 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   Future<void> _loadNextFlight() async {
     try {
       final upcoming = await _calendarFlightSource.loadUpcomingFlights();
-      if (mounted) setState(() => _upcomingFlights = upcoming);
+      final closedKeys = await _briefingStorage.loadClosedFlightKeys();
+      final available = upcoming
+          .where(
+            (flight) =>
+                !closedKeys.contains(_briefingStorage.flightKey(flight)),
+          )
+          .toList();
+      if (mounted) setState(() => _upcomingFlights = available);
       final stored = await _briefingStorage.loadCurrent();
-      if (stored != null && stored.active) {
+      if (stored != null && (stored.active || stored.selectedByUser)) {
         if (mounted) {
           setState(() {
             _flight = stored.flight;
@@ -385,7 +393,14 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   Future<void> _refreshFlightList() async {
     try {
       final flights = await _calendarFlightSource.loadUpcomingFlights();
-      if (mounted) setState(() => _upcomingFlights = flights);
+      final closedKeys = await _briefingStorage.loadClosedFlightKeys();
+      final available = flights
+          .where(
+            (flight) =>
+                !closedKeys.contains(_briefingStorage.flightKey(flight)),
+          )
+          .toList();
+      if (mounted) setState(() => _upcomingFlights = available);
     } on Object {
       // An empty or unavailable roster is a valid state.
     }
