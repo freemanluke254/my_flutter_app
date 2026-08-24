@@ -29,6 +29,8 @@ class _CalendarTabState extends State<CalendarTab> {
   DateTime _visibleMonth = DateTime(2026, 8);
   DateTime? _selectedDate;
   RosterViewMode _viewMode = RosterViewMode.monthly;
+  bool _weekStartsMonday = true;
+  bool _autoSelectToday = true;
   List<CalendarEntry> _entries = const [];
 
   @override
@@ -128,6 +130,7 @@ class _CalendarTabState extends State<CalendarTab> {
             onDateSelected: _showDateDetails,
             onPreviousMonth: () => _changeMonth(-1),
             onNextMonth: () => _changeMonth(1),
+            weekStartsMonday: _weekStartsMonday,
           )
         else
           PeriodCalendar(
@@ -182,6 +185,17 @@ class _CalendarTabState extends State<CalendarTab> {
       final savedView = (await SharedPreferences.getInstance()).getString(
         'roster_view_mode',
       );
+      final preferences = await SharedPreferences.getInstance();
+      final showDaysOff = preferences.getBool('show_roster_days_off') ?? true;
+      final weekStartsMonday =
+          preferences.getBool('roster_week_starts_monday') ?? true;
+      final autoSelectToday =
+          preferences.getBool('roster_auto_select_today') ?? true;
+      if (!showDaysOff) {
+        rosterEntries.removeWhere(
+          (entry) => entry.type == CalendarEntryType.dayOff,
+        );
+      }
       entries.addAll(
         expiries.map(
           (record) => CalendarEntry(
@@ -203,13 +217,15 @@ class _CalendarTabState extends State<CalendarTab> {
                 .where((mode) => mode.name == savedView)
                 .firstOrNull ??
             RosterViewMode.monthly;
+        _weekStartsMonday = weekStartsMonday;
+        _autoSelectToday = autoSelectToday;
         _rosterLoaded = rosters.isNotEmpty;
         if (rosters.isNotEmpty) {
-          _visibleMonth = DateTime(
-            rosterEntries.last.date.year,
-            rosterEntries.last.date.month,
-          );
-          _selectedDate = rosterEntries.last.date;
+          final initialDate = _autoSelectToday
+              ? DateTime.now()
+              : rosterEntries.last.date;
+          _visibleMonth = DateTime(initialDate.year, initialDate.month);
+          _selectedDate = initialDate;
         }
       });
     } on Object {
@@ -230,7 +246,8 @@ class _CalendarTabState extends State<CalendarTab> {
 
   DateTime get _periodStart {
     final anchor = _selectedDate ?? _visibleMonth;
-    return anchor.subtract(Duration(days: anchor.weekday - 1));
+    final offset = _weekStartsMonday ? anchor.weekday - 1 : anchor.weekday % 7;
+    return anchor.subtract(Duration(days: offset));
   }
 
   void _changePeriod(int direction) {

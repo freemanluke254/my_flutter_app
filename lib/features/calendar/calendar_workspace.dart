@@ -19,6 +19,11 @@ class _CalendarWorkspaceState extends State<CalendarWorkspace> {
 
   void _dataChanged() => setState(() => _refreshVersion++);
 
+  void _rosterUploaded() => setState(() {
+    _refreshVersion++;
+    _selectedIndex = 0;
+  });
+
   @override
   Widget build(BuildContext context) {
     final tabs = [
@@ -27,7 +32,7 @@ class _CalendarWorkspaceState extends State<CalendarWorkspace> {
         onUploadRequested: () => setState(() => _selectedIndex = 2),
       ),
       ExpiryDatesTab(onExpiryChanged: _dataChanged),
-      RosterUploadTab(onRosterChanged: _dataChanged),
+      RosterUploadTab(onRosterChanged: _rosterUploaded),
       RosterHistoryTab(
         refreshVersion: _refreshVersion,
         onRosterChanged: _dataChanged,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/roster_view_mode.dart';
+import '../widgets/advanced_roster_settings.dart';
 
 class CalendarSettingsTab extends StatefulWidget {
   const CalendarSettingsTab({required this.onSettingsChanged, super.key});
@@ -80,6 +81,8 @@ class _CalendarSettingsTabState extends State<CalendarSettingsTab> {
           ),
         ),
       ),
+      const SizedBox(height: 12),
+      AdvancedRosterSettings(onChanged: widget.onSettingsChanged),
       const SizedBox(height: 12),
       Card(
         elevation: 0,

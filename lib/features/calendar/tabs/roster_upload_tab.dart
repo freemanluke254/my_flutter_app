@@ -70,12 +70,14 @@ class _RosterUploadTabState extends State<RosterUploadTab> {
   );
 
   Future<void> _import() async {
+    String? selectedFileName;
     try {
       final file = await FilePicker.pickFile(
         type: FileType.custom,
         allowedExtensions: const ['ics'],
       );
       if (!mounted || file == null) return;
+      selectedFileName = file.name;
       setState(() => _importing = true);
       final entries = const IcalRosterParser().parse(
         utf8.decode(await file.readAsBytes()),
@@ -95,21 +97,62 @@ class _RosterUploadTabState extends State<RosterUploadTab> {
       ];
       await storage.save(updated);
       if (!mounted) return;
-      widget.onRosterChanged();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${file.name} imported successfully.')),
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          icon: const Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF28634A),
+            size: 46,
+          ),
+          title: const Text('Roster uploaded successfully'),
+          content: Text(
+            file.name,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
+      if (!mounted) return;
+      widget.onRosterChanged();
     } on Object catch (error) {
       if (mounted) {
         await showDialog<void>(
           context: context,
           builder: (context) => AlertDialog(
+            icon: const Icon(
+              Icons.error_outline_rounded,
+              color: Color(0xFFB93B3B),
+              size: 46,
+            ),
             title: const Text('Roster could not be imported'),
-            content: SelectableText(error.toString()),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selectedFileName != null) ...[
+                  Text(
+                    selectedFileName,
+                    style: const TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                SelectableText(error.toString()),
+                const SizedBox(height: 12),
+                const Text('Close this message and try uploading again.'),
+              ],
+            ),
             actions: [
-              TextButton(
+              FilledButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('Close'),
+                child: const Text('Try again'),
               ),
             ],
           ),

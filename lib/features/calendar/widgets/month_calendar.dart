@@ -11,6 +11,7 @@ class MonthCalendar extends StatelessWidget {
     required this.onDateSelected,
     required this.onPreviousMonth,
     required this.onNextMonth,
+    this.weekStartsMonday = true,
   });
 
   final DateTime month;
@@ -19,6 +20,7 @@ class MonthCalendar extends StatelessWidget {
   final ValueChanged<DateTime> onDateSelected;
   final VoidCallback onPreviousMonth;
   final VoidCallback onNextMonth;
+  final bool weekStartsMonday;
 
   static const _monthNames = [
     'January',
@@ -39,7 +41,9 @@ class MonthCalendar extends StatelessWidget {
   Widget build(BuildContext context) {
     final firstDay = DateTime(month.year, month.month);
     final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
-    final leadingSpaces = firstDay.weekday - 1;
+    final leadingSpaces = weekStartsMonday
+        ? firstDay.weekday - 1
+        : firstDay.weekday % 7;
     final cellCount = ((leadingSpaces + daysInMonth + 6) ~/ 7) * 7;
 
     return Container(
@@ -75,16 +79,13 @@ class MonthCalendar extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          const Row(
-            children: [
-              _Weekday('M'),
-              _Weekday('T'),
-              _Weekday('W'),
-              _Weekday('T'),
-              _Weekday('F'),
-              _Weekday('S'),
-              _Weekday('S'),
-            ],
+          Row(
+            children:
+                (weekStartsMonday
+                        ? const ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+                        : const ['S', 'M', 'T', 'W', 'T', 'F', 'S'])
+                    .map(_Weekday.new)
+                    .toList(),
           ),
           const SizedBox(height: 5),
           GridView.builder(
