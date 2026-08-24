@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../calendar/models/calendar_entry.dart';
+import '../../calendar/models/roster_view_mode.dart';
 import '../../calendar/services/expiry_storage.dart';
 import '../../calendar/widgets/month_calendar.dart';
+import '../../calendar/widgets/period_calendar.dart';
 import '../../roster/services/roster_storage.dart';
 
 class CalendarTab extends StatefulWidget {
@@ -25,6 +28,7 @@ class _CalendarTabState extends State<CalendarTab> {
   bool _rosterLoaded = false;
   DateTime _visibleMonth = DateTime(2026, 8);
   DateTime? _selectedDate;
+  RosterViewMode _viewMode = RosterViewMode.monthly;
   List<CalendarEntry> _entries = const [];
 
   @override
@@ -116,14 +120,24 @@ class _CalendarTabState extends State<CalendarTab> {
           style: TextStyle(color: Color(0xFF667069)),
         ),
         const SizedBox(height: 16),
-        MonthCalendar(
-          month: _visibleMonth,
-          entries: _entries,
-          selectedDate: _selectedDate,
-          onDateSelected: _showDateDetails,
-          onPreviousMonth: () => _changeMonth(-1),
-          onNextMonth: () => _changeMonth(1),
-        ),
+        if (_viewMode == RosterViewMode.monthly)
+          MonthCalendar(
+            month: _visibleMonth,
+            entries: _entries,
+            selectedDate: _selectedDate,
+            onDateSelected: _showDateDetails,
+            onPreviousMonth: () => _changeMonth(-1),
+            onNextMonth: () => _changeMonth(1),
+          )
+        else
+          PeriodCalendar(
+            startDate: _periodStart,
+            numberOfDays: _viewMode == RosterViewMode.weekly ? 7 : 14,
+            entries: _entries,
+            onDateSelected: _showDateDetails,
+            onPreviousPeriod: () => _changePeriod(-1),
+            onNextPeriod: () => _changePeriod(1),
+          ),
       ],
     );
   }
@@ -165,6 +179,9 @@ class _CalendarTabState extends State<CalendarTab> {
         ..sort((first, second) => first.date.compareTo(second.date));
       final entries = [...rosterEntries];
       final expiries = await _expiryStorage.load();
+      final savedView = await SharedPreferencesAsync().getString(
+        'roster_view_mode',
+      );
       entries.addAll(
         expiries.map(
           (record) => CalendarEntry(
@@ -181,6 +198,11 @@ class _CalendarTabState extends State<CalendarTab> {
       setState(() {
         _loading = false;
         _entries = entries;
+        _viewMode =
+            RosterViewMode.values
+                .where((mode) => mode.name == savedView)
+                .firstOrNull ??
+            RosterViewMode.monthly;
         _rosterLoaded = rosters.isNotEmpty;
         if (rosters.isNotEmpty) {
           _visibleMonth = DateTime(
@@ -203,6 +225,20 @@ class _CalendarTabState extends State<CalendarTab> {
         _visibleMonth.month + difference,
       );
       _selectedDate = null;
+    });
+  }
+
+  DateTime get _periodStart {
+    final anchor = _selectedDate ?? _visibleMonth;
+    return anchor.subtract(Duration(days: anchor.weekday - 1));
+  }
+
+  void _changePeriod(int direction) {
+    final days = _viewMode == RosterViewMode.weekly ? 7 : 14;
+    final next = _periodStart.add(Duration(days: days * direction));
+    setState(() {
+      _selectedDate = next;
+      _visibleMonth = DateTime(next.year, next.month);
     });
   }
 

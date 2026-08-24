@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../landing/tabs/calendar_tab.dart';
 import 'tabs/expiry_dates_tab.dart';
+import 'tabs/calendar_settings_tab.dart';
 import 'tabs/roster_history_tab.dart';
 import 'tabs/roster_upload_tab.dart';
 
@@ -31,6 +32,7 @@ class _CalendarWorkspaceState extends State<CalendarWorkspace> {
         refreshVersion: _refreshVersion,
         onRosterChanged: _dataChanged,
       ),
+      CalendarSettingsTab(onSettingsChanged: _dataChanged),
     ];
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -59,6 +61,11 @@ class _CalendarWorkspaceState extends State<CalendarWorkspace> {
             icon: Icon(Icons.history_outlined),
             selectedIcon: Icon(Icons.history_rounded),
             label: 'History',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.settings_outlined),
+            selectedIcon: Icon(Icons.settings_rounded),
+            label: 'Settings',
           ),
         ],
       ),

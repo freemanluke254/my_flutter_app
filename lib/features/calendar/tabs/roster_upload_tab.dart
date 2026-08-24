@@ -70,13 +70,13 @@ class _RosterUploadTabState extends State<RosterUploadTab> {
   );
 
   Future<void> _import() async {
-    final file = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: const ['ics'],
-    );
-    if (!mounted || file == null) return;
-    setState(() => _importing = true);
     try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['ics'],
+      );
+      if (!mounted || file == null) return;
+      setState(() => _importing = true);
       final entries = const IcalRosterParser().parse(
         utf8.decode(await file.readAsBytes()),
       );
@@ -101,8 +101,18 @@ class _RosterUploadTabState extends State<RosterUploadTab> {
       );
     } on Object catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Roster could not be imported: $error')),
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Roster could not be imported'),
+            content: SelectableText(error.toString()),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
         );
       }
     } finally {
