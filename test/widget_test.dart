@@ -5,6 +5,7 @@ import 'package:trying_flutter/main.dart';
 import 'package:trying_flutter/features/planning/planning_compliance_page.dart';
 import 'package:trying_flutter/features/commute/commute_reminder_page.dart';
 import 'package:trying_flutter/features/library/north_atlantic_review_page.dart';
+import 'package:trying_flutter/features/briefing/operational_calculations_page.dart';
 
 void main() {
   test('commute timing includes travel, arrival buffer and reminder lead', () {
@@ -226,9 +227,44 @@ void main() {
     await tester.tap(find.text('Calculations'));
     await tester.pumpAndSettle();
     expect(find.text('Operational calculations'), findsOneWidget);
-    expect(find.text('Fuel trend'), findsOneWidget);
-    expect(find.text('Wind components'), findsOneWidget);
+    expect(find.text('Time arithmetic'), findsOneWidget);
+    expect(find.text('Time & distance'), findsOneWidget);
   });
+
+  testWidgets('time calculator adds minutes and wraps aviation time', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: OperationalCalculationsPage())),
+    );
+    await tester.tap(find.text('Time arithmetic'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).at(0), '12:25');
+    await tester.enterText(find.byType(TextField).at(1), '70');
+    await tester.pump();
+
+    expect(find.text('13:35'), findsOneWidget);
+  });
+
+  testWidgets(
+    'gradient calculator converts percent to feet per nautical mile',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: Scaffold(body: OperationalCalculationsPage())),
+      );
+      await tester.scrollUntilVisible(
+        find.text('Gradient: percent to ft/NM'),
+        500,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Gradient: percent to ft/NM'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '1');
+      await tester.pump();
+
+      expect(find.text('61 ft/NM · 0.57°'), findsOneWidget);
+    },
+  );
 
   testWidgets('custom compliance date shows a colour-coded countdown', (
     tester,

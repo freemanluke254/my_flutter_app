@@ -35,6 +35,49 @@ class _OperationalCalculationsPageState
   final _machTemperature = TextEditingController();
   final _fuelVolume = TextEditingController();
   final _fuelDensity = TextEditingController(text: '0.80');
+  final _celsius = TextEditingController();
+  final _currencyAmount = TextEditingController();
+  final _currencyRate = TextEditingController();
+  final _currencyFrom = TextEditingController(text: 'GBP');
+  final _currencyTo = TextEditingController(text: 'USD');
+  final _gradientPercent = TextEditingController();
+  final _gradientFeetPerNm = TextEditingController();
+  final _unitValue = TextEditingController();
+  final _localTime = TextEditingController();
+  final _utcOffset = TextEditingController();
+  final _holdingFuel = TextEditingController();
+  final _holdingFlow = TextEditingController();
+  final _etpDistance = TextEditingController();
+  final _etpReturnGs = TextEditingController();
+  final _etpContinueGs = TextEditingController();
+  final _usableEndurance = TextEditingController();
+  final _outboundGs = TextEditingController();
+  final _homeboundGs = TextEditingController();
+  final _specificRangeGs = TextEditingController();
+  final _specificRangeFlow = TextEditingController();
+  final _fieldElevation = TextEditingController();
+  final _qnh = TextEditingController();
+  final _temperature = TextEditingController();
+  final _dewPoint = TextEditingController();
+  final _coldHeight = TextEditingController();
+  final _coldIsaDeviation = TextEditingController();
+  final _turnTas = TextEditingController();
+  final _turnBank = TextEditingController();
+  final _standardRateTas = TextEditingController();
+  final _requiredGradient = TextEditingController();
+  final _climbGs = TextEditingController();
+  final _windTriangleTas = TextEditingController();
+  final _windTriangleSpeed = TextEditingController();
+  final _windTriangleFrom = TextEditingController();
+  final _desiredCourse = TextEditingController();
+  final _ias = TextEditingController();
+  final _speedAltitude = TextEditingController();
+  final _speedTemperature = TextEditingController();
+  final _fuelBefore = TextEditingController();
+  final _fuelUplift = TextEditingController();
+  final _fuelAfter = TextEditingController();
+  final _baseDistance = TextEditingController();
+  final _distanceAddition = TextEditingController();
 
   @override
   void dispose() {
@@ -62,6 +105,49 @@ class _OperationalCalculationsPageState
       _machTemperature,
       _fuelVolume,
       _fuelDensity,
+      _celsius,
+      _currencyAmount,
+      _currencyRate,
+      _currencyFrom,
+      _currencyTo,
+      _gradientPercent,
+      _gradientFeetPerNm,
+      _unitValue,
+      _localTime,
+      _utcOffset,
+      _holdingFuel,
+      _holdingFlow,
+      _etpDistance,
+      _etpReturnGs,
+      _etpContinueGs,
+      _usableEndurance,
+      _outboundGs,
+      _homeboundGs,
+      _specificRangeGs,
+      _specificRangeFlow,
+      _fieldElevation,
+      _qnh,
+      _temperature,
+      _dewPoint,
+      _coldHeight,
+      _coldIsaDeviation,
+      _turnTas,
+      _turnBank,
+      _standardRateTas,
+      _requiredGradient,
+      _climbGs,
+      _windTriangleTas,
+      _windTriangleSpeed,
+      _windTriangleFrom,
+      _desiredCourse,
+      _ias,
+      _speedAltitude,
+      _speedTemperature,
+      _fuelBefore,
+      _fuelUplift,
+      _fuelAfter,
+      _baseDistance,
+      _distanceAddition,
     ]) {
       controller.dispose();
     }
@@ -283,8 +369,434 @@ class _OperationalCalculationsPageState
           return '${(pressure * 0.0295299830714).toStringAsFixed(2)} inHg';
         },
       ),
+      const _SectionLabel('CONVERSIONS'),
+      _CalculatorCard(
+        title: 'Temperature',
+        subtitle: 'Celsius to Fahrenheit and Kelvin',
+        fields: [_field(_celsius, 'Temperature', '°C')],
+        result: () {
+          final celsius = _number(_celsius);
+          if (celsius == null) return null;
+          final fahrenheit = celsius * 9 / 5 + 32;
+          final kelvin = celsius + 273.15;
+          return '${fahrenheit.toStringAsFixed(1)}°F · ${kelvin.toStringAsFixed(2)} K';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Currency',
+        subtitle: 'Convert using a current rate you enter',
+        fields: [
+          Row(
+            children: [
+              Expanded(
+                child: _field(
+                  _currencyFrom,
+                  'From currency',
+                  '',
+                  keyboardType: TextInputType.text,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _field(
+                  _currencyTo,
+                  'To currency',
+                  '',
+                  keyboardType: TextInputType.text,
+                ),
+              ),
+            ],
+          ),
+          _field(_currencyAmount, 'Amount', _currencyFrom.text.toUpperCase()),
+          _field(
+            _currencyRate,
+            'Exchange rate',
+            '${_currencyTo.text.toUpperCase()} per ${_currencyFrom.text.toUpperCase()}',
+          ),
+        ],
+        result: () {
+          final amount = _number(_currencyAmount);
+          final rate = _number(_currencyRate);
+          if (amount == null || rate == null || rate <= 0) return null;
+          final from = _currencyFrom.text.trim().toUpperCase();
+          final to = _currencyTo.text.trim().toUpperCase();
+          return '$from ${amount.toStringAsFixed(2)} = $to ${(amount * rate).toStringAsFixed(2)}';
+        },
+        note:
+            'Enter a current trusted rate. Live rates require an exchange-rate data provider and network connection.',
+      ),
+      _CalculatorCard(
+        title: 'Gradient: percent to ft/NM',
+        subtitle: 'Convert climb or descent gradient',
+        fields: [_field(_gradientPercent, 'Gradient', '%')],
+        result: () {
+          final percent = _number(_gradientPercent);
+          if (percent == null) return null;
+          final feetPerNm = percent / 100 * 6076.12;
+          final angle = math.atan(percent / 100) * 180 / math.pi;
+          return '${feetPerNm.toStringAsFixed(0)} ft/NM · ${angle.toStringAsFixed(2)}°';
+        },
+        note: 'A 1% geometric gradient equals approximately 60.8 ft/NM.',
+      ),
+      _CalculatorCard(
+        title: 'Gradient: ft/NM to percent',
+        subtitle: 'Convert a published climb or descent gradient',
+        fields: [_field(_gradientFeetPerNm, 'Gradient', 'ft/NM')],
+        result: () {
+          final feetPerNm = _number(_gradientFeetPerNm);
+          if (feetPerNm == null) return null;
+          final ratio = feetPerNm / 6076.12;
+          final percent = ratio * 100;
+          final angle = math.atan(ratio) * 180 / math.pi;
+          return '${percent.toStringAsFixed(2)}% · ${angle.toStringAsFixed(2)}°';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Common unit conversions',
+        subtitle: 'Distance, height, mass and volume from one entered value',
+        fields: [_field(_unitValue, 'Value to convert', '')],
+        result: () {
+          final value = _number(_unitValue);
+          if (value == null) return null;
+          return '${value.toStringAsFixed(2)} NM = ${(value * 1.852).toStringAsFixed(2)} km = ${(value * 1.15078).toStringAsFixed(2)} sm\n'
+              '${value.toStringAsFixed(2)} ft = ${(value * 0.3048).toStringAsFixed(2)} m\n'
+              '${value.toStringAsFixed(2)} kg = ${(value * 2.20462).toStringAsFixed(2)} lb\n'
+              '${value.toStringAsFixed(2)} L = ${(value * 0.264172).toStringAsFixed(2)} US gal = ${(value * 0.219969).toStringAsFixed(2)} Imp gal';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Local time to UTC',
+        subtitle: 'Convert using a manually entered UTC offset',
+        fields: [
+          _field(
+            _localTime,
+            'Local time',
+            'HH:mm',
+            keyboardType: TextInputType.datetime,
+          ),
+          _field(_utcOffset, 'Local UTC offset', 'hours'),
+        ],
+        result: () {
+          final offset = _number(_utcOffset);
+          if (offset == null) return null;
+          return _shiftTime(_localTime.text, (-offset * 60).round(), 'UTC');
+        },
+        note:
+            'Example: enter +8 when local time is UTC+8. Confirm daylight-saving status independently.',
+      ),
+      const _SectionLabel('FUEL, RANGE & DIVERSION PLANNING'),
+      _CalculatorCard(
+        title: 'Holding time from fuel',
+        subtitle: 'Available holding time using entered usable fuel and flow',
+        fields: [
+          _field(_holdingFuel, 'Fuel available for holding', 'kg'),
+          _field(_holdingFlow, 'Total holding fuel flow', 'kg/h'),
+        ],
+        result: () {
+          final fuel = _number(_holdingFuel);
+          final flow = _number(_holdingFlow);
+          if (fuel == null || flow == null || flow <= 0) return null;
+          final minutes = fuel / flow * 60;
+          return '${minutes.toStringAsFixed(0)} min holding';
+        },
+        note:
+            'Enter only fuel genuinely available after required reserves and use the applicable predicted aircraft fuel flow.',
+      ),
+      _CalculatorCard(
+        title: 'Equal-time point',
+        subtitle: 'Still-airline ETP between two diversion points',
+        fields: [
+          _field(_etpDistance, 'Distance between diversion points', 'nm'),
+          _field(_etpReturnGs, 'Groundspeed toward return point', 'kt'),
+          _field(_etpContinueGs, 'Groundspeed toward continue point', 'kt'),
+        ],
+        result: () {
+          final distance = _number(_etpDistance);
+          final returnGs = _number(_etpReturnGs);
+          final continueGs = _number(_etpContinueGs);
+          if (distance == null ||
+              returnGs == null ||
+              continueGs == null ||
+              returnGs <= 0 ||
+              continueGs <= 0) {
+            return null;
+          }
+          final fromReturn = distance * returnGs / (returnGs + continueGs);
+          final equalMinutes = fromReturn / returnGs * 60;
+          return '${fromReturn.toStringAsFixed(1)} nm from return point · ${equalMinutes.toStringAsFixed(0)} min either way';
+        },
+        note:
+            'Geometric two-point estimate only. Approved ETP calculations may use scenario-specific winds, levels, performance, depressurisation or engine-out data.',
+      ),
+      _CalculatorCard(
+        title: 'Point of no return / radius of action',
+        subtitle: 'Maximum outbound distance using usable endurance',
+        fields: [
+          _field(_usableEndurance, 'Usable endurance', 'hours'),
+          _field(_outboundGs, 'Outbound groundspeed', 'kt'),
+          _field(_homeboundGs, 'Homebound groundspeed', 'kt'),
+        ],
+        result: () {
+          final endurance = _number(_usableEndurance);
+          final outbound = _number(_outboundGs);
+          final homebound = _number(_homeboundGs);
+          if (endurance == null ||
+              outbound == null ||
+              homebound == null ||
+              outbound <= 0 ||
+              homebound <= 0) {
+            return null;
+          }
+          final radius =
+              endurance * outbound * homebound / (outbound + homebound);
+          final outboundMinutes = radius / outbound * 60;
+          return '${radius.toStringAsFixed(1)} nm radius · PNR after ${outboundMinutes.toStringAsFixed(0)} min';
+        },
+        note:
+            'Usable endurance must already exclude all required reserves and allowances. Not an approved operational flight-planning result.',
+      ),
+      _CalculatorCard(
+        title: 'Specific range',
+        subtitle: 'Distance achieved per unit of fuel',
+        fields: [
+          _field(_specificRangeGs, 'Groundspeed', 'kt'),
+          _field(_specificRangeFlow, 'Total fuel flow', 'kg/h'),
+        ],
+        result: () {
+          final speed = _number(_specificRangeGs);
+          final flow = _number(_specificRangeFlow);
+          if (speed == null || flow == null || flow <= 0) return null;
+          return '${(speed / flow).toStringAsFixed(4)} nm/kg · ${(speed / flow * 1000).toStringAsFixed(1)} nm/tonne';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Fuel uplift discrepancy',
+        subtitle: 'Compare expected and indicated fuel after uplift',
+        fields: [
+          _field(_fuelBefore, 'Fuel before uplift', 'kg'),
+          _field(_fuelUplift, 'Fuel uplifted', 'kg'),
+          _field(_fuelAfter, 'Fuel indicated after uplift', 'kg'),
+        ],
+        result: () {
+          final before = _number(_fuelBefore);
+          final uplift = _number(_fuelUplift);
+          final after = _number(_fuelAfter);
+          if (before == null || uplift == null || after == null) return null;
+          final expected = before + uplift;
+          final difference = after - expected;
+          final percent = expected == 0 ? 0 : difference / expected * 100;
+          return 'Expected ${expected.toStringAsFixed(0)} kg · difference ${difference >= 0 ? '+' : ''}${difference.toStringAsFixed(0)} kg (${percent >= 0 ? '+' : ''}${percent.toStringAsFixed(2)}%)';
+        },
+      ),
+      const _SectionLabel('ATMOSPHERE & ALTITUDE'),
+      _CalculatorCard(
+        title: 'Pressure altitude',
+        subtitle: 'Approximate pressure altitude from QNH and elevation',
+        fields: [
+          _field(_fieldElevation, 'Field/indicated altitude', 'ft'),
+          _field(_qnh, 'QNH', 'hPa'),
+        ],
+        result: () {
+          final elevation = _number(_fieldElevation);
+          final qnh = _number(_qnh);
+          if (elevation == null || qnh == null) return null;
+          return '${(elevation + (1013.25 - qnh) * 30).round()} ft pressure altitude';
+        },
+        note: 'Uses the common 30 ft per hPa approximation.',
+      ),
+      _CalculatorCard(
+        title: 'Cloud-base estimate',
+        subtitle: 'Approximate convective cloud base from temperature spread',
+        fields: [
+          _field(_temperature, 'Surface temperature', '°C'),
+          _field(_dewPoint, 'Surface dew point', '°C'),
+        ],
+        result: () {
+          final temperature = _number(_temperature);
+          final dewPoint = _number(_dewPoint);
+          if (temperature == null || dewPoint == null) return null;
+          return '${((temperature - dewPoint).clamp(0, double.infinity) * 400).round()} ft AGL approximate base';
+        },
+        note:
+            'Rough convective estimate only; not a substitute for METAR, TAF or observed cloud.',
+      ),
+      _CalculatorCard(
+        title: 'Cold-temperature altitude correction',
+        subtitle: 'Common screening approximation',
+        fields: [
+          _field(_coldHeight, 'Height above altimeter source', 'ft'),
+          _field(_coldIsaDeviation, 'Temperature below ISA', '°C'),
+        ],
+        result: () {
+          final height = _number(_coldHeight);
+          final belowIsa = _number(_coldIsaDeviation);
+          if (height == null || belowIsa == null) return null;
+          final correction = 4 * height / 1000 * belowIsa;
+          return 'Add approximately ${correction.round()} ft';
+        },
+        note:
+            'Screening estimate only. Use the approved chart/EFB method and apply corrections only as required by the controlling procedure.',
+      ),
+      const _SectionLabel('TURNING & FLIGHT PATH'),
+      _CalculatorCard(
+        title: 'Turn radius & rate',
+        subtitle: 'Coordinated level-turn geometry',
+        fields: [
+          _field(_turnTas, 'True airspeed', 'kt'),
+          _field(_turnBank, 'Bank angle', '°'),
+        ],
+        result: () {
+          final tas = _number(_turnTas);
+          final bank = _number(_turnBank);
+          if (tas == null ||
+              bank == null ||
+              tas <= 0 ||
+              bank <= 0 ||
+              bank >= 90)
+            return null;
+          final speed = tas * 0.514444;
+          final tangent = math.tan(bank * math.pi / 180);
+          final radiusNm = speed * speed / (9.80665 * tangent) / 1852;
+          final rate = 9.80665 * tangent / speed * 180 / math.pi;
+          return '${radiusNm.toStringAsFixed(2)} nm radius · ${rate.toStringAsFixed(2)}°/s';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Bank angle for standard-rate turn',
+        subtitle: 'Bank required for 3° per second',
+        fields: [_field(_standardRateTas, 'True airspeed', 'kt')],
+        result: () {
+          final tas = _number(_standardRateTas);
+          if (tas == null || tas <= 0) return null;
+          final speed = tas * 0.514444;
+          final bank =
+              math.atan((3 * math.pi / 180) * speed / 9.80665) * 180 / math.pi;
+          return '${bank.toStringAsFixed(1)}° bank';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Climb gradient to vertical speed',
+        subtitle: 'Required ft/min for a published ft/NM gradient',
+        fields: [
+          _field(_requiredGradient, 'Required gradient', 'ft/NM'),
+          _field(_climbGs, 'Groundspeed', 'kt'),
+        ],
+        result: () {
+          final gradient = _number(_requiredGradient);
+          final speed = _number(_climbGs);
+          if (gradient == null || speed == null) return null;
+          return '${(gradient * speed / 60).round()} ft/min required';
+        },
+      ),
+      _CalculatorCard(
+        title: 'Wind correction angle & groundspeed',
+        subtitle: 'Basic wind-triangle solution',
+        fields: [
+          _field(_windTriangleTas, 'True airspeed', 'kt'),
+          _field(_windTriangleSpeed, 'Wind speed', 'kt'),
+          _field(_windTriangleFrom, 'Wind from', '°'),
+          _field(_desiredCourse, 'Desired course', '°'),
+        ],
+        result: _windTriangleResult,
+        note:
+            'Wind direction and course must use the same true or magnetic reference.',
+      ),
+      _CalculatorCard(
+        title: 'IAS, TAS & Mach estimate',
+        subtitle: 'Low-speed density relationship with Mach estimate',
+        fields: [
+          _field(_ias, 'Indicated airspeed', 'kt'),
+          _field(_speedAltitude, 'Pressure altitude', 'ft'),
+          _field(_speedTemperature, 'Static air temperature', '°C'),
+        ],
+        result: _speedEstimateResult,
+        note:
+            'Approximation only: ignores position, instrument and compressibility corrections. Use aircraft/EFB data for operational work.',
+      ),
+      const _SectionLabel('PLANNING ADJUSTMENTS'),
+      _CalculatorCard(
+        title: 'Distance percentage addition',
+        subtitle: 'Apply a percentage increment to a base distance',
+        fields: [
+          _field(_baseDistance, 'Base distance', 'm'),
+          _field(_distanceAddition, 'Addition', '%'),
+        ],
+        result: () {
+          final distance = _number(_baseDistance);
+          final addition = _number(_distanceAddition);
+          if (distance == null || addition == null) return null;
+          final added = distance * addition / 100;
+          return '${(distance + added).toStringAsFixed(0)} m total · ${added.toStringAsFixed(0)} m added';
+        },
+        note:
+            'Arithmetic only. Do not invent or apply take-off/landing factors; use the factor and method mandated by the approved performance source.',
+      ),
     ],
   );
+
+  String? _shiftTime(String input, int offsetMinutes, String label) {
+    final match = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(input.trim());
+    if (match == null) return null;
+    final hour = int.parse(match.group(1)!);
+    final minute = int.parse(match.group(2)!);
+    if (hour > 23 || minute > 59) return 'Enter a valid 24-hour time';
+    final raw = hour * 60 + minute + offsetMinutes;
+    final total = ((raw % 1440) + 1440) % 1440;
+    final hh = (total ~/ 60).toString().padLeft(2, '0');
+    final mm = (total % 60).toString().padLeft(2, '0');
+    final day = raw >= 1440
+        ? ' next day'
+        : raw < 0
+        ? ' previous day'
+        : '';
+    return '$hh:$mm $label$day';
+  }
+
+  String? _windTriangleResult() {
+    final tas = _number(_windTriangleTas);
+    final windSpeed = _number(_windTriangleSpeed);
+    final windFrom = _number(_windTriangleFrom);
+    final course = _number(_desiredCourse);
+    if (tas == null ||
+        windSpeed == null ||
+        windFrom == null ||
+        course == null ||
+        tas <= 0) {
+      return null;
+    }
+    final difference = (windFrom - course) * math.pi / 180;
+    final sine = windSpeed / tas * math.sin(difference);
+    if (sine.abs() > 1) return 'No wind-triangle solution at this TAS';
+    final correction = math.asin(sine);
+    final heading = (course + correction * 180 / math.pi + 360) % 360;
+    final groundSpeed =
+        tas * math.cos(correction) - windSpeed * math.cos(difference);
+    return 'Heading ${heading.toStringAsFixed(0).padLeft(3, '0')}° · WCA ${correction >= 0 ? '+' : ''}${(correction * 180 / math.pi).toStringAsFixed(1)}° · GS ${groundSpeed.toStringAsFixed(0)} kt';
+  }
+
+  String? _speedEstimateResult() {
+    final ias = _number(_ias);
+    final altitudeFeet = _number(_speedAltitude);
+    final temperatureC = _number(_speedTemperature);
+    if (ias == null ||
+        altitudeFeet == null ||
+        temperatureC == null ||
+        ias < 0 ||
+        temperatureC <= -273.15) {
+      return null;
+    }
+    final altitudeMetres = altitudeFeet * 0.3048;
+    final pressure = altitudeMetres <= 11000
+        ? 101325 * math.pow(1 - 0.0000225577 * altitudeMetres, 5.25588)
+        : 22632.1 * math.exp(-0.000157689 * (altitudeMetres - 11000));
+    final temperatureKelvin = temperatureC + 273.15;
+    final density = pressure / (287.05287 * temperatureKelvin);
+    if (density <= 0) return null;
+    final tas = ias / math.sqrt(density / 1.225);
+    final speedOfSound = math.sqrt(1.4 * 287.05287 * temperatureKelvin);
+    final mach = tas / (speedOfSound * 1.943844);
+    return '${tas.toStringAsFixed(0)} kt TAS · Mach ${mach.toStringAsFixed(2)}';
+  }
 
   String? _timeResult() {
     final match = RegExp(
