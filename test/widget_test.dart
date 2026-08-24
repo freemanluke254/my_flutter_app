@@ -33,10 +33,10 @@ void main() {
     expect(find.text('BA275'), findsOneWidget);
     expect(find.text('Ready for your next flight'), findsOneWidget);
 
-    await tester.tap(find.text('Roster'));
+    await tester.tap(find.text('Calendar'));
     await tester.pumpAndSettle();
     expect(
-      find.text('Roster import and upcoming duties will be added here.'),
+      find.text('Your complete roster, personal events and expiry dates.'),
       findsOneWidget,
     );
   });

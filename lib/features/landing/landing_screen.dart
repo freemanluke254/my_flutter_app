@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'tabs/briefing_tab.dart';
+import 'tabs/calendar_tab.dart';
 import 'tabs/logbook_tab.dart';
 import 'tabs/more_tab.dart';
-import 'tabs/roster_tab.dart';
 import 'tabs/today_tab.dart';
 
 class LandingScreen extends StatefulWidget {
@@ -21,7 +21,7 @@ class _LandingScreenState extends State<LandingScreen> {
   Widget build(BuildContext context) {
     final tabs = [
       TodayTab(pilotName: widget.pilotName),
-      const RosterTab(),
+      const CalendarTab(),
       const BriefingTab(),
       const LogbookTab(),
       const MoreTab(),
@@ -54,7 +54,7 @@ class _LandingScreenState extends State<LandingScreen> {
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Roster',
+            label: 'Calendar',
           ),
           NavigationDestination(
             icon: Icon(Icons.airplane_ticket_outlined),
