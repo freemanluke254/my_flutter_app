@@ -32,5 +32,12 @@ void main() {
     expect(find.text('Today’s duty'), findsOneWidget);
     expect(find.text('BA275'), findsOneWidget);
     expect(find.text('Ready for your next flight'), findsOneWidget);
+
+    await tester.tap(find.text('Roster'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Roster import and upcoming duties will be added here.'),
+      findsOneWidget,
+    );
   });
 }
