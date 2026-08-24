@@ -3,17 +3,27 @@ import 'package:flutter/material.dart';
 import '../../roster/models/day_duty.dart';
 
 class DayDutyTile extends StatelessWidget {
-  const DayDutyTile({super.key, required this.duty, this.onTap});
+  const DayDutyTile({
+    super.key,
+    required this.duty,
+    this.onTap,
+    this.statusLabel,
+    this.footerText,
+    this.backgroundColor,
+  });
 
   final DayDuty duty;
   final VoidCallback? onTap;
+  final String? statusLabel;
+  final String? footerText;
+  final Color? backgroundColor;
 
   @override
   Widget build(BuildContext context) {
     final isFlight = duty.type == DutyType.flight;
     return Card(
       elevation: 0,
-      color: const Color(0xFF173D31),
+      color: backgroundColor ?? const Color(0xFF173D31),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -34,7 +44,7 @@ class DayDutyTile extends StatelessWidget {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      isFlight ? 'FLIGHT DUTY' : 'STANDBY',
+                      statusLabel ?? (isFlight ? 'FLIGHT DUTY' : 'STANDBY'),
                       style: const TextStyle(
                         color: Color(0xFF17211B),
                         fontSize: 10,
@@ -65,13 +75,20 @@ class DayDutyTile extends StatelessWidget {
               else
                 _StandbyDetails(duty: duty),
               const SizedBox(height: 16),
-              const Row(
+              Row(
                 children: [
-                  Icon(Icons.sync_rounded, size: 15, color: Color(0xFFBFD8C8)),
-                  SizedBox(width: 6),
+                  const Icon(
+                    Icons.sync_rounded,
+                    size: 15,
+                    color: Color(0xFFBFD8C8),
+                  ),
+                  const SizedBox(width: 6),
                   Text(
-                    'Sample data · roster connection to follow',
-                    style: TextStyle(color: Color(0xFFBFD8C8), fontSize: 11),
+                    footerText ?? 'Sample data · roster connection to follow',
+                    style: const TextStyle(
+                      color: Color(0xFFBFD8C8),
+                      fontSize: 11,
+                    ),
                   ),
                 ],
               ),

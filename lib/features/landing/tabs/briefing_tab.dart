@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 
 import '../../briefing/models/flight_briefing.dart';
 import '../../briefing/services/ofp_parser.dart';
+import '../../roster/models/day_duty.dart';
+import '../widgets/day_duty_tile.dart';
 
 class BriefingTab extends StatelessWidget {
   const BriefingTab({
@@ -404,55 +406,30 @@ class _FlightCard extends StatelessWidget {
   final FlightBriefing flight;
   final bool active;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      color: active ? const Color(0xFF173D31) : const Color(0xFFD9E1EA),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                active ? 'ACTIVE FLIGHT' : 'NEXT FLIGHT',
-                style: TextStyle(
-                  color: active
-                      ? const Color(0xFF9BD1B4)
-                      : const Color(0xFF244A73),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            Icon(
-              active ? Icons.check_circle_rounded : Icons.schedule_rounded,
-              color: active ? const Color(0xFF9BD1B4) : const Color(0xFF244A73),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(
-          '${flight.flightNumber} · ${flight.route}',
-          style: TextStyle(
-            color: active ? Colors.white : const Color(0xFF18334F),
-            fontSize: 23,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          '${flight.departureTime}\n${flight.arrivalTime}',
-          style: TextStyle(
-            color: active ? Colors.white70 : const Color(0xFF43576A),
-            height: 1.5,
-          ),
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) {
+    final route = flight.route.split(RegExp(r'\s*[→–-]\s*'));
+    final duty = DayDuty.flight(
+      title: flight.flightNumber,
+      reportTime: 'TBC',
+      startTime: flight.departureTime,
+      endTime: flight.arrivalTime,
+      departure: route.isNotEmpty && route.first.isNotEmpty
+          ? route.first
+          : 'DEP',
+      arrival: route.length > 1 && route.last.isNotEmpty ? route.last : 'ARR',
+      aircraft: flight.aircraftType,
+    );
+    return DayDutyTile(
+      duty: duty,
+      statusLabel: active ? 'ACTIVE FLIGHT' : 'CURRENT FLIGHT',
+      backgroundColor: active
+          ? const Color(0xFF173D31)
+          : const Color(0xFF244A73),
+      footerText: active
+          ? 'All briefing tabs are showing data for this active flight'
+          : 'Current flight · upload documents to activate',
+    );
+  }
 }
 
 class _NoFlightCard extends StatelessWidget {

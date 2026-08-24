@@ -26,7 +26,14 @@ class OfpParser {
   static const _channel = MethodChannel('pilot_app/pdf_text');
 
   Future<OfpFlightDetails> parse(Uint8List bytes) async {
-    final text = await _channel.invokeMethod<String>('extractText', bytes);
+    late final String? text;
+    try {
+      text = await _channel.invokeMethod<String>('extractText', bytes);
+    } on MissingPluginException {
+      throw const FormatException(
+        'OFP decoding is available in the rebuilt macOS app, not Chrome or an older hot-reloaded app. Fully stop Flutter and run: flutter run -d macos',
+      );
+    }
     if (text == null || text.isEmpty) {
       throw const FormatException('No selectable text was found in the OFP.');
     }
@@ -35,7 +42,7 @@ class OfpParser {
           pattern,
           caseSensitive: false,
           multiLine: true,
-        ).firstMatch(text)?.group(group)?.trim() ??
+        ).firstMatch(text!)?.group(group)?.trim() ??
         fallback;
     final route = RegExp(r'\b([A-Z]{4})-([A-Z]{4})\b').firstMatch(text);
     final flightNumber = match(r'OPERATIONAL FLIGHT PLAN\s+([A-Z]{2}\d+)');
