@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trying_flutter/main.dart';
 import 'package:trying_flutter/features/planning/planning_compliance_page.dart';
 import 'package:trying_flutter/features/commute/commute_reminder_page.dart';
+import 'package:trying_flutter/features/library/north_atlantic_review_page.dart';
 
 void main() {
   test('commute timing includes travel, arrival buffer and reminder lead', () {
@@ -98,6 +99,28 @@ void main() {
     await tester.tap(find.text('Fuel policy and in-flight fuel management'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Planning fuel structure'), findsOneWidget);
+  });
+
+  testWidgets('North Atlantic review follows the operation lifecycle', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: NorthAtlanticReviewPage()));
+
+    expect(find.text('NAT HLA study path'), findsOneWidget);
+    expect(find.text('Sources combined in this guide'), findsOneWidget);
+    expect(find.text('Airspace, approval & capability'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Oceanic clearance'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Oceanic clearance'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Before oceanic entry'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Before oceanic entry'), findsOneWidget);
   });
 
   testWidgets('logbook page opens the compliant flight entry form', (

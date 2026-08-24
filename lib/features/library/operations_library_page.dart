@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'north_atlantic_review_page.dart';
+
 class OperationsLibraryPage extends StatefulWidget {
   const OperationsLibraryPage({super.key});
 
@@ -451,6 +453,38 @@ class _EntryCard extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(entry.summary, style: const TextStyle(height: 1.45)),
         ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: entry.sourceCoverage
+                .map(
+                  (source) => Chip(
+                    avatar: const Icon(Icons.menu_book_outlined, size: 15),
+                    label: Text(source),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        if (entry.title == 'North Atlantic operations') ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const NorthAtlanticReviewPage(),
+                ),
+              ),
+              icon: const Icon(Icons.menu_book_rounded),
+              label: const Text('Open full NAT review'),
+            ),
+          ),
+        ],
         if (entry.timeSensitive || entry.controlledOnly) ...[
           const SizedBox(height: 10),
           Container(
@@ -530,4 +564,30 @@ class _LibraryEntry {
 
   String get searchText =>
       '$title $category $summary $source ${keywords.join(' ')}'.toLowerCase();
+
+  List<String> get sourceCoverage => switch (category) {
+    'Aircraft' => const ['FCOM', 'OMB', 'OMA policy'],
+    'Flight operations' => const ['OMA', 'OMB', 'FCOM where applicable'],
+    'Navigation' => const [
+      'OMC Navigation',
+      'NAT Manual/revisions',
+      'FCOM/OMB',
+      'ICAO where applicable',
+    ],
+    'ATC' => const ['ICAO Doc 4444', 'OMC regional', 'OMA/OMB company'],
+    'Contingencies' => const [
+      'Current operational notice',
+      'OMA/OMB',
+      'FCOM/QRH/ECL',
+      'ICAO/regional',
+    ],
+    'Airports' => const [
+      'OMC Area/Aerodrome',
+      'OMC Navigation',
+      'OMA/OMB',
+      'Current chart/NOTAM',
+    ],
+    'Training' => const ['OMD', 'OMA qualification policy', 'OMB/FCOM content'],
+    _ => const [],
+  };
 }
