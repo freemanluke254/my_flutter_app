@@ -92,7 +92,7 @@ class MonthCalendar extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 0.82,
+              childAspectRatio: 0.64,
             ),
             itemCount: cellCount,
             itemBuilder: (context, index) {
@@ -162,7 +162,12 @@ class _DayCell extends StatelessWidget {
     child: Container(
       margin: const EdgeInsets.symmetric(vertical: 2),
       decoration: BoxDecoration(
-        color: selected ? const Color(0xFFDCEADD) : null,
+        color: selected
+            ? const Color(0xFFDCEADD)
+            : date.weekday == DateTime.saturday ||
+                  date.weekday == DateTime.sunday
+            ? const Color(0xFFF0F3F5)
+            : null,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
@@ -214,12 +219,15 @@ class _DayCell extends StatelessWidget {
     final continuesToNext =
         date.weekday != DateTime.sunday && _hasMatchingEntry(entry, nextDate);
     final label =
-        entry.barLabel ?? (!continuesFromPrevious ? _shortLabel(entry) : null);
+        entry.barLabel ??
+        (entry.type != CalendarEntryType.flight && !continuesFromPrevious
+            ? _shortLabel(entry)
+            : null);
     return Container(
-      height: 14,
+      height: 22,
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 3),
-      padding: const EdgeInsets.symmetric(horizontal: 3),
+      margin: const EdgeInsets.only(bottom: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 5),
       alignment: switch (entry.barLabelPosition) {
         CalendarBarLabelPosition.left => Alignment.centerLeft,
         CalendarBarLabelPosition.center => Alignment.center,
@@ -228,8 +236,8 @@ class _DayCell extends StatelessWidget {
       decoration: BoxDecoration(
         color: entry.color,
         borderRadius: BorderRadius.horizontal(
-          left: Radius.circular(continuesFromPrevious ? 0 : 5),
-          right: Radius.circular(continuesToNext ? 0 : 5),
+          left: Radius.circular(continuesFromPrevious ? 0 : 7),
+          right: Radius.circular(continuesToNext ? 0 : 7),
         ),
       ),
       child: label != null
@@ -240,7 +248,7 @@ class _DayCell extends StatelessWidget {
               softWrap: false,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 8,
+                fontSize: 11,
                 fontWeight: FontWeight.w800,
               ),
             )

@@ -50,7 +50,7 @@ class CalendarEntry {
   };
 
   Color get color => switch (type) {
-    CalendarEntryType.flight => const Color(0xFF28634A),
+    CalendarEntryType.flight => const Color(0xFF244A73),
     CalendarEntryType.standby => const Color(0xFFBD7A17),
     CalendarEntryType.reserve => const Color(0xFF9A6418),
     CalendarEntryType.training => const Color(0xFF315F9A),
