@@ -441,6 +441,8 @@ class BriefingTab extends StatelessWidget {
         callsign: callsign.text.trim().toUpperCase(),
         planId: details?.planId ?? flight?.planId ?? '',
         reportTime: reportTime.text.trim(),
+        scheduledDepartureUtc: flight?.scheduledDepartureUtc,
+        flightDate: flight?.flightDate,
         documents: const [],
       ),
       false,
@@ -473,6 +475,8 @@ class BriefingTab extends StatelessWidget {
       callsign: current?.callsign ?? '',
       planId: current?.planId ?? '',
       reportTime: current?.reportTime ?? '',
+      scheduledDepartureUtc: current?.scheduledDepartureUtc,
+      flightDate: current?.flightDate,
       documents: documents.entries
           .map(
             (item) => BriefingDocument(

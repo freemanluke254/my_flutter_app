@@ -12,6 +12,7 @@ class OfpFlightDetails {
     required this.operation,
     required this.callsign,
     required this.planId,
+    required this.flightDate,
   });
   final String flightNumber;
   final String departure;
@@ -23,6 +24,7 @@ class OfpFlightDetails {
   final String operation;
   final String callsign;
   final String planId;
+  final DateTime? flightDate;
 }
 
 class OfpParser {
@@ -55,6 +57,10 @@ class OfpParser {
         'The flight number or route could not be decoded. Enter the details manually.',
       );
     }
+    final dateMatch = RegExp(
+      r'\b(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})\b',
+      caseSensitive: false,
+    ).firstMatch(text);
     return OfpFlightDetails(
       flightNumber: flightNumber,
       departure: route.group(1)!,
@@ -66,6 +72,26 @@ class OfpParser {
       operation: match(r'APPL RULE:\s*([^\r\n]+)', fallback: 'From OFP'),
       callsign: match(r'^([A-Z]{3}\d+[A-Z]?)\s+\d{2}[A-Z]{3}\d{2}'),
       planId: match(r'PLAN ID\s+([A-Z0-9]+)', fallback: 'Not stated'),
+      flightDate: dateMatch == null
+          ? null
+          : DateTime(
+              2000 + int.parse(dateMatch.group(3)!),
+              const {
+                'JAN': 1,
+                'FEB': 2,
+                'MAR': 3,
+                'APR': 4,
+                'MAY': 5,
+                'JUN': 6,
+                'JUL': 7,
+                'AUG': 8,
+                'SEP': 9,
+                'OCT': 10,
+                'NOV': 11,
+                'DEC': 12,
+              }[dateMatch.group(2)!.toUpperCase()]!,
+              int.parse(dateMatch.group(1)!),
+            ),
     );
   }
 }

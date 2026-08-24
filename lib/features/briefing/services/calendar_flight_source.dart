@@ -69,6 +69,7 @@ class CalendarFlightSource {
       arrivalTime: timeSummary.isEmpty ? 'Time pending' : timeSummary,
       reportTime: report,
       scheduledDepartureUtc: _scheduledUtc(entry, utcTimes, localTimes),
+      flightDate: DateTime(entry.date.year, entry.date.month, entry.date.day),
       aircraftType: 'Aircraft pending flight package',
       registration: '',
       planType: entry.manuallyEntered

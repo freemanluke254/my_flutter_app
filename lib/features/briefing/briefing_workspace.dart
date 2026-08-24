@@ -7,6 +7,7 @@ import '../landing/tabs/briefing_tab.dart';
 import 'models/flight_briefing.dart';
 import 'services/briefing_storage.dart';
 import 'services/calendar_flight_source.dart';
+import 'services/flight_package_validator.dart';
 import 'services/ofp_parser.dart';
 import 'tabs/calculations_tab.dart';
 import 'tabs/configuration_tab.dart';
@@ -186,6 +187,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       planId: flight.planId,
       reportTime: flight.reportTime,
       scheduledDepartureUtc: flight.scheduledDepartureUtc,
+      flightDate: flight.flightDate,
       documents: const [],
     );
     await _briefingStorage.archiveForLogbook(logbookFlight);
@@ -208,15 +210,70 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
     );
     if (files.isEmpty || !mounted) return;
     OfpFlightDetails? ofp;
+    Object? ofpError;
     for (final file in files) {
       if (file.name.toUpperCase().contains('OFP')) {
         try {
           ofp = await const OfpParser().parse(await file.readAsBytes());
-        } on Object {
-          // Other selected documents can still be attached if OFP decoding fails.
+        } on Object catch (error) {
+          ofpError = error;
         }
         break;
       }
+    }
+    final validationIssues = <String>[
+      if (ofp != null)
+        ...const FlightPackageValidator().validate(selected: current, ofp: ofp)
+      else if (ofpError != null)
+        'The OFP could not be decoded, so its date, route and callsign could not be verified.'
+      else
+        'No OFP was selected, so the package date, route and callsign could not be fully verified.',
+      ..._filenameValidationIssues(current, files.map((file) => file.name)),
+    ];
+    final loadedWithWarnings = validationIssues.isNotEmpty;
+    if (validationIssues.isNotEmpty) {
+      final useAnyway =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              icon: const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFB93B3B),
+                size: 46,
+              ),
+              title: const Text('Flight package warning'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'The background check found the following:',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 10),
+                  ...validationIssues.map(
+                    (issue) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Text('• $issue'),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Choose documents again'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Use anyway'),
+                ),
+              ],
+            ),
+          ) ??
+          false;
+      if (!useAnyway || !mounted) return;
     }
     final counts = <BriefingDocumentType, int>{};
     for (final file in files) {
@@ -235,6 +292,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       planId: ofp?.planId ?? current.planId,
       reportTime: current.reportTime,
       scheduledDepartureUtc: current.scheduledDepartureUtc,
+      flightDate: current.flightDate,
       documents: counts.entries
           .map(
             (entry) => BriefingDocument(
@@ -255,9 +313,15 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
           color: Color(0xFF28634A),
           size: 44,
         ),
-        title: const Text('Flight package uploaded'),
+        title: Text(
+          loadedWithWarnings ? 'Uploaded with warnings' : 'Upload successful',
+        ),
         content: Text(
-          '${updated.flightNumber}\n${files.length} documents loaded${updated.planId.isEmpty ? '' : '\nOFP Plan ID ${updated.planId}'}',
+          loadedWithWarnings
+              ? '${updated.flightNumber}\n${files.length} documents loaded after validation warnings.'
+              : updated.planId.isEmpty || updated.planId == 'Not stated'
+              ? '${updated.flightNumber}\n${files.length} documents loaded successfully.\nOFP Plan ID not stated.'
+              : 'OFP Plan ID ${updated.planId} loaded successfully.\n${updated.flightNumber} · ${files.length} documents',
           textAlign: TextAlign.center,
         ),
         actions: [
@@ -268,6 +332,29 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         ],
       ),
     );
+  }
+
+  List<String> _filenameValidationIssues(
+    FlightBriefing selected,
+    Iterable<String> filenames,
+  ) {
+    final expected = RegExp(
+      r'\d+[A-Z]?$',
+    ).firstMatch(selected.flightNumber.toUpperCase())?.group(0);
+    if (expected == null) return const [];
+    final mismatches = <String>[];
+    for (final filename in filenames) {
+      final identity = RegExp(
+        r'(?:VS|VIR)(\d+[A-Z]?)',
+        caseSensitive: false,
+      ).firstMatch(filename)?.group(1)?.toUpperCase();
+      if (identity != null && identity != expected) mismatches.add(filename);
+    }
+    return mismatches.isEmpty
+        ? const []
+        : [
+            'Document filename does not match the selected flight: ${mismatches.join(', ')}.',
+          ];
   }
 
   Future<void> _loadNextFlight() async {

@@ -45,6 +45,7 @@ class FlightBriefing {
     this.planId = '',
     this.reportTime = '',
     this.scheduledDepartureUtc,
+    this.flightDate,
   });
   final String flightNumber;
   final String route;
@@ -58,4 +59,5 @@ class FlightBriefing {
   final String planId;
   final String reportTime;
   final DateTime? scheduledDepartureUtc;
+  final DateTime? flightDate;
 }

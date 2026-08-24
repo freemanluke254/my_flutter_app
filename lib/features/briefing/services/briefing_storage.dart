@@ -71,6 +71,7 @@ class BriefingStorage {
     'planId': flight.planId,
     'reportTime': flight.reportTime,
     'scheduledDepartureUtc': flight.scheduledDepartureUtc?.toIso8601String(),
+    'flightDate': flight.flightDate?.toIso8601String(),
     'documents': flight.documents
         .map(
           (document) => {
@@ -96,6 +97,9 @@ class BriefingStorage {
     scheduledDepartureUtc: json['scheduledDepartureUtc'] == null
         ? null
         : DateTime.parse(json['scheduledDepartureUtc']! as String),
+    flightDate: json['flightDate'] == null
+        ? null
+        : DateTime.parse(json['flightDate']! as String),
     documents: (json['documents']! as List<Object?>).map((value) {
       final item = (value! as Map<Object?, Object?>).cast<String, Object?>();
       return BriefingDocument(
