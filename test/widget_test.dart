@@ -70,4 +70,21 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('A pond is an ecosystem'), findsOneWidget);
   });
+
+  testWidgets('logbook page opens the compliant flight entry form', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+
+    await tester.tap(find.byIcon(Icons.flight_takeoff_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Flight logbook'), findsOneWidget);
+    expect(find.text('UK PART-FCL · FCL.050'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Add flight'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add flight entry'), findsOneWidget);
+    expect(find.text('Aircraft type'), findsOneWidget);
+    expect(find.text('Pilot-in-command name'), findsOneWidget);
+  });
 }
