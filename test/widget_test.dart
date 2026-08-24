@@ -43,10 +43,31 @@ void main() {
     expect(find.text('Please enter your email'), findsOneWidget);
     expect(find.text('Please enter your password'), findsOneWidget);
 
-    await tester.enterText(find.byType(TextFormField).at(0), 'luke@example.com');
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'luke@example.com',
+    );
     await tester.enterText(find.byType(TextFormField).at(1), 'password123');
     await tester.tap(find.widgetWithText(FilledButton, 'Sign in'));
     await tester.pumpAndSettle();
     expect(find.text('Good morning, Luke.'), findsOneWidget);
+  });
+
+  testWidgets('learning page filters and expands definitions', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: HomeScreen()));
+
+    await tester.tap(find.byIcon(Icons.menu_book_outlined));
+    await tester.pumpAndSettle();
+    expect(find.text('Your learning library'), findsOneWidget);
+    expect(find.text('Neuroplasticity'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'ecosystem');
+    await tester.pump();
+    expect(find.text('Ecosystem'), findsOneWidget);
+    expect(find.text('Neuroplasticity'), findsNothing);
+
+    await tester.tap(find.text('Ecosystem'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('A pond is an ecosystem'), findsOneWidget);
   });
 }
