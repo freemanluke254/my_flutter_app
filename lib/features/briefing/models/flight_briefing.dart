@@ -44,6 +44,7 @@ class FlightBriefing {
     this.callsign = '',
     this.planId = '',
     this.reportTime = '',
+    this.scheduledDepartureUtc,
   });
   final String flightNumber;
   final String route;
@@ -56,4 +57,5 @@ class FlightBriefing {
   final String callsign;
   final String planId;
   final String reportTime;
+  final DateTime? scheduledDepartureUtc;
 }

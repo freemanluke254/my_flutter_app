@@ -5,6 +5,7 @@ import '../../calendar/models/calendar_entry.dart';
 import '../../calendar/models/roster_view_mode.dart';
 import '../../calendar/services/expiry_storage.dart';
 import '../../calendar/services/calendar_adjustment_storage.dart';
+import '../../calendar/services/airport_utc_offset.dart';
 import '../../calendar/widgets/month_calendar.dart';
 import '../../calendar/widgets/period_calendar.dart';
 import '../../roster/services/roster_storage.dart';
@@ -26,6 +27,7 @@ class _CalendarTabState extends State<CalendarTab> {
   final _storage = RosterStorage();
   final _expiryStorage = ExpiryStorage();
   final _adjustmentStorage = CalendarAdjustmentStorage();
+  final _airportUtcOffset = const AirportUtcOffset();
   List<CalendarAdjustment> _adjustments = const [];
   bool _loading = true;
   bool _rosterLoaded = false;
@@ -483,8 +485,15 @@ class _CalendarTabState extends State<CalendarTab> {
                           child: TextField(
                             controller: departure,
                             textCapitalization: TextCapitalization.characters,
+                            onChanged: (value) {
+                              final offset = _airportUtcOffset.offsetFor(
+                                value,
+                                date,
+                              );
+                              if (offset != null) startOffset.text = offset;
+                            },
                             decoration: const InputDecoration(
-                              labelText: 'Departure',
+                              labelText: 'Departure airport',
                             ),
                           ),
                         ),
@@ -493,8 +502,15 @@ class _CalendarTabState extends State<CalendarTab> {
                           child: TextField(
                             controller: arrival,
                             textCapitalization: TextCapitalization.characters,
+                            onChanged: (value) {
+                              final offset = _airportUtcOffset.offsetFor(
+                                value,
+                                date,
+                              );
+                              if (offset != null) finishOffset.text = offset;
+                            },
                             decoration: const InputDecoration(
-                              labelText: 'Arrival',
+                              labelText: 'Arrival airport',
                             ),
                           ),
                         ),
@@ -548,7 +564,8 @@ class _CalendarTabState extends State<CalendarTab> {
                           child: TextField(
                             controller: startOffset,
                             decoration: const InputDecoration(
-                              labelText: 'Start UTC offset',
+                              labelText: 'Departure UTC offset',
+                              helperText: 'Set from airport',
                             ),
                           ),
                         ),
@@ -557,7 +574,8 @@ class _CalendarTabState extends State<CalendarTab> {
                           child: TextField(
                             controller: finishOffset,
                             decoration: const InputDecoration(
-                              labelText: 'Finish UTC offset',
+                              labelText: 'Arrival UTC offset',
+                              helperText: 'Set from airport',
                             ),
                           ),
                         ),
@@ -601,7 +619,25 @@ class _CalendarTabState extends State<CalendarTab> {
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                       );
-                      if (value != null) setDialogState(() => date = value);
+                      if (value != null) {
+                        setDialogState(() {
+                          date = value;
+                          final departureValue = _airportUtcOffset.offsetFor(
+                            departure.text,
+                            date,
+                          );
+                          final arrivalValue = _airportUtcOffset.offsetFor(
+                            arrival.text,
+                            date,
+                          );
+                          if (departureValue != null) {
+                            startOffset.text = departureValue;
+                          }
+                          if (arrivalValue != null) {
+                            finishOffset.text = arrivalValue;
+                          }
+                        });
+                      }
                     },
                   ),
                 ],

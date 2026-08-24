@@ -28,7 +28,6 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   FlightBriefing? _flight;
   List<FlightBriefing> _upcomingFlights = const [];
   bool _active = false;
-  bool _calendarSuggested = false;
   final _briefingStorage = BriefingStorage();
   final _calendarFlightSource = CalendarFlightSource();
 
@@ -41,9 +40,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   @override
   void didUpdateWidget(covariant BriefingWorkspace oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.refreshToken != oldWidget.refreshToken &&
-        (_flight == null || _calendarSuggested)) {
-      _loadNextFlight();
+    if (widget.refreshToken != oldWidget.refreshToken) {
+      _refreshFlightList();
     }
   }
 
@@ -111,7 +109,42 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
     );
   }
 
-  void _selectUpcomingFlight(FlightBriefing flight) {
+  Future<void> _selectUpcomingFlight(FlightBriefing flight) async {
+    final departure = flight.scheduledDepartureUtc;
+    if (departure != null) {
+      final leadTime = departure.difference(DateTime.now().toUtc());
+      if (leadTime > const Duration(hours: 24)) {
+        final days = leadTime.inDays;
+        final hours = leadTime.inHours.remainder(24);
+        final confirmed =
+            await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                icon: const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFBD7A17),
+                  size: 44,
+                ),
+                title: const Text('Future flight selected'),
+                content: Text(
+                  'You have selected ${flight.flightNumber}, which is ${days > 0 ? '$days day${days == 1 ? '' : 's'} ' : ''}$hours hour${hours == 1 ? '' : 's'} in the future. Are you sure this is the correct flight?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Choose another'),
+                  ),
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Select flight'),
+                  ),
+                ],
+              ),
+            ) ??
+            false;
+        if (!confirmed || !mounted) return;
+      }
+    }
     _changeFlight(flight, false);
     setState(() => _selectedIndex = 1);
   }
@@ -119,7 +152,6 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
   void _changeFlight(FlightBriefing flight, bool active) => setState(() {
     _flight = flight;
     _active = active;
-    _calendarSuggested = false;
     unawaited(_briefingStorage.saveCurrent(flight, active));
   });
 
@@ -135,7 +167,6 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       setState(() {
         _flight = null;
         _active = false;
-        _calendarSuggested = false;
       });
     }
   }
@@ -154,6 +185,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       callsign: flight.callsign,
       planId: flight.planId,
       reportTime: flight.reportTime,
+      scheduledDepartureUtc: flight.scheduledDepartureUtc,
       documents: const [],
     );
     await _briefingStorage.archiveForLogbook(logbookFlight);
@@ -162,7 +194,6 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
     setState(() {
       _flight = null;
       _active = false;
-      _calendarSuggested = false;
       _selectedIndex = 0;
     });
     await _loadNextFlight();
@@ -203,6 +234,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       callsign: ofp?.callsign ?? current.callsign,
       planId: ofp?.planId ?? current.planId,
       reportTime: current.reportTime,
+      scheduledDepartureUtc: current.scheduledDepartureUtc,
       documents: counts.entries
           .map(
             (entry) => BriefingDocument(
@@ -243,7 +275,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       final upcoming = await _calendarFlightSource.loadUpcomingFlights();
       if (mounted) setState(() => _upcomingFlights = upcoming);
       final stored = await _briefingStorage.loadCurrent();
-      if (stored != null) {
+      if (stored != null && stored.active) {
         if (mounted) {
           setState(() {
             _flight = stored.flight;
@@ -252,15 +284,23 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         }
         return;
       }
-      final nextFlight = upcoming.isEmpty ? null : upcoming.first;
+      if (stored != null) await _briefingStorage.clearCurrent();
       if (!mounted) return;
       setState(() {
-        _flight = nextFlight;
+        _flight = null;
         _active = false;
-        _calendarSuggested = nextFlight != null;
       });
     } on Object {
       /* No stored roster is a valid state. */
+    }
+  }
+
+  Future<void> _refreshFlightList() async {
+    try {
+      final flights = await _calendarFlightSource.loadUpcomingFlights();
+      if (mounted) setState(() => _upcomingFlights = flights);
+    } on Object {
+      // An empty or unavailable roster is a valid state.
     }
   }
 

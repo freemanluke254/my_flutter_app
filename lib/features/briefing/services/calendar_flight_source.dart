@@ -35,7 +35,15 @@ class CalendarFlightSource {
             )
             .toList()
           ..sort((first, second) => first.date.compareTo(second.date));
-    return flights.map(_toBriefing).toList();
+    final nowUtc = DateTime.now().toUtc();
+    return flights
+        .map(_toBriefing)
+        .where(
+          (flight) =>
+              flight.scheduledDepartureUtc == null ||
+              !flight.scheduledDepartureUtc!.isBefore(nowUtc),
+        )
+        .toList();
   }
 
   FlightBriefing _toBriefing(CalendarEntry entry) {
@@ -60,6 +68,7 @@ class CalendarFlightSource {
           '$date · ${timeSummary.isEmpty ? 'Time pending' : timeSummary}',
       arrivalTime: timeSummary.isEmpty ? 'Time pending' : timeSummary,
       reportTime: report,
+      scheduledDepartureUtc: _scheduledUtc(entry, utcTimes, localTimes),
       aircraftType: 'Aircraft pending flight package',
       registration: '',
       planType: entry.manuallyEntered
@@ -67,6 +76,36 @@ class CalendarFlightSource {
           : 'Roster flight · Upload flight documents',
       documents: const [],
     );
+  }
+
+  DateTime? _scheduledUtc(
+    CalendarEntry entry,
+    String utcTimes,
+    String? localTimes,
+  ) {
+    final utcMatch = RegExp(r'(\d{2}):?(\d{2})').firstMatch(utcTimes);
+    if (utcMatch == null) return null;
+    var departure = DateTime.utc(
+      entry.date.year,
+      entry.date.month,
+      entry.date.day,
+      int.parse(utcMatch.group(1)!),
+      int.parse(utcMatch.group(2)!),
+    );
+    final localMatch = localTimes == null
+        ? null
+        : RegExp(r'(\d{2}):?(\d{2})').firstMatch(localTimes);
+    if (localMatch == null) return departure;
+    final utcMinutes =
+        int.parse(utcMatch.group(1)!) * 60 + int.parse(utcMatch.group(2)!);
+    final localMinutes =
+        int.parse(localMatch.group(1)!) * 60 + int.parse(localMatch.group(2)!);
+    if (utcMinutes - localMinutes > 12 * 60) {
+      departure = departure.subtract(const Duration(days: 1));
+    } else if (localMinutes - utcMinutes > 12 * 60) {
+      departure = departure.add(const Duration(days: 1));
+    }
+    return departure;
   }
 
   String? _detailValue(String details, String label) {

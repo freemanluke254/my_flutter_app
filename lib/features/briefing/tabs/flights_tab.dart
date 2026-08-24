@@ -43,13 +43,13 @@ class FlightsTab extends StatelessWidget {
           final selected = _sameFlight(flight, selectedFlight);
           return Card(
             elevation: 0,
-            color: selected ? const Color(0xFFE6EEF7) : Colors.white,
+            color: selected ? const Color(0xFFE2F1E9) : Colors.white,
             margin: const EdgeInsets.only(bottom: 10),
             child: ListTile(
               leading: Icon(
                 Icons.flight_takeoff_rounded,
                 color: selected
-                    ? const Color(0xFF244A73)
+                    ? const Color(0xFF28634A)
                     : const Color(0xFF667069),
               ),
               title: Text(
@@ -59,7 +59,10 @@ class FlightsTab extends StatelessWidget {
               subtitle: Text('${flight.departureTime}\n${flight.planType}'),
               isThreeLine: true,
               trailing: selected
-                  ? const Chip(label: Text('SELECTED'))
+                  ? const Chip(
+                      avatar: Icon(Icons.check_rounded, size: 18),
+                      label: Text('SELECTED'),
+                    )
                   : const Icon(Icons.chevron_right_rounded),
               onTap: () => onSelected(flight),
             ),
