@@ -493,6 +493,8 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                _stepHeader('1', 'RTOW and RLW'),
+                const SizedBox(height: 12),
                 _RtowField(
                   controller: _controllers['rtow']!,
                   onChanged: (value) => _update('rtow', value),
@@ -536,15 +538,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'LOADSHEET',
-                  style: TextStyle(
-                    color: Color(0xFF315F86),
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _stepHeader('1', 'Initialise'),
+                _stepHeader('2', 'Initialise loadsheet'),
                 const SizedBox(height: 12),
                 Wrap(
                   spacing: 10,
@@ -621,6 +615,29 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                     'RLW of 192,776 kg is prefilled.',
                     style: TextStyle(color: Color(0xFF667069), fontSize: 12),
                   ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Material(
+          color: const Color(0xFFF0F3F6),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: Color(0xFFCBD5DE)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _stepHeader('3', 'Fuel'),
+                const SizedBox(height: 10),
+                const Text(
+                  'Fuel details will be added here.',
+                  style: TextStyle(color: Color(0xFF667069)),
+                ),
               ],
             ),
           ),
