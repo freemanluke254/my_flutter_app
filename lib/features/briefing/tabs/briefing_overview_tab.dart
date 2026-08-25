@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/flight_briefing.dart';
 import '../widgets/pdf_preview_thumbnail.dart';
 import '../widgets/pdf_full_page_viewer.dart';
+import '../widgets/operational_document_dialog.dart';
 import 'weather_notams_tab.dart';
 
 class BriefingOverviewTab extends StatelessWidget {
@@ -360,7 +361,7 @@ class _TrackTerrainSection extends StatelessWidget {
                           content: Text('Reupload this document to open it.'),
                         ),
                       )
-                    : () => _open(context, file.name, file.path!),
+                    : () => _open(context, file.name, file.path!, file.type),
               ),
             ),
           );
@@ -369,28 +370,16 @@ class _TrackTerrainSection extends StatelessWidget {
     );
   }
 
-  Future<void> _open(BuildContext context, String name, String path) =>
-      showDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 800),
-            child: Column(
-              children: [
-                ListTile(
-                  title: Text(name),
-                  trailing: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(child: PdfFullPageViewer(path: path)),
-              ],
-            ),
-          ),
-        ),
-      );
+  Future<void> _open(
+    BuildContext context,
+    String name,
+    String path,
+    BriefingDocumentType type,
+  ) => showDialog<void>(
+    context: context,
+    builder: (context) =>
+        OperationalDocumentDialog(name: name, path: path, type: type),
+  );
 }
 
 class _OriginalDocumentsSection extends StatelessWidget {
