@@ -180,16 +180,50 @@ class _TrackDecodedView extends StatelessWidget {
               ),
             ),
           ),
-        if (decoded.remarks.isNotEmpty)
-          _TextLinesCard(title: 'Operational remarks', lines: decoded.remarks),
-        if (decoded.additionalInformation.isNotEmpty)
-          _TextLinesCard(
-            title: 'Additional track information',
-            lines: decoded.additionalInformation,
-          ),
+        for (final group in decoded.informationGroups)
+          _TrackInformationCard(group: group),
       ],
     );
   }
+}
+
+class _TrackInformationCard extends StatelessWidget {
+  const _TrackInformationCard({required this.group});
+  final DecodedTrackInformationGroup group;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    elevation: 0,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            group.title,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 9),
+          for (final item in group.items)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: SelectableText.rich(
+                TextSpan(
+                  style: const TextStyle(color: Color(0xFF202522), height: 1.4),
+                  children: [
+                    TextSpan(
+                      text: '${item.label}: ',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    TextSpan(text: item.value),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _TerrainDecodedView extends StatelessWidget {

@@ -14,6 +14,13 @@ NAR N485A N491A
 TMI IS 236
 PBCS TRACKS C D E
 SLOP SHOULD BE USED
+PACOTS TRACK MESSAGE
+TDM TRK 1
+Q) RJJJ/QARLC/IV/NBO/E/055/660/3500N14000E999
+A) RJJJ
+B) 2608241200
+C) 2608242000
+E) TRACK 1 AVAILABLE
 ''';
 
     final result = const TrackMessageDecoder().decode(source);
@@ -27,5 +34,27 @@ SLOP SHOULD BE USED
     expect(result.tracks.single.westLevels, '350 360 380 390 400');
     expect(result.remarks, contains('TMI IS 236'));
     expect(result.remarks, contains('PBCS TRACKS C D E'));
+    final operational = result.informationGroups.firstWhere(
+      (group) => group.title == 'Operational requirements and remarks',
+    );
+    expect(
+      operational.items.map((item) => item.label),
+      contains('Performance-based communication and surveillance'),
+    );
+    final pacots = result.informationGroups.firstWhere(
+      (group) => group.title == 'PACOTS and additional track messages',
+    );
+    expect(
+      pacots.items.map((item) => item.label),
+      contains('Track definition message'),
+    );
+    final notam = result.informationGroups.firstWhere(
+      (group) => group.title == 'Associated NOTAM fields',
+    );
+    expect(notam.items.first.label, 'Qualified NOTAM code');
+    expect(
+      notam.items.map((item) => item.label),
+      containsAll(['Affected FIR or location', 'Valid from', 'Valid until']),
+    );
   });
 }

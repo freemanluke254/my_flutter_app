@@ -36,6 +36,7 @@ class BriefingOverviewTab extends StatelessWidget {
     final route = _route(current.route);
     final weather = _document(current, BriefingDocumentType.weather);
     final sigWx = _document(current, BriefingDocumentType.significantWeather);
+    final routeCharts = _document(current, BriefingDocumentType.routeChart);
     final notams = _document(current, BriefingDocumentType.notams);
     final notamWindow = _notamWindow(current);
     final localNotamWindow = _localNotamWindow(current);
@@ -50,6 +51,10 @@ class BriefingOverviewTab extends StatelessWidget {
         _heading(context),
         const SizedBox(height: 14),
         _BriefingFlightTile(flight: current),
+        if (routeCharts != null) ...[
+          const SizedBox(height: 12),
+          _RouteChartGallery(document: routeCharts),
+        ],
         const SizedBox(height: 16),
         _sectionTitle(context, 'Aircraft'),
         _AircraftDetailsCard(flight: current),
@@ -391,7 +396,9 @@ class _OriginalDocumentsSection extends StatelessWidget {
     final files = <({String name, String? path, String type})>[];
     for (final document in flight.documents) {
       if (document.type == BriefingDocumentType.significantWeather ||
-          document.type == BriefingDocumentType.operationalFlightPlan) {
+          document.type == BriefingDocumentType.operationalFlightPlan ||
+          document.type == BriefingDocumentType.routeChart ||
+          document.type == BriefingDocumentType.tracks) {
         continue;
       }
       for (var index = 0; index < document.fileCount; index++) {
@@ -462,6 +469,137 @@ class _OriginalDocumentsSection extends StatelessWidget {
                   leading: const Icon(Icons.picture_as_pdf_rounded),
                   title: Text(name),
                   subtitle: const Text('Original loaded document'),
+                  trailing: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(child: PdfFullPageViewer(path: path)),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _RouteChartGallery extends StatelessWidget {
+  const _RouteChartGallery({required this.document});
+  final BriefingDocument document;
+
+  @override
+  Widget build(BuildContext context) {
+    final charts = List.generate(document.fileCount, (index) {
+      return (
+        name: index < document.fileNames.length
+            ? document.fileNames[index]
+            : 'Route chart ${index + 1}',
+        path: index < document.filePaths.length
+            ? document.filePaths[index]
+            : null,
+      );
+    });
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF193B60),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.route_rounded, color: Colors.white, size: 19),
+              SizedBox(width: 7),
+              Text(
+                'Route charts',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 170,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: charts.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, index) {
+                final chart = charts[index];
+                return InkWell(
+                  onTap: chart.path == null
+                      ? () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Reupload this route chart to open it.',
+                            ),
+                          ),
+                        )
+                      : () => _open(context, chart.name, chart.path!),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 210,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: PdfPreviewThumbnail(path: chart.path),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.picture_as_pdf, size: 16),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  chart.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _open(BuildContext context, String name, String path) =>
+      showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.route_rounded),
+                  title: const Text('Route chart'),
+                  subtitle: Text(name),
                   trailing: IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close_rounded),

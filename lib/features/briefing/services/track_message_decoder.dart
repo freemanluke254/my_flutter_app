@@ -24,6 +24,7 @@ class DecodedTrackMessage {
     required this.tracks,
     required this.remarks,
     required this.additionalInformation,
+    required this.informationGroups,
   });
 
   final String title;
@@ -32,6 +33,24 @@ class DecodedTrackMessage {
   final List<DecodedOceanicTrack> tracks;
   final List<String> remarks;
   final List<String> additionalInformation;
+  final List<DecodedTrackInformationGroup> informationGroups;
+}
+
+class DecodedTrackInformation {
+  const DecodedTrackInformation({required this.label, required this.value});
+
+  final String label;
+  final String value;
+}
+
+class DecodedTrackInformationGroup {
+  const DecodedTrackInformationGroup({
+    required this.title,
+    required this.items,
+  });
+
+  final String title;
+  final List<DecodedTrackInformation> items;
 }
 
 class TrackMessageDecoder {
@@ -124,6 +143,7 @@ class TrackMessageDecoder {
       }
       additional.add(line);
     }
+    final informationGroups = _informationGroups(remarks, additional);
     return DecodedTrackMessage(
       title: title,
       validity: validity,
@@ -131,7 +151,92 @@ class TrackMessageDecoder {
       tracks: tracks,
       remarks: remarks,
       additionalInformation: additional,
+      informationGroups: informationGroups,
     );
+  }
+
+  List<DecodedTrackInformationGroup> _informationGroups(
+    List<String> remarks,
+    List<String> additional,
+  ) {
+    final grouped = <String, List<DecodedTrackInformation>>{};
+    void add(String group, String line) {
+      final decoded = _decodeInformation(line);
+      (grouped[group] ??= []).add(decoded);
+    }
+
+    for (final line in remarks) {
+      add('Operational requirements and remarks', line);
+    }
+    var currentTrackSystem = false;
+    for (final line in additional) {
+      if (RegExp(
+        r'\b(PACOTS|TDM|TRACK DEFINITION MESSAGE)\b',
+        caseSensitive: false,
+      ).hasMatch(line)) {
+        currentTrackSystem = true;
+      }
+      if (RegExp(r'^[QABCE]\)').hasMatch(line)) {
+        add('Associated NOTAM fields', line);
+      } else if (currentTrackSystem ||
+          RegExp(r'\b(PACOTS|TDM)\b', caseSensitive: false).hasMatch(line)) {
+        add('PACOTS and additional track messages', line);
+      } else if (RegExp(
+        r'^[A-Z]{3}\d+\b|\b[A-Z]{4}\s*[-/]\s*[A-Z]{4}\b',
+      ).hasMatch(line)) {
+        add('Flight and package details', line);
+      } else {
+        add('Other source information', line);
+      }
+    }
+    const order = <String>[
+      'Operational requirements and remarks',
+      'Flight and package details',
+      'PACOTS and additional track messages',
+      'Associated NOTAM fields',
+      'Other source information',
+    ];
+    return [
+      for (final title in order)
+        if (grouped[title]?.isNotEmpty == true)
+          DecodedTrackInformationGroup(title: title, items: grouped[title]!),
+    ];
+  }
+
+  DecodedTrackInformation _decodeInformation(String line) {
+    final upper = line.toUpperCase();
+    const notamLabels = <String, String>{
+      'Q)': 'Qualified NOTAM code',
+      'A)': 'Affected FIR or location',
+      'B)': 'Valid from',
+      'C)': 'Valid until',
+      'E)': 'Details',
+    };
+    for (final entry in notamLabels.entries) {
+      if (upper.startsWith(entry.key)) {
+        return DecodedTrackInformation(
+          label: entry.value,
+          value: line.substring(entry.key.length).trim(),
+        );
+      }
+    }
+    final labels = <(RegExp, String)>[
+      (RegExp(r'\bTMI\b'), 'Track Message Identification'),
+      (RegExp(r'\bRCL\b'), 'Oceanic clearance request'),
+      (RegExp(r'\bPBCS\b'), 'Performance-based communication and surveillance'),
+      (RegExp(r'\bSLOP\b'), 'Strategic lateral offset procedure'),
+      (RegExp(r'\bSQUAWK\b'), 'Transponder setting'),
+      (RegExp(r'\bADS-C\b|\bCPDLC\b'), 'Data-link requirement'),
+      (RegExp(r'\bLOGON\b'), 'Data-link logon'),
+      (RegExp(r'\bPACOTS\b'), 'Pacific organised track system'),
+      (RegExp(r'\bTDM\b'), 'Track definition message'),
+    ];
+    for (final item in labels) {
+      if (item.$1.hasMatch(upper)) {
+        return DecodedTrackInformation(label: item.$2, value: line);
+      }
+    }
+    return DecodedTrackInformation(label: 'Source information', value: line);
   }
 
   bool _looksLikeRoute(String value) =>
