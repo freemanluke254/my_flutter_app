@@ -6,6 +6,7 @@ import '../models/flight_briefing.dart';
 import '../widgets/pdf_preview_thumbnail.dart';
 import '../widgets/pdf_full_page_viewer.dart';
 import '../widgets/operational_document_dialog.dart';
+import '../widgets/route_charts_dialog.dart';
 import 'weather_notams_tab.dart';
 
 class BriefingOverviewTab extends StatelessWidget {
@@ -981,11 +982,7 @@ class _BriefingFlightTileState extends State<_BriefingFlightTile> {
                           ),
                         ),
                       )
-                    : () => _openRouteChart(
-                        context,
-                        routeChartName,
-                        routeChartPath,
-                      ),
+                    : () => _openRouteCharts(context, routeChart),
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: 145,
@@ -1046,32 +1043,12 @@ class _BriefingFlightTileState extends State<_BriefingFlightTile> {
     );
   }
 
-  Future<void> _openRouteChart(
+  Future<void> _openRouteCharts(
     BuildContext context,
-    String name,
-    String path,
+    BriefingDocument document,
   ) => showDialog<void>(
     context: context,
-    builder: (context) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
-        child: Column(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.route_rounded),
-              title: const Text('Route chart'),
-              subtitle: Text(name),
-              trailing: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(child: PdfFullPageViewer(path: path)),
-          ],
-        ),
-      ),
-    ),
+    builder: (context) => RouteChartsDialog(document: document),
   );
 
   Widget _flightTimes(FlightBriefing flight, int? difference) {

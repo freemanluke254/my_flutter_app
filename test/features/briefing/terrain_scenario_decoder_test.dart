@@ -19,7 +19,7 @@ AFTER M2-5 TERRAIN NOT CRITICAL
     final result = const TerrainScenarioDecoder().decode(source);
 
     expect(result.flight, 'VIR358 /1 24AUG26');
-    expect(result.route, 'EGLL / VABB');
+    expect(result.route, 'EGLL → VABB');
     expect(result.segments, hasLength(3));
     expect(result.segments.first.isCritical, isFalse);
     expect(result.segments[1].isCritical, isTrue);

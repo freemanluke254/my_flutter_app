@@ -294,6 +294,12 @@ class _TerrainDecodedView extends StatelessWidget {
           rows: {
             'Flight': decoded.flight,
             'Route': decoded.route,
+            'Aircraft': decoded.registrationAndType,
+            'STD': decoded.scheduledDeparture,
+            'STA': decoded.scheduledArrival,
+            'Flight time': decoded.flightTime,
+            'Variant / rating': decoded.variantAndRating,
+            'Forecast validity': decoded.forecastValidity,
             'Scenario': decoded.scenarioRoute,
           },
         ),
@@ -335,10 +341,11 @@ class _TerrainDecodedView extends StatelessWidget {
                     segment.engineOutDiversion,
                   ),
                   _detail('Maximum terrain', segment.maximumTerrain),
-                  if (segment.lines.isNotEmpty) ...[
-                    const Divider(),
-                    for (final line in segment.lines) SelectableText(line),
-                  ],
+                  for (final point in segment.boundaryPoints)
+                    _detail('Boundary point', point),
+                  _detail('Engine anti-ice / MEL', segment.engineRestriction),
+                  for (final line in segment.additionalInformation)
+                    _detail('Additional instruction', line),
                 ],
               ),
             ),
@@ -357,7 +364,18 @@ Widget _detail(String label, String value) => value.isEmpty
     ? const SizedBox.shrink()
     : Padding(
         padding: const EdgeInsets.only(top: 7),
-        child: SelectableText('$label: $value'),
+        child: SelectableText.rich(
+          TextSpan(
+            style: const TextStyle(color: Color(0xFF202522), height: 1.35),
+            children: [
+              TextSpan(
+                text: '$label: ',
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              TextSpan(text: value),
+            ],
+          ),
+        ),
       );
 
 class _SummaryCard extends StatelessWidget {
