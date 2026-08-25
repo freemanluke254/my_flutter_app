@@ -726,29 +726,71 @@ class _DecodedContentView extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-          ...parts.map((part) {
-            final taf = part.trimLeft().startsWith('FORECAST');
-            final colour = taf
-                ? const Color(0xFFEDE6F7)
-                : const Color(0xFFE2F0F7);
-            final accent = taf
-                ? const Color(0xFF704C9F)
-                : const Color(0xFF216487);
-            return Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(11),
-              decoration: BoxDecoration(
-                color: colour,
-                borderRadius: BorderRadius.circular(10),
-                border: Border(left: BorderSide(color: accent, width: 4)),
-              ),
-              child: _labelledText(part.trim(), boldFirstLine: true),
-            );
-          }),
+          ...parts.map((part) => _weatherMessage(part.trim())),
         ],
       ),
     );
   }
+
+  Widget _weatherMessage(String message) {
+    final taf = message.startsWith('FORECAST');
+    if (!taf) {
+      return _weatherGroup(
+        message,
+        const Color(0xFFE2F0F7),
+        const Color(0xFF216487),
+      );
+    }
+    final lines = message.split('\n');
+    final groups = <({String kind, List<String> lines})>[];
+    var kind = 'FORECAST';
+    var current = <String>[];
+    for (final line in lines) {
+      final nextKind = line == 'TEMPORARILY'
+          ? 'TEMPO'
+          : line == 'BECOMING'
+          ? 'BECOMING'
+          : null;
+      if (nextKind != null) {
+        if (current.isNotEmpty) groups.add((kind: kind, lines: current));
+        kind = nextKind;
+        current = [line];
+      } else {
+        current.add(line);
+      }
+    }
+    if (current.isNotEmpty) groups.add((kind: kind, lines: current));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final group in groups)
+          _weatherGroup(
+            group.lines.join('\n'),
+            group.kind == 'TEMPO'
+                ? const Color(0xFFFFF0D8)
+                : group.kind == 'BECOMING'
+                ? const Color(0xFFE5F3E9)
+                : const Color(0xFFEDE6F7),
+            group.kind == 'TEMPO'
+                ? const Color(0xFFB97918)
+                : group.kind == 'BECOMING'
+                ? const Color(0xFF34785A)
+                : const Color(0xFF704C9F),
+          ),
+      ],
+    );
+  }
+
+  Widget _weatherGroup(String text, Color colour, Color accent) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    padding: const EdgeInsets.all(11),
+    decoration: BoxDecoration(
+      color: colour,
+      borderRadius: BorderRadius.circular(10),
+      border: Border(left: BorderSide(color: accent, width: 4)),
+    ),
+    child: _labelledText(text, boldFirstLine: true),
+  );
 
   Widget _notamCard(String section, int index) {
     if (RegExp(r'^[A-Z]{4}\s+·').hasMatch(section)) {

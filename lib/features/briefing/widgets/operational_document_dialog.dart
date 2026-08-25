@@ -332,6 +332,28 @@ class _TerrainDecodedView extends StatelessWidget {
                           : const Color(0xFF23733A),
                     ),
                   ),
+                  if (segment.isCritical) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'ENTRY AND EXIT POINTS',
+                      style: TextStyle(
+                        color: const Color(0xFF9B4A00),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    _detail('Entry point', segment.entryPoint),
+                    _detail('Exit point', segment.exitPoint),
+                    const Divider(height: 22),
+                    const Text(
+                      'RESOLVER INFORMATION',
+                      style: TextStyle(
+                        color: Color(0xFF9B4A00),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                   _detail(
                     'Emergency-descent diversion',
                     segment.emergencyDescentDiversion,
@@ -341,9 +363,8 @@ class _TerrainDecodedView extends StatelessWidget {
                     segment.engineOutDiversion,
                   ),
                   _detail('Maximum terrain', segment.maximumTerrain),
-                  for (final point in segment.boundaryPoints)
-                    _detail('Boundary point', point),
-                  _detail('Engine anti-ice / MEL', segment.engineRestriction),
+                  _detail('Engine anti-ice', segment.engineAntiIce),
+                  _detail('MEL restrictions', segment.melRestriction),
                   for (final line in segment.additionalInformation)
                     _detail('Additional instruction', line),
                 ],

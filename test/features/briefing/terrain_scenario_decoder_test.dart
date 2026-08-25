@@ -12,7 +12,10 @@ PRIOR TO M2-1 TERRAIN NOT CRITICAL
 BETWEEN M2-1 AND M2-2
 EMERGENCY DESCENT DIVERSION LTCG
 ONE ENGINE OUT DIVERSION LTCG
+(M2-1) N4058.5 E04033.4 - EKTES/015
+(M2-2) N4053.9 E04234.1 - DELEL/076
 MAXIMUM TERRAIN HEIGHT 12897 FT
+ENG ANTI ICE ON/NO MEL RESTRICTIONS
 AFTER M2-5 TERRAIN NOT CRITICAL
 ''';
 
@@ -26,6 +29,10 @@ AFTER M2-5 TERRAIN NOT CRITICAL
     expect(result.segments[1].emergencyDescentDiversion, 'LTCG');
     expect(result.segments[1].engineOutDiversion, 'LTCG');
     expect(result.segments[1].maximumTerrain, contains('12897'));
+    expect(result.segments[1].entryPoint, contains('M2-1'));
+    expect(result.segments[1].exitPoint, contains('M2-2'));
+    expect(result.segments[1].engineAntiIce, 'ON');
+    expect(result.segments[1].melRestriction, 'NO MEL RESTRICTIONS');
     expect(result.segments.last.isCritical, isFalse);
   });
 }

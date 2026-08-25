@@ -6,8 +6,10 @@ class DecodedTerrainSegment {
     this.emergencyDescentDiversion = '',
     this.engineOutDiversion = '',
     this.maximumTerrain = '',
-    this.boundaryPoints = const [],
-    this.engineRestriction = '',
+    this.entryPoint = '',
+    this.exitPoint = '',
+    this.engineAntiIce = '',
+    this.melRestriction = '',
     this.additionalInformation = const [],
   });
 
@@ -17,8 +19,10 @@ class DecodedTerrainSegment {
   final String emergencyDescentDiversion;
   final String engineOutDiversion;
   final String maximumTerrain;
-  final List<String> boundaryPoints;
-  final String engineRestriction;
+  final String entryPoint;
+  final String exitPoint;
+  final String engineAntiIce;
+  final String melRestriction;
   final List<String> additionalInformation;
 }
 
@@ -137,6 +141,10 @@ class TerrainScenarioDecoder {
         r'^(TERRAIN\s+NOT\s+CRITICAL|EMER\s+DES|1ENG\s+OUT|\(M2-|MAX\s+TERRAIN|ENG\s+ANTI\s+ICE)',
         caseSensitive: false,
       ).hasMatch(line);
+      final boundaryPoints = body
+          .where((line) => RegExp(r'^\(M2-').hasMatch(line))
+          .toList();
+      final engineInformation = _engineInformation(body);
       segments.add(
         DecodedTerrainSegment(
           heading: lines[start],
@@ -157,10 +165,10 @@ class TerrainScenarioDecoder {
             ),
           ),
           maximumTerrain: _maximumTerrain(body),
-          boundaryPoints: body
-              .where((line) => RegExp(r'^\(M2-').hasMatch(line))
-              .toList(),
-          engineRestriction: _engineRestriction(body),
+          entryPoint: boundaryPoints.firstOrNull ?? '',
+          exitPoint: boundaryPoints.length > 1 ? boundaryPoints[1] : '',
+          engineAntiIce: engineInformation.$1,
+          melRestriction: engineInformation.$2,
           additionalInformation: body
               .where((line) => !recognised(line))
               .toList(),
@@ -234,15 +242,20 @@ class TerrainScenarioDecoder {
         : '${match.group(1)} ft${match.group(2) == null ? '' : ' at ${match.group(2)}'}';
   }
 
-  String _engineRestriction(List<String> lines) {
+  (String, String) _engineInformation(List<String> lines) {
     final line = lines.firstWhere(
       (value) =>
           RegExp(r'^ENG\s+ANTI\s+ICE', caseSensitive: false).hasMatch(value),
       orElse: () => '',
     );
-    if (line.isEmpty) return '';
-    return line
-        .replaceFirst(RegExp(r'^ENG\s+ANTI\s+ICE\s*', caseSensitive: false), '')
-        .replaceFirst('/', ' · MEL restrictions: ');
+    if (line.isEmpty) return ('', '');
+    final match = RegExp(
+      r'^ENG\s+ANTI\s+ICE\s+([^/]+)(?:/(.+))?$',
+      caseSensitive: false,
+    ).firstMatch(line);
+    return (
+      match?.group(1)?.trim() ?? line,
+      match?.group(2)?.trim() ?? 'Not stated',
+    );
   }
 }
