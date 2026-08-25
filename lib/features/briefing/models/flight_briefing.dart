@@ -69,8 +69,15 @@ class FlightBriefing {
     this.taxiFuel = '',
     this.tripFuel = '',
     this.contingencyFuel = '',
+    this.alternateFuel = '',
     this.finalReserveFuel = '',
+    this.etpAdjustmentFuel = '',
+    this.additionalFuel = '',
+    this.unusableFuel = '',
+    this.arrivalDelayFuel = '',
     this.extraFuel = '',
+    this.discretionaryFuel = '',
+    this.fuelTimes = const {},
     this.actualZeroFuelWeight = '',
     this.actualTakeoffWeight = '',
     this.actualLandingWeight = '',
@@ -137,8 +144,15 @@ class FlightBriefing {
   final String taxiFuel;
   final String tripFuel;
   final String contingencyFuel;
+  final String alternateFuel;
   final String finalReserveFuel;
+  final String etpAdjustmentFuel;
+  final String additionalFuel;
+  final String unusableFuel;
+  final String arrivalDelayFuel;
   final String extraFuel;
+  final String discretionaryFuel;
+  final Map<String, String> fuelTimes;
   final String actualZeroFuelWeight;
   final String actualTakeoffWeight;
   final String actualLandingWeight;
@@ -206,8 +220,15 @@ class FlightBriefing {
     String? taxiFuel,
     String? tripFuel,
     String? contingencyFuel,
+    String? alternateFuel,
     String? finalReserveFuel,
+    String? etpAdjustmentFuel,
+    String? additionalFuel,
+    String? unusableFuel,
+    String? arrivalDelayFuel,
     String? extraFuel,
+    String? discretionaryFuel,
+    Map<String, String>? fuelTimes,
     String? actualZeroFuelWeight,
     String? actualTakeoffWeight,
     String? actualLandingWeight,
@@ -274,8 +295,15 @@ class FlightBriefing {
     taxiFuel: taxiFuel ?? this.taxiFuel,
     tripFuel: tripFuel ?? this.tripFuel,
     contingencyFuel: contingencyFuel ?? this.contingencyFuel,
+    alternateFuel: alternateFuel ?? this.alternateFuel,
     finalReserveFuel: finalReserveFuel ?? this.finalReserveFuel,
+    etpAdjustmentFuel: etpAdjustmentFuel ?? this.etpAdjustmentFuel,
+    additionalFuel: additionalFuel ?? this.additionalFuel,
+    unusableFuel: unusableFuel ?? this.unusableFuel,
+    arrivalDelayFuel: arrivalDelayFuel ?? this.arrivalDelayFuel,
     extraFuel: extraFuel ?? this.extraFuel,
+    discretionaryFuel: discretionaryFuel ?? this.discretionaryFuel,
+    fuelTimes: fuelTimes ?? this.fuelTimes,
     actualZeroFuelWeight: actualZeroFuelWeight ?? this.actualZeroFuelWeight,
     actualTakeoffWeight: actualTakeoffWeight ?? this.actualTakeoffWeight,
     actualLandingWeight: actualLandingWeight ?? this.actualLandingWeight,

@@ -24,8 +24,14 @@ class OfpFlightDetails {
     this.taxiFuel = '',
     this.tripFuel = '',
     this.contingencyFuel = '',
+    this.alternateFuel = '',
     this.finalReserveFuel = '',
+    this.etpAdjustmentFuel = '',
+    this.additionalFuel = '',
+    this.unusableFuel = '',
+    this.arrivalDelayFuel = '',
     this.extraFuel = '',
+    this.discretionaryFuel = '',
     this.maxPayloadPlan = false,
   });
   final String flightNumber;
@@ -50,8 +56,14 @@ class OfpFlightDetails {
   final String taxiFuel;
   final String tripFuel;
   final String contingencyFuel;
+  final String alternateFuel;
   final String finalReserveFuel;
+  final String etpAdjustmentFuel;
+  final String additionalFuel;
+  final String unusableFuel;
+  final String arrivalDelayFuel;
   final String extraFuel;
+  final String discretionaryFuel;
   final bool maxPayloadPlan;
 }
 
@@ -144,8 +156,14 @@ class OfpParser {
       taxiFuel: match(r'\bTAXI/APU\s+(\d+)'),
       tripFuel: match(r'\bTRIP\s+(\d+)'),
       contingencyFuel: match(r'\bCONT%?\d*\s+(\d+)'),
+      alternateFuel: match(r'\bALTN\s+(\d+)'),
       finalReserveFuel: match(r'\bFNL\s+RES\s+(\d+)'),
+      etpAdjustmentFuel: match(r'\bETP\s+ADJ\s+(\d+)'),
+      additionalFuel: match(r'\bADDNL\s+(\d+)'),
+      unusableFuel: match(r'\bUNUSABLE\s+(\d+)'),
+      arrivalDelayFuel: match(r'\bARR\s+DLY\s+(\d+)'),
       extraFuel: match(r'\bEXTRA\s+(\d+)'),
+      discretionaryFuel: match(r'\bDISC\s+(\d+)'),
       maxPayloadPlan: RegExp(
         r'\bMAX\s+PAYLOAD\s+PLAN\b',
         caseSensitive: false,

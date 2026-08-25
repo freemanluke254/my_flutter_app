@@ -641,6 +641,50 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                     child: _weightField('FINAL ZFW', 'actualZfw'),
                   ),
                 ),
+                const SizedBox(height: 4),
+                const Text(
+                  'OFP FUEL FIGURES',
+                  style: TextStyle(
+                    color: Color(0xFF315F86),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final figures = <(String, String)>[
+                      ('TRIP', flight.tripFuel),
+                      ('CONT', flight.contingencyFuel),
+                      ('ALTN', flight.alternateFuel),
+                      ('FNL RES', flight.finalReserveFuel),
+                      ('ETP ADJ', flight.etpAdjustmentFuel),
+                      ('ADDNL', flight.additionalFuel),
+                      ('UNUSABLE', flight.unusableFuel),
+                      ('ARR DLY', flight.arrivalDelayFuel),
+                      ('EXTRA', flight.extraFuel),
+                      ('DISC', flight.discretionaryFuel),
+                      ('TAXI/APU', flight.taxiFuel),
+                      ('RAMP', flight.blockFuel),
+                    ];
+                    final width = constraints.maxWidth < 620
+                        ? constraints.maxWidth
+                        : (constraints.maxWidth - 10) / 2;
+                    return Wrap(
+                      spacing: 10,
+                      children: figures
+                          .map(
+                            (figure) => SizedBox(
+                              width: width,
+                              child: _PlannedWeight(
+                                label: figure.$1,
+                                value: figure.$2,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    );
+                  },
+                ),
               ],
             ),
           ),
