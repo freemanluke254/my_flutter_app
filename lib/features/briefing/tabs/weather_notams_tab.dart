@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
-import '../services/free_aviation_reference_service.dart';
+import '../services/aviation_weather_decoder.dart';
 import '../services/pdf_document_reader.dart';
 import '../widgets/pdf_full_page_viewer.dart';
 
@@ -14,6 +14,7 @@ Future<void> showBriefingDocuments(
   BriefingDocumentContentType contentType = BriefingDocumentContentType.other,
   bool charts = false,
   bool includeOtherSections = false,
+  DateTime? flightDate,
 }) async {
   final value = document;
   if (value == null || value.fileCount == 0) {
@@ -88,6 +89,7 @@ Future<void> showBriefingDocuments(
       airportCodes: airportCodes,
       contentType: contentType,
       includeOtherSections: includeOtherSections,
+      flightDate: flightDate,
     ),
   );
 }
@@ -291,30 +293,24 @@ class _PdfTextDialog extends StatefulWidget {
     required this.airportCodes,
     required this.contentType,
     this.includeOtherSections = false,
+    this.flightDate,
   });
   final String name;
   final String path;
   final List<String> airportCodes;
   final BriefingDocumentContentType contentType;
   final bool includeOtherSections;
+  final DateTime? flightDate;
   @override
   State<_PdfTextDialog> createState() => _PdfTextDialogState();
 }
 
 class _PdfTextDialogState extends State<_PdfTextDialog> {
-  late final Future<_PdfBriefingContent> _content = _loadContent();
+  late final Future<String> _text = const PdfDocumentReader().extractText(
+    widget.path,
+  );
   bool _raw = false;
 
-  Future<_PdfBriefingContent> _loadContent() async {
-    final results = await Future.wait<Object>([
-      const PdfDocumentReader().extractText(widget.path),
-      const FreeAviationReferenceService().airports(widget.airportCodes),
-    ]);
-    return _PdfBriefingContent(
-      text: results[0] as String,
-      airports: results[1] as List<AirportReference>,
-    );
-  }
   @override
   Widget build(BuildContext context) => Dialog(
     child: ConstrainedBox(
@@ -348,8 +344,8 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
             ),
           const Divider(height: 1),
           Expanded(
-            child: FutureBuilder<_PdfBriefingContent>(
-              future: _content,
+            child: FutureBuilder<String>(
+              future: _text,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -362,35 +358,11 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
                     ),
                   );
                 }
-                final content = snapshot.data;
-                final rawText = _relevantText(
-                  content?.text ?? '',
-                  content?.airports ?? const [],
-                );
+                final rawText = _relevantText(snapshot.data ?? '');
                 final displayText = _raw ? rawText : _decodedText(rawText);
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (content?.airports.isNotEmpty == true) ...[
-                        Text(
-                          content!.airports
-                              .map(
-                                (airport) =>
-                                    '${airport.icao}${airport.iata.isEmpty ? '' : ' / ${airport.iata}'} · ${airport.name}${airport.firCode.isEmpty ? '' : ' · ${airport.firCode} FIR'}',
-                              )
-                              .join('\n'),
-                          style: const TextStyle(
-                            color: Color(0xFF244A73),
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 14),
-                      ],
-                      SelectableText(displayText),
-                    ],
-                  ),
+                  child: SelectableText(displayText),
                 );
               },
             ),
@@ -400,14 +372,9 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     ),
   );
 
-  String _relevantText(String text, List<AirportReference> airports) {
+  String _relevantText(String text) {
     if (widget.airportCodes.isEmpty) return text;
     final relevantCodes = widget.airportCodes.toSet();
-    if (widget.contentType == BriefingDocumentContentType.notam) {
-      relevantCodes.addAll(
-        airports.map((airport) => airport.firCode).where((code) => code.isNotEmpty),
-      );
-    }
     final starts = RegExp(
       r'^([A-Z]{4})\s*(?:-|/)',
       multiLine: true,
@@ -437,29 +404,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     if (widget.contentType == BriefingDocumentContentType.notam) {
       return _categorisedNotams(raw);
     }
-    return raw
-        .replaceAllMapped(
-          RegExp(r'\bMETAR\s+([^=]+)=', dotAll: true),
-          (match) => 'OBSERVATION (METAR)\n${match.group(1)!.trim()}\n',
-        )
-        .replaceAllMapped(
-          RegExp(r'\bTAF\s+([^=]+)=', dotAll: true),
-          (match) => 'FORECAST (TAF)\n${match.group(1)!.trim()}\n',
-        )
-        .replaceAllMapped(
-          RegExp(r'\b(\d{3}|VRB)(\d{2})(G(\d{2}))?KT\b'),
-          (match) =>
-              'Wind ${match.group(1)}° at ${match.group(2)} kt${match.group(4) == null ? '' : ', gusting ${match.group(4)} kt'}',
-        )
-        .replaceAllMapped(
-          RegExp(r'\bQ(\d{4})\b'),
-          (match) => 'QNH ${match.group(1)} hPa',
-        )
-        .replaceAllMapped(
-          RegExp(r'\b(\d{2})/(M?\d{2})\b'),
-          (match) =>
-              'Temperature ${match.group(1)}°C, dew point ${match.group(2)!.replaceFirst('M', '-')}°C',
-        );
+    return const AviationWeatherDecoder().decodeDocument(raw);
   }
 
   String _categorisedNotams(String raw) {
@@ -469,11 +414,19 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     ).allMatches(raw).toList();
     if (matches.isEmpty) return raw;
     final grouped = <String, List<String>>{};
+    var excluded = 0;
+    var ambiguous = 0;
     for (var index = 0; index < matches.length; index++) {
       final end = index + 1 < matches.length
           ? matches[index + 1].start
           : raw.length;
       final entry = raw.substring(matches[index].start, end).trim();
+      final relevance = _relevance(entry);
+      if (relevance == _NotamRelevance.outsideFlightWindow) {
+        excluded++;
+        continue;
+      }
+      if (relevance == _NotamRelevance.ambiguous) ambiguous++;
       (grouped[_notamCategory(entry)] ??= []).add(_formatNotam(entry));
     }
     const order = <String>[
@@ -487,21 +440,71 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
       'Aerodrome facilities',
       'Other operational NOTAMs',
     ];
-    return order
+    final categories = order
         .where((category) => grouped[category]?.isNotEmpty == true)
         .map(
           (category) =>
               '$category (${grouped[category]!.length})\n${'─' * 34}\n${grouped[category]!.join('\n\n')}',
         )
         .join('\n\n══════════════════════════════════\n\n');
+    final summary = [
+      'Flight-relevance filter',
+      if (excluded > 0)
+        '$excluded notice${excluded == 1 ? '' : 's'} outside the flight date hidden',
+      if (ambiguous > 0)
+        '$ambiguous notice${ambiguous == 1 ? '' : 's'} retained because validity could not be proven',
+      'Scope: selected airport/FIR sections from the uploaded flight package',
+    ].join('\n');
+    return '$summary\n\n══════════════════════════════════\n\n$categories';
+  }
+
+  _NotamRelevance _relevance(String entry) {
+    final flightDate = widget.flightDate;
+    if (flightDate == null) return _NotamRelevance.ambiguous;
+    final match = RegExp(
+      r'(\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})\s+(\d{2}):(\d{2})\s*-\s*(\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})\s+(\d{2}):(\d{2})',
+      caseSensitive: false,
+    ).firstMatch(entry);
+    if (match == null) return _NotamRelevance.ambiguous;
+    final start = _notamDate(match, 1);
+    final end = _notamDate(match, 6);
+    final dayStart = DateTime.utc(
+      flightDate.year,
+      flightDate.month,
+      flightDate.day,
+    );
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    return !end.isAfter(dayStart) || !start.isBefore(dayEnd)
+        ? _NotamRelevance.outsideFlightWindow
+        : _NotamRelevance.relevant;
+  }
+
+  DateTime _notamDate(RegExpMatch match, int offset) {
+    const months = <String>[
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    return DateTime.utc(
+      int.parse(match.group(offset + 2)!),
+      months.indexOf(match.group(offset + 1)!.toUpperCase()) + 1,
+      int.parse(match.group(offset)!),
+      int.parse(match.group(offset + 3)!),
+      int.parse(match.group(offset + 4)!),
+    );
   }
 
   String _notamCategory(String entry) {
     final value = entry.toUpperCase();
-    if (RegExp(r'\b(RWY|RUNWAY)\b').hasMatch(value)) return 'Runways';
-    if (RegExp(r'\b(TWY|TAXIWAY|APRON|STAND|GATE)\b').hasMatch(value)) {
-      return 'Taxiways, aprons and stands';
-    }
     if (RegExp(r'\b(SID|DEPARTURE)\b').hasMatch(value)) {
       return 'SIDs and departures';
     }
@@ -511,6 +514,10 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     if (RegExp(r'\b(IAP|APPROACH|ILS|RNP|RNAV APP)\b').hasMatch(value)) {
       return 'Approaches';
     }
+    if (RegExp(r'\b(TWY|TAXIWAY|APRON|STAND|GATE)\b').hasMatch(value)) {
+      return 'Taxiways, aprons and stands';
+    }
+    if (RegExp(r'\b(RWY|RUNWAY)\b').hasMatch(value)) return 'Runways';
     if (RegExp(r'\b(VOR|DME|NDB|FREQ|CPDLC|COM|NAV)\b').hasMatch(value)) {
       return 'Navigation and communications';
     }
@@ -527,17 +534,60 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     return 'Other operational NOTAMs';
   }
 
-  String _formatNotam(String entry) => entry
-      .replaceAll(' E)', '\nDetails: ')
-      .replaceAll(' D)', '\nSchedule: ')
-      .replaceAll(' F)', '\nLower limit: ')
-      .replaceAll(' G)', '\nUpper limit: ')
-      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
-      .trim();
+  String _formatNotam(String entry) {
+    var decoded = entry
+        .replaceAll(' E)', '\nDetails: ')
+        .replaceAll(' D)', '\nSchedule: ')
+        .replaceAll(' F)', '\nLower limit: ')
+        .replaceAll(' G)', '\nUpper limit: ');
+    const contractions = <String, String>{
+      'ABV': 'above',
+      'ACFT': 'aircraft',
+      'ACT': 'active',
+      'AD': 'aerodrome',
+      'AGL': 'above ground level',
+      'ALTN': 'alternate',
+      'APCH': 'approach',
+      'ARR': 'arrival',
+      'AUTH': 'authorised',
+      'AVBL': 'available',
+      'BLW': 'below',
+      'BTN': 'between',
+      'CLSD': 'closed',
+      'COM': 'communications',
+      'CTC': 'contact',
+      'DLA': 'delay',
+      'DLY': 'daily',
+      'EXC': 'except',
+      'FREQ': 'frequency',
+      'FLT': 'flight',
+      'FM': 'from',
+      'H24': 'continuous day and night service',
+      'INOP': 'inoperative',
+      'MAINT': 'maintenance',
+      'NAV': 'navigation',
+      'OPR': 'operating',
+      'PPR': 'prior permission required',
+      'RMK': 'remark',
+      'RTE': 'route',
+      'RWY': 'runway',
+      'SFC': 'surface',
+      'TFC': 'traffic',
+      'TWR': 'tower',
+      'TWY': 'taxiway',
+      'U/S': 'unserviceable',
+      'WI': 'within',
+      'WIP': 'work in progress',
+      'WEF': 'with effect from',
+    };
+    for (final item in contractions.entries) {
+      decoded = decoded.replaceAll(
+        RegExp('(?<![A-Z0-9/])${RegExp.escape(item.key)}(?![A-Z0-9/])'),
+        item.value,
+      );
+    }
+    return decoded.replaceAll(RegExp(r'\n{3,}'), '\n\n').trim();
+  }
 }
 
-class _PdfBriefingContent {
-  const _PdfBriefingContent({required this.text, required this.airports});
-  final String text;
-  final List<AirportReference> airports;
-}
+enum _NotamRelevance { relevant, outsideFlightWindow, ambiguous }
