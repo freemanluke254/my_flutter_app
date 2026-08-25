@@ -56,8 +56,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'finalThrust': flight?.finalThrustSetting ?? '',
       'finalFlap': flight?.finalFlapSetting ?? '',
       'atis': flight?.atisLetter ?? '',
-      'flightDeckCount': '${flight?.flightDeckCount ?? 3}',
-      'cabinCrewCount': '${flight?.cabinCrewCount ?? 10}',
       'captainPayroll': flight?.captainPayrollNumber ?? '',
       'rlw': flight == null
           ? ''
@@ -527,60 +525,37 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                 ),
               ),
               const SizedBox(height: 12),
-              _stepHeader(
-                '1',
-                'Initialise the loadsheet in the aircraft COMM page',
-              ),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Initial loadsheet sent to GLC'),
-                subtitle: Text(
-                  flight.loadsheetInitialized
-                      ? 'Initialisation complete'
-                      : 'Enter the RTOW and RLW, then send the initial loadsheet.',
-                ),
-                value: flight.loadsheetInitialized,
-                onChanged: null,
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Expanded(
-                    child: _ActualValue(
-                      label: 'RTOW TO SEND',
-                      value: flight.calculatedRtow,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(child: _weightField('RLW TO SEND', 'rlw')),
-                ],
-              ),
+              _stepHeader('1', 'Initialise'),
+              const SizedBox(height: 12),
               LayoutBuilder(
                 builder: (context, constraints) {
+                  final crewTotal =
+                      flight.flightDeckCount + flight.cabinCrewCount;
                   final fields = [
-                    _loadsheetField('FLIGHT DECK CREW', 'flightDeckCount'),
-                    _loadsheetField('CABIN CREW', 'cabinCrewCount'),
-                    _loadsheetField('CAPTAIN PAYROLL NUMBER', 'captainPayroll'),
+                    _ActualValue(label: 'RTOW', value: flight.calculatedRtow),
+                    _ActualValue(
+                      label: 'RLW',
+                      value: flight.regulatedLandingWeight,
+                    ),
+                    _ActualValue(label: 'TOTAL CREW', value: '$crewTotal'),
+                    _loadsheetField('CAPTAIN PAYROLL', 'captainPayroll'),
                   ];
-                  if (constraints.maxWidth < 650) {
+                  if (constraints.maxWidth < 800) {
                     return Column(
-                      children: fields
-                          .map(
-                            (field) => Padding(
-                              padding: const EdgeInsets.only(bottom: 10),
-                              child: field,
-                            ),
-                          )
-                          .toList(),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: fields,
                     );
                   }
                   return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(child: fields[0]),
                       const SizedBox(width: 10),
                       Expanded(child: fields[1]),
                       const SizedBox(width: 10),
                       Expanded(child: fields[2]),
+                      const SizedBox(width: 10),
+                      Expanded(child: fields[3]),
                     ],
                   );
                 },
@@ -590,6 +565,17 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                 style: TextStyle(color: Color(0xFF667069), fontSize: 12),
               ),
               const SizedBox(height: 10),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Initial loadsheet sent to GLC'),
+                subtitle: Text(
+                  flight.loadsheetInitialized
+                      ? 'Initialisation complete'
+                      : 'Complete the figures above, then send.',
+                ),
+                value: flight.loadsheetInitialized,
+                onChanged: null,
+              ),
               Align(
                 alignment: Alignment.centerRight,
                 child: FilledButton.icon(
@@ -597,8 +583,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       flight.loadsheetInitialized ||
                           flight.calculatedRtow.isEmpty ||
                           _controllers['rlw']!.text.isEmpty ||
-                          _controllers['flightDeckCount']!.text.isEmpty ||
-                          _controllers['cabinCrewCount']!.text.isEmpty ||
+                          flight.flightDeckCount + flight.cabinCrewCount <= 0 ||
                           _controllers['captainPayroll']!.text.isEmpty
                       ? null
                       : _sendInitialLoadsheet,
@@ -689,20 +674,13 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     if (flight == null ||
         flight.calculatedRtow.isEmpty ||
         _controllers['rlw']!.text.isEmpty ||
-        _controllers['flightDeckCount']!.text.isEmpty ||
-        _controllers['cabinCrewCount']!.text.isEmpty ||
+        flight.flightDeckCount + flight.cabinCrewCount <= 0 ||
         _controllers['captainPayroll']!.text.isEmpty) {
       return;
     }
     widget.onFlightChanged(
       flight.copyWith(
         regulatedLandingWeight: _controllers['rlw']!.text,
-        flightDeckCount:
-            int.tryParse(_controllers['flightDeckCount']!.text) ??
-            flight.flightDeckCount,
-        cabinCrewCount:
-            int.tryParse(_controllers['cabinCrewCount']!.text) ??
-            flight.cabinCrewCount,
         captainPayrollNumber: _controllers['captainPayroll']!.text,
         loadsheetInitialized: true,
         regulatedWeightsSent: true,
@@ -806,16 +784,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'atis' => flight.copyWith(atisLetter: value),
       'rlw' => flight.copyWith(
         regulatedLandingWeight: value,
-        loadsheetInitialized: false,
-        regulatedWeightsSent: false,
-      ),
-      'flightDeckCount' => flight.copyWith(
-        flightDeckCount: int.tryParse(value) ?? 0,
-        loadsheetInitialized: false,
-        regulatedWeightsSent: false,
-      ),
-      'cabinCrewCount' => flight.copyWith(
-        cabinCrewCount: int.tryParse(value) ?? 0,
         loadsheetInitialized: false,
         regulatedWeightsSent: false,
       ),

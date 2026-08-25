@@ -475,6 +475,12 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       1,
       20,
     );
+    final flightDeckCount = [
+      value('captain'),
+      value('firstOfficer'),
+      value('reliefPilot'),
+      value('otherCrew'),
+    ].where((name) => name.isNotEmpty).length;
     widget.onFlightChanged(
       flight.copyWith(
         registration: value('registration'),
@@ -486,6 +492,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         otherCrewRole: _otherCrewRole,
         fsm: value('fsm'),
         css: value('css'),
+        flightDeckCount: flightDeckCount,
         cabinCrewCount: cabinCrewCount,
         pilotFlying: _pilotFlying,
         detailedRoute: value('detailedRoute'),
