@@ -466,145 +466,168 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     ),
   );
 
-  Widget _rtowAndLoadsheetSetup(FlightBriefing flight) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Material(
-        color: const Color(0xFFF0F3F6),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFCBD5DE)),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _RtowField(
-                controller: _controllers['rtow']!,
-                onChanged: (value) => _update('rtow', value),
-                onOpenChecklist: _showRtowProcedure,
-              ),
-              const SizedBox(height: 8),
-              _LandingDispatchDecision(
-                required: flight.landingDispatchRequired,
-                onChanged: _setLandingDispatchRequired,
-                onOpenInfo: _showLandingDispatchCriteria,
-              ),
-              if (flight.landingDispatchRequired) ...[
+  Widget _rtowAndLoadsheetSetup(FlightBriefing flight) {
+    final rtowRlwComplete =
+        flight.landingDispatchAnswered &&
+        flight.calculatedRtow.isNotEmpty &&
+        (!flight.landingDispatchRequired ||
+            flight.regulatedLandingWeight.isNotEmpty);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: rtowRlwComplete
+              ? const Color(0xFFEAF6ED)
+              : const Color(0xFFF0F3F6),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: rtowRlwComplete
+                  ? const Color(0xFFA8CEB1)
+                  : const Color(0xFFCBD5DE),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _RtowField(
+                  controller: _controllers['rtow']!,
+                  onChanged: (value) => _update('rtow', value),
+                  onOpenChecklist: _showRtowProcedure,
+                ),
                 const SizedBox(height: 8),
-                _CalculatedRlwField(
-                  controller: _controllers['rlw']!,
-                  onChanged: (value) => _update('rlw', value),
-                  onOpenChecklist: _showLandingDispatchProcedure,
+                _LandingDispatchDecision(
+                  answered: flight.landingDispatchAnswered,
+                  required: flight.landingDispatchRequired,
+                  onChanged: _setLandingDispatchRequired,
+                  onOpenInfo: _showLandingDispatchCriteria,
                 ),
-              ],
-            ],
-          ),
-        ),
-      ),
-      const SizedBox(height: 12),
-      Material(
-        color: flight.loadsheetInitialized
-            ? const Color(0xFFEAF6ED)
-            : const Color(0xFFF0F3F6),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: flight.loadsheetInitialized
-                ? const Color(0xFFA8CEB1)
-                : const Color(0xFFCBD5DE),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'LOADSHEET',
-                style: TextStyle(
-                  color: Color(0xFF315F86),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 12),
-              _stepHeader('1', 'Initialise'),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                crossAxisAlignment: WrapCrossAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 155,
-                    child: _ActualValue(
-                      label: 'RTOW',
-                      value: flight.calculatedRtow,
-                      compact: true,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 155,
-                    child: _ActualValue(
-                      label: 'RLW',
-                      value: flight.regulatedLandingWeight,
-                      compact: true,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 130,
-                    child: _ActualValue(
-                      label: 'TOTAL CREW',
-                      value:
-                          '${flight.flightDeckCount + flight.cabinCrewCount}',
-                      suffix: null,
-                      compact: true,
-                    ),
-                  ),
-                  SizedBox(
-                    width: 210,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _loadsheetField('CAPTAIN PAYROLL', 'captainPayroll'),
-                        CheckboxListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          controlAffinity: ListTileControlAffinity.leading,
-                          title: const Text(
-                            'Sent GLC',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                          value: flight.loadsheetInitialized,
-                          onChanged:
-                              flight.loadsheetInitialized ||
-                                  !_canSendInitialLoadsheet(flight)
-                              ? null
-                              : (_) => _confirmInitialLoadsheetSent(),
-                        ),
-                      ],
-                    ),
+                if (flight.landingDispatchRequired) ...[
+                  const SizedBox(height: 8),
+                  _CalculatedRlwField(
+                    controller: _controllers['rlw']!,
+                    onChanged: (value) => _update('rlw', value),
+                    onOpenChecklist: _showLandingDispatchProcedure,
                   ),
                 ],
-              ),
-              if (flight.regulatedLandingWeight.replaceAll(
-                    RegExp(r'\D'),
-                    '',
-                  ) ==
-                  '192776')
-                const Text(
-                  'RLW of 192,776 kg is prefilled.',
-                  style: TextStyle(color: Color(0xFF667069), fontSize: 12),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
-    ],
-  );
+        const SizedBox(height: 12),
+        Material(
+          color: flight.loadsheetInitialized
+              ? const Color(0xFFEAF6ED)
+              : const Color(0xFFF0F3F6),
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: flight.loadsheetInitialized
+                  ? const Color(0xFFA8CEB1)
+                  : const Color(0xFFCBD5DE),
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'LOADSHEET',
+                  style: TextStyle(
+                    color: Color(0xFF315F86),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _stepHeader('1', 'Initialise'),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  crossAxisAlignment: WrapCrossAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 155,
+                      child: _ActualValue(
+                        label: 'RTOW',
+                        value: flight.calculatedRtow,
+                        compact: true,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 155,
+                      child: _ActualValue(
+                        label: 'RLW',
+                        value: flight.regulatedLandingWeight,
+                        compact: true,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 130,
+                      child: _ActualValue(
+                        label: 'TOTAL CREW',
+                        value:
+                            '${flight.flightDeckCount + flight.cabinCrewCount}',
+                        suffix: null,
+                        compact: true,
+                      ),
+                    ),
+                    SizedBox(
+                      width: 330,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _loadsheetField(
+                              'CAPTAIN PAYROLL',
+                              'captainPayroll',
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          SizedBox(
+                            width: 112,
+                            child: CheckboxListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              controlAffinity: ListTileControlAffinity.leading,
+                              title: const Text(
+                                'Sent GLC',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              value: flight.loadsheetInitialized,
+                              onChanged: flight.loadsheetInitialized
+                                  ? (_) => _undoInitialLoadsheetSent()
+                                  : !_canSendInitialLoadsheet(flight)
+                                  ? null
+                                  : (_) => _confirmInitialLoadsheetSent(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (flight.regulatedLandingWeight.replaceAll(
+                      RegExp(r'\D'),
+                      '',
+                    ) ==
+                    '192776')
+                  const Text(
+                    'RLW of 192,776 kg is prefilled.',
+                    style: TextStyle(color: Color(0xFF667069), fontSize: 12),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 
   Future<void> _showRtowProcedure() => showDialog<void>(
     context: context,
@@ -662,6 +685,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     widget.onFlightChanged(
       flight.copyWith(
         landingDispatchRequired: value,
+        landingDispatchAnswered: true,
         regulatedLandingWeight: rlw,
         loadsheetInitialized: false,
         regulatedWeightsSent: false,
@@ -685,6 +709,14 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
         loadsheetInitialized: true,
         regulatedWeightsSent: true,
       ),
+    );
+  }
+
+  void _undoInitialLoadsheetSent() {
+    final flight = widget.flight;
+    if (flight == null) return;
+    widget.onFlightChanged(
+      flight.copyWith(loadsheetInitialized: false, regulatedWeightsSent: false),
     );
   }
 
@@ -1110,11 +1142,13 @@ class _CalculatedRlwField extends StatelessWidget {
 
 class _LandingDispatchDecision extends StatelessWidget {
   const _LandingDispatchDecision({
+    required this.answered,
     required this.required,
     required this.onChanged,
     required this.onOpenInfo,
   });
 
+  final bool answered;
   final bool required;
   final ValueChanged<bool> onChanged;
   final VoidCallback onOpenInfo;
@@ -1123,18 +1157,35 @@ class _LandingDispatchDecision extends StatelessWidget {
   Widget build(BuildContext context) => Material(
     color: const Color(0xFFEAF3FA),
     borderRadius: BorderRadius.circular(10),
-    child: CheckboxListTile(
-      value: required,
-      onChanged: (value) => onChanged(value ?? false),
-      controlAffinity: ListTileControlAffinity.leading,
-      title: const Text(
-        'Is a Landing Dispatch calculation required?',
-        style: TextStyle(fontWeight: FontWeight.w800),
-      ),
-      secondary: IconButton(
-        tooltip: 'Check whether a calculation is required',
-        onPressed: onOpenInfo,
-        icon: const Icon(Icons.info_outline_rounded),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Is a Landing Dispatch calculation required?',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Check whether a calculation is required',
+            onPressed: onOpenInfo,
+            icon: const Icon(Icons.info_outline_rounded),
+          ),
+          const SizedBox(width: 6),
+          SegmentedButton<bool>(
+            segments: const [
+              ButtonSegment(value: true, label: Text('Yes')),
+              ButtonSegment(value: false, label: Text('No')),
+            ],
+            selected: answered ? {required} : const <bool>{},
+            emptySelectionAllowed: true,
+            showSelectedIcon: false,
+            onSelectionChanged: (selection) {
+              if (selection.isNotEmpty) onChanged(selection.first);
+            },
+          ),
+        ],
       ),
     ),
   );
