@@ -1209,7 +1209,7 @@ class _LandingDispatchProcedure extends StatelessWidget {
         _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
         _ReferenceStep(
           number: 2,
-          text: 'Select or confirm LANDING DISPATCH in the tab bar.',
+          text: 'Confirm PERFORMANCE – LANDING – DISPATCH.',
         ),
         _ReferenceStep(number: 3, text: 'Enter ARPT.'),
         _ReferenceStep(number: 4, text: 'Enter RWY.'),
