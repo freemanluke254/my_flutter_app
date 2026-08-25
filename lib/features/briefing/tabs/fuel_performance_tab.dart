@@ -552,7 +552,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                   crossAxisAlignment: WrapCrossAlignment.start,
                   children: [
                     SizedBox(
-                      width: 155,
+                      width: 130,
                       child: _ActualValue(
                         label: 'RTOW',
                         value: flight.calculatedRtow,
@@ -560,7 +560,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       ),
                     ),
                     SizedBox(
-                      width: 155,
+                      width: 130,
                       child: _ActualValue(
                         label: 'RLW',
                         value: flight.regulatedLandingWeight,
@@ -568,7 +568,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       ),
                     ),
                     SizedBox(
-                      width: 130,
+                      width: 110,
                       child: _ActualValue(
                         label: 'TOTAL CREW',
                         value:
@@ -578,7 +578,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       ),
                     ),
                     SizedBox(
-                      width: 330,
+                      width: 270,
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -590,13 +590,13 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                           ),
                           const SizedBox(width: 6),
                           SizedBox(
-                            width: 112,
+                            width: 108,
                             child: CheckboxListTile(
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               controlAffinity: ListTileControlAffinity.leading,
                               title: const Text(
-                                'Sent GLC',
+                                'Sent to GLC',
                                 style: TextStyle(fontWeight: FontWeight.w800),
                               ),
                               value: flight.loadsheetInitialized,
