@@ -1286,10 +1286,18 @@ class _CriteriaItem extends StatelessWidget {
   );
 }
 
-class _RtowCalculationReference extends StatelessWidget {
+class _RtowCalculationReference extends StatefulWidget {
   const _RtowCalculationReference({this.initiallyExpanded = false});
 
   final bool initiallyExpanded;
+
+  @override
+  State<_RtowCalculationReference> createState() =>
+      _RtowCalculationReferenceState();
+}
+
+class _RtowCalculationReferenceState extends State<_RtowCalculationReference> {
+  bool _portableEfbUnavailable = false;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -1300,48 +1308,83 @@ class _RtowCalculationReference extends StatelessWidget {
       side: const BorderSide(color: Color(0xFFCBD5DE)),
     ),
     child: ExpansionTile(
-      initiallyExpanded: initiallyExpanded,
-      leading: const Icon(Icons.fact_check_outlined, color: Color(0xFF315F86)),
-      title: const Text(
-        'How to calculate RTOW',
+      initiallyExpanded: widget.initiallyExpanded,
+      leading: Icon(
+        _portableEfbUnavailable
+            ? Icons.phonelink_erase_rounded
+            : Icons.tablet_mac_rounded,
+        color: const Color(0xFF315F86),
+      ),
+      title: Text(
+        _portableEfbUnavailable ? 'No Portable EFB' : 'Portable EFB',
         style: TextStyle(fontWeight: FontWeight.w900),
       ),
-      subtitle: const Text('OPT take-off setup sequence'),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
-        _ReferenceStep(
-          number: 2,
-          text: 'Confirm PERFORMANCE – TAKEOFF in the top tab bar.',
+      children: [
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: const Text('Portable EFB or OPT APP failure?'),
+          value: _portableEfbUnavailable,
+          onChanged: (value) =>
+              setState(() => _portableEfbUnavailable = value ?? false),
         ),
-        _ReferenceStep(number: 3, text: 'Enter ARPT.'),
-        _ReferenceStep(number: 4, text: 'Enter RWY.'),
-        _ReferenceStep(
-          number: 5,
-          text: 'Select AIRPORT INFO and confirm AIRPORT DATA.',
-        ),
-        _ReferenceStep(number: 6, text: 'Enter NOTAM, MEL and CDL data.'),
-        _ReferenceStep(number: 7, text: 'Enter all remaining data.'),
-        _ReferenceStep(
-          number: 8,
-          text:
-              'Use OPTIMUM RTG and OPTIMUM FLAP unless conditions dictate otherwise.',
-        ),
-        _ReferenceStep(number: 9, text: 'Do not enter TOW, ZFW or CG.'),
-        _ReferenceStep(number: 10, text: 'Press CALC.'),
-        SizedBox(height: 8),
-        _ReferenceWarning(),
-        SizedBox(height: 8),
-        _CrosswindReferenceNote(),
-        SizedBox(height: 10),
-        _RtowOutputSection(),
-        SizedBox(height: 10),
-        Text(
+        if (_portableEfbUnavailable)
+          const _PortableEfbUnavailableNote()
+        else ...const [
+          _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
+          _ReferenceStep(
+            number: 2,
+            text: 'Confirm PERFORMANCE – TAKEOFF in the top tab bar.',
+          ),
+          _ReferenceStep(number: 3, text: 'Enter ARPT.'),
+          _ReferenceStep(number: 4, text: 'Enter RWY.'),
+          _ReferenceStep(
+            number: 5,
+            text: 'Select AIRPORT INFO and confirm AIRPORT DATA.',
+          ),
+          _ReferenceStep(number: 6, text: 'Enter NOTAM, MEL and CDL data.'),
+          _ReferenceStep(number: 7, text: 'Enter all remaining data.'),
+          _ReferenceStep(
+            number: 8,
+            text:
+                'Use OPTIMUM RTG and OPTIMUM FLAP unless conditions dictate otherwise.',
+          ),
+          _ReferenceStep(number: 9, text: 'Do not enter TOW, ZFW or CG.'),
+          _ReferenceStep(number: 10, text: 'Press CALC.'),
+          SizedBox(height: 8),
+          _ReferenceWarning(),
+          SizedBox(height: 8),
+          _CrosswindReferenceNote(),
+          SizedBox(height: 10),
+          _RtowOutputSection(),
+        ],
+        const SizedBox(height: 10),
+        const Text(
           'Reference aid only — verify against the current approved company and aircraft procedure.',
           style: TextStyle(color: Color(0xFF667069), fontSize: 11),
         ),
       ],
+    ),
+  );
+}
+
+class _PortableEfbUnavailableNote extends StatelessWidget {
+  const _PortableEfbUnavailableNote();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF1DA),
+      borderRadius: BorderRadius.circular(9),
+      border: Border.all(color: const Color(0xFFE3B96F)),
+    ),
+    child: const Text(
+      'Refer to OPT Device Failures in Chapter SP, Section 20.',
+      style: TextStyle(fontWeight: FontWeight.w700),
     ),
   );
 }
