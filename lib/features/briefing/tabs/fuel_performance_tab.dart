@@ -465,77 +465,106 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     ),
   );
 
-  Widget _rtowAndLoadsheetSetup(FlightBriefing flight) => Material(
-    color: const Color(0xFFF0F3F6),
-    clipBehavior: Clip.antiAlias,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(16),
-      side: const BorderSide(color: Color(0xFFCBD5DE)),
-    ),
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const Text(
-            'RTOW & LOADSHEET SETUP',
-            style: TextStyle(
-              color: Color(0xFF315F86),
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 12),
-          _RtowField(
-            controller: _controllers['rtow']!,
-            onChanged: (value) => _update('rtow', value),
-            onOpenChecklist: _showRtowProcedure,
-          ),
-          const SizedBox(height: 8),
-          const _LandingDispatchCriteria(),
-          const Divider(height: 28),
-          _stepHeader(
-            '1',
-            'Initialise the loadsheet in the aircraft COMM page',
-          ),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Loadsheet initialised'),
-            value: flight.loadsheetInitialized,
-            onChanged: flight.calculatedRtow.isEmpty
-                ? null
-                : (value) =>
-                      _updateFlag('loadsheetInitialized', value ?? false),
-          ),
-          const SizedBox(height: 4),
-          Row(
+  Widget _rtowAndLoadsheetSetup(FlightBriefing flight) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Material(
+        color: const Color(0xFFF0F3F6),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFCBD5DE)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                child: _ActualValue(
-                  label: 'RTOW TO SEND',
-                  value: flight.calculatedRtow,
+              const Text(
+                'RTOW',
+                style: TextStyle(
+                  color: Color(0xFF315F86),
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(child: _weightField('RLW TO SEND', 'rlw')),
+              const SizedBox(height: 12),
+              _RtowField(
+                controller: _controllers['rtow']!,
+                onChanged: (value) => _update('rtow', value),
+                onOpenChecklist: _showRtowProcedure,
+              ),
+              const SizedBox(height: 8),
+              const _LandingDispatchCriteria(),
             ],
           ),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('RTOW and RLW sent through COMM'),
-            subtitle: const Text(
-              'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
-            ),
-            value: flight.regulatedWeightsSent,
-            onChanged:
-                !flight.loadsheetInitialized ||
-                    flight.calculatedRtow.isEmpty ||
-                    _controllers['rlw']!.text.isEmpty
-                ? null
-                : (value) => _updateFlag('weightsSent', value ?? false),
-          ),
-        ],
+        ),
       ),
-    ),
+      const SizedBox(height: 12),
+      Material(
+        color: const Color(0xFFF0F3F6),
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFFCBD5DE)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'LOADSHEET',
+                style: TextStyle(
+                  color: Color(0xFF315F86),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 12),
+              _stepHeader(
+                '1',
+                'Initialise the loadsheet in the aircraft COMM page',
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Loadsheet initialised'),
+                value: flight.loadsheetInitialized,
+                onChanged: flight.calculatedRtow.isEmpty
+                    ? null
+                    : (value) =>
+                          _updateFlag('loadsheetInitialized', value ?? false),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActualValue(
+                      label: 'RTOW TO SEND',
+                      value: flight.calculatedRtow,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: _weightField('RLW TO SEND', 'rlw')),
+                ],
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('RTOW and RLW sent through COMM'),
+                subtitle: const Text(
+                  'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
+                ),
+                value: flight.regulatedWeightsSent,
+                onChanged:
+                    !flight.loadsheetInitialized ||
+                        flight.calculatedRtow.isEmpty ||
+                        _controllers['rlw']!.text.isEmpty
+                    ? null
+                    : (value) => _updateFlag('weightsSent', value ?? false),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
   );
 
   Future<void> _showRtowProcedure() => showDialog<void>(
