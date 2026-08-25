@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
@@ -94,33 +96,35 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                   _field('registration', 'Registration'),
                   _field('aircraftType', 'Aircraft type'),
                 ]),
-                _row([
-                  _field('captain', 'Captain'),
-                  _field('firstOfficer', 'First officer'),
-                ]),
+                _crewAssignmentRow('captain', 'Captain', 'Captain'),
+                _crewAssignmentRow(
+                  'firstOfficer',
+                  'First officer',
+                  'First officer',
+                ),
                 _row([
                   _field('reliefPilot', 'SO / Relief'),
                   _field('otherCrew', 'Other'),
                 ]),
-                DropdownButtonFormField<String>(
-                  initialValue: _pilotFlying.isEmpty ? null : _pilotFlying,
-                  decoration: const InputDecoration(
-                    labelText: 'Pilot flying this sector',
-                  ),
-                  items: const [
-                    DropdownMenuItem(value: 'Captain', child: Text('Captain')),
-                    DropdownMenuItem(
-                      value: 'First officer',
-                      child: Text('First officer'),
-                    ),
-                    DropdownMenuItem(
-                      value: 'SO / Relief',
-                      child: Text('SO / Relief pilot'),
-                    ),
-                  ],
-                  onChanged: (value) =>
-                      setState(() => _pilotFlying = value ?? ''),
+              ],
+            ),
+          ),
+          _section(
+            title: 'Flight times',
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _timeValue(
+                  'STD',
+                  _dualTime(flight.departureTime, flight.departureTimeUtc),
                 ),
+                _timeValue(
+                  'STA',
+                  _dualTime(flight.arrivalTime, flight.arrivalTimeUtc),
+                ),
+                _timeValue('SCH', flight.scheduledFlightTime),
+                _timeValue('FP flight time', flight.flightPlanTime),
               ],
             ),
           ),
@@ -128,7 +132,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             title: 'Route',
             child: TextField(
               controller: _controllers['detailedRoute'],
-              maxLines: 3,
+              minLines: 3,
+              maxLines: 6,
               decoration: const InputDecoration(
                 labelText: 'Planned ATC route',
                 alignLabelWithHint: true,
@@ -227,6 +232,68 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     controller: _controllers[key],
     decoration: InputDecoration(labelText: label),
   );
+
+  Widget _crewAssignmentRow(String key, String label, String crewRole) {
+    final otherRole = crewRole == 'Captain' ? 'First officer' : 'Captain';
+    final selection = _pilotFlying.isEmpty
+        ? <String>{}
+        : {_pilotFlying == crewRole ? 'PF' : 'PM'};
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          Expanded(child: _field(key, label)),
+          const SizedBox(width: 10),
+          SegmentedButton<String>(
+            segments: const [
+              ButtonSegment(value: 'PF', label: Text('PF')),
+              ButtonSegment(value: 'PM', label: Text('PM')),
+            ],
+            selected: selection,
+            emptySelectionAllowed: true,
+            showSelectedIcon: false,
+            onSelectionChanged: (selected) {
+              if (selected.isEmpty) return;
+              setState(
+                () => _pilotFlying = selected.first == 'PF'
+                    ? crewRole
+                    : otherRole,
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _timeValue(String label, String value) => Container(
+    width: 145,
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF2F5F3),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Color(0xFF667069))),
+        const SizedBox(height: 3),
+        Text(
+          value.isEmpty ? 'Pending' : value,
+          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+      ],
+    ),
+  );
+
+  String _formatLocalTime(String value) {
+    final match = RegExp(r'^(\d{2})(\d{2})(\+?)$').firstMatch(value.trim());
+    if (match == null) return value;
+    return '${match.group(1)}:${match.group(2)}${match.group(3)}';
+  }
+
+  String _dualTime(String local, String utc) =>
+      '${_formatLocalTime(local)} local\n${utc.isEmpty ? 'Pending' : _formatLocalTime(utc)} UTC';
 
   void _load(FlightBriefing? flight) {
     final values = <String, String>{
@@ -336,11 +403,49 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       false;
 }
 
-class _FlightPlanHeader extends StatelessWidget {
+class _FlightPlanHeader extends StatefulWidget {
   const _FlightPlanHeader({required this.flight});
   final FlightBriefing flight;
+
+  @override
+  State<_FlightPlanHeader> createState() => _FlightPlanHeaderState();
+}
+
+class _FlightPlanHeaderState extends State<_FlightPlanHeader> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  @override
+  void didUpdateWidget(covariant _FlightPlanHeader oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.flight.scheduledDepartureUtc !=
+        widget.flight.scheduledDepartureUtc) {
+      _startTimer();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
+    if (widget.flight.scheduledDepartureUtc == null) return;
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final flight = widget.flight;
     final date = flight.flightDate;
     final dateText = date == null
         ? 'Date pending'
@@ -375,11 +480,15 @@ class _FlightPlanHeader extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'STD ${flight.departureTime}   STA ${flight.arrivalTime}   EET ${flight.scheduledFlightTime.isEmpty ? 'Pending' : flight.scheduledFlightTime}',
+                  'STD ${_localTime(flight.departureTime)} local / ${flight.departureTimeUtc.isEmpty ? 'Pending' : _localTime(flight.departureTimeUtc)} UTC\nSTA ${_localTime(flight.arrivalTime)} local / ${flight.arrivalTimeUtc.isEmpty ? 'Pending' : _localTime(flight.arrivalTimeUtc)} UTC   SCH ${flight.scheduledFlightTime.isEmpty ? 'Pending' : flight.scheduledFlightTime}',
                   style: const TextStyle(
                     color: Color(0xFFDCE8F3),
                     fontWeight: FontWeight.w700,
                   ),
+                ),
+                const SizedBox(height: 9),
+                _CountdownBadge(
+                  label: _countdown(flight.scheduledDepartureUtc),
                 ),
               ],
             ),
@@ -402,4 +511,54 @@ class _FlightPlanHeader extends StatelessWidget {
       ),
     );
   }
+
+  String _localTime(String value) {
+    final match = RegExp(r'^(\d{2})(\d{2})(\+?)$').firstMatch(value.trim());
+    if (match == null) return value;
+    return '${match.group(1)}:${match.group(2)}${match.group(3)}';
+  }
+
+  String _countdown(DateTime? departureUtc) {
+    if (departureUtc == null) return 'STD countdown pending';
+    final difference = departureUtc.difference(DateTime.now().toUtc());
+    final passed = difference.isNegative;
+    final duration = difference.abs();
+    final days = duration.inDays;
+    final hours = duration.inHours.remainder(24);
+    final minutes = duration.inMinutes.remainder(60);
+    final value = [
+      if (days > 0) '${days}d',
+      '${hours}h',
+      '${minutes}m',
+    ].join(' ');
+    return passed ? 'STD passed $value ago' : 'STD in $value';
+  }
+}
+
+class _CountdownBadge extends StatelessWidget {
+  const _CountdownBadge({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: Colors.white.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(20),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Icon(Icons.timer_outlined, color: Colors.white, size: 17),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ],
+    ),
+  );
 }

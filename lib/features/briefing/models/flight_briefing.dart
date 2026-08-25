@@ -37,6 +37,8 @@ class FlightBriefing {
     required this.route,
     required this.departureTime,
     required this.arrivalTime,
+    this.departureTimeUtc = '',
+    this.arrivalTimeUtc = '',
     required this.aircraftType,
     required this.registration,
     required this.planType,
@@ -69,6 +71,8 @@ class FlightBriefing {
   final String route;
   final String departureTime;
   final String arrivalTime;
+  final String departureTimeUtc;
+  final String arrivalTimeUtc;
   final String aircraftType;
   final String registration;
   final String planType;
@@ -102,6 +106,8 @@ class FlightBriefing {
     String? route,
     String? departureTime,
     String? arrivalTime,
+    String? departureTimeUtc,
+    String? arrivalTimeUtc,
     String? aircraftType,
     String? registration,
     String? planType,
@@ -134,6 +140,8 @@ class FlightBriefing {
     route: route ?? this.route,
     departureTime: departureTime ?? this.departureTime,
     arrivalTime: arrivalTime ?? this.arrivalTime,
+    departureTimeUtc: departureTimeUtc ?? this.departureTimeUtc,
+    arrivalTimeUtc: arrivalTimeUtc ?? this.arrivalTimeUtc,
     aircraftType: aircraftType ?? this.aircraftType,
     registration: registration ?? this.registration,
     planType: planType ?? this.planType,

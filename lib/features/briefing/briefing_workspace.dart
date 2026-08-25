@@ -225,6 +225,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       route: flight.route,
       departureTime: flight.departureTime,
       arrivalTime: flight.arrivalTime,
+      departureTimeUtc: flight.departureTimeUtc,
+      arrivalTimeUtc: flight.arrivalTimeUtc,
       aircraftType: flight.aircraftType,
       registration: flight.registration,
       planType: 'Closed flight',
@@ -331,6 +333,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       route: ofp == null ? current.route : '${ofp.departure} → ${ofp.arrival}',
       departureTime: ofp?.departureTime ?? current.departureTime,
       arrivalTime: ofp?.arrivalTime ?? current.arrivalTime,
+      departureTimeUtc: current.departureTimeUtc,
+      arrivalTimeUtc: current.arrivalTimeUtc,
       aircraftType: ofp?.aircraftType ?? current.aircraftType,
       registration: ofp?.registration ?? current.registration,
       planType: 'Active flight package',
@@ -341,6 +345,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       flightDate: current.flightDate,
       scheduledFlightTime:
           ofp?.scheduledFlightTime ?? current.scheduledFlightTime,
+      flightPlanTime: ofp?.flightPlanTime ?? current.flightPlanTime,
       detailedRoute: ofp?.detailedRoute.isNotEmpty == true
           ? ofp!.detailedRoute
           : current.detailedRoute,
@@ -425,6 +430,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
           route: current.route,
           departureTime: current.departureTime,
           arrivalTime: current.arrivalTime,
+          departureTimeUtc: current.departureTimeUtc,
+          arrivalTimeUtc: current.arrivalTimeUtc,
           aircraftType: 'Aircraft pending flight package',
           registration: '',
           planType: 'Upload flight documents',
@@ -473,9 +480,31 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       if (mounted) setState(() => _upcomingFlights = available);
       final stored = await _briefingStorage.loadCurrent();
       if (stored != null && (stored.active || stored.selectedByUser)) {
+        final calendarFlight = available.where((candidate) {
+          if (candidate.flightNumber != stored.flight.flightNumber) {
+            return false;
+          }
+          final first = candidate.flightDate;
+          final second = stored.flight.flightDate;
+          return first == null ||
+              second == null ||
+              (first.year == second.year &&
+                  first.month == second.month &&
+                  first.day == second.day);
+        }).firstOrNull;
+        final restoredFlight = calendarFlight == null
+            ? stored.flight
+            : stored.flight.copyWith(
+                departureTimeUtc: stored.flight.departureTimeUtc.isEmpty
+                    ? calendarFlight.departureTimeUtc
+                    : stored.flight.departureTimeUtc,
+                arrivalTimeUtc: stored.flight.arrivalTimeUtc.isEmpty
+                    ? calendarFlight.arrivalTimeUtc
+                    : stored.flight.arrivalTimeUtc,
+              );
         if (mounted) {
           setState(() {
-            _flight = stored.flight;
+            _flight = restoredFlight;
             _active = stored.active;
           });
         }

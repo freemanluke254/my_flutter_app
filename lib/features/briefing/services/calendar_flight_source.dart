@@ -54,19 +54,14 @@ class CalendarFlightSource {
     final utcTimes =
         _detailValue(entry.details, 'UTC') ?? entry.utcPeriod ?? '';
     final report = _detailValue(entry.details, 'Report') ?? '';
-    final date = '${entry.date.day}/${entry.date.month}/${entry.date.year}';
-    final timeSummary = [
-      if (localTimes != null) 'Local $localTimes',
-      if (utcTimes.isNotEmpty) 'UTC $utcTimes',
-    ].join(' · ');
-
     return FlightBriefing(
       flightNumber: flightNumber,
       callsign: flightNumber,
       route: route.isEmpty ? 'Route pending' : route,
-      departureTime:
-          '$date · ${timeSummary.isEmpty ? 'Time pending' : timeSummary}',
-      arrivalTime: timeSummary.isEmpty ? 'Time pending' : timeSummary,
+      departureTime: _periodTime(localTimes, first: true) ?? 'Time pending',
+      arrivalTime: _periodTime(localTimes, first: false) ?? 'Time pending',
+      departureTimeUtc: _periodTime(utcTimes, first: true) ?? '',
+      arrivalTimeUtc: _periodTime(utcTimes, first: false) ?? '',
       reportTime: report,
       scheduledDepartureUtc: _scheduledUtc(entry, utcTimes, localTimes),
       flightDate: DateTime(entry.date.year, entry.date.month, entry.date.day),
@@ -77,6 +72,14 @@ class CalendarFlightSource {
           : 'Roster flight · Upload flight documents',
       documents: const [],
     );
+  }
+
+  String? _periodTime(String? period, {required bool first}) {
+    if (period == null || period.isEmpty) return null;
+    final values = RegExp(r'(\d{2}):?(\d{2})').allMatches(period).toList();
+    if (values.length < 2) return null;
+    final match = first ? values.first : values[1];
+    return '${match.group(1)}:${match.group(2)}';
   }
 
   DateTime? _scheduledUtc(

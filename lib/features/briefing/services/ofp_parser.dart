@@ -69,12 +69,16 @@ class OfpParser {
     if (text == null || text.isEmpty) {
       throw const FormatException('No selectable text was found in the OFP.');
     }
+    return parseText(text);
+  }
+
+  OfpFlightDetails parseText(String text) {
     String match(String pattern, {int group = 1, String fallback = ''}) =>
         RegExp(
           pattern,
           caseSensitive: false,
           multiLine: true,
-        ).firstMatch(text!)?.group(group)?.trim() ??
+        ).firstMatch(text)?.group(group)?.trim() ??
         fallback;
     final route = RegExp(r'\b([A-Z]{4})-([A-Z]{4})\b').firstMatch(text);
     final flightNumber = match(r'OPERATIONAL FLIGHT PLAN\s+([A-Z]{2}\d+)');

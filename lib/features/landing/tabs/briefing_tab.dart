@@ -433,6 +433,8 @@ class BriefingTab extends StatelessWidget {
         arrivalTime: arrivalTime.text.trim().isEmpty
             ? 'Times pending flight package'
             : arrivalTime.text.trim(),
+        departureTimeUtc: flight?.departureTimeUtc ?? '',
+        arrivalTimeUtc: flight?.arrivalTimeUtc ?? '',
         aircraftType: aircraft.text.trim().isEmpty
             ? 'Aircraft pending'
             : aircraft.text.trim(),
@@ -469,6 +471,8 @@ class BriefingTab extends StatelessWidget {
       route: current?.route ?? 'Route pending OFP decoding',
       departureTime: current?.departureTime ?? 'From uploaded flight package',
       arrivalTime: current?.arrivalTime ?? '${files.length} documents uploaded',
+      departureTimeUtc: current?.departureTimeUtc ?? '',
+      arrivalTimeUtc: current?.arrivalTimeUtc ?? '',
       aircraftType: current?.aircraftType ?? 'Aircraft pending OFP decoding',
       registration: current?.registration ?? '',
       planType: 'Active flight package',
