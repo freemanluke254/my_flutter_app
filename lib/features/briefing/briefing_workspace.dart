@@ -333,6 +333,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       maxPayloadPlan: ofp?.maxPayloadPlan ?? current.maxPayloadPlan,
       flightDeckCount: current.flightDeckCount,
       cabinCrewCount: current.cabinCrewCount,
+      captainPayrollNumber: current.captainPayrollNumber,
       fsm: current.fsm,
       css: current.css,
       stand: current.stand,

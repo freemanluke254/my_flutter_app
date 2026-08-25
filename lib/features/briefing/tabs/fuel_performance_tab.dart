@@ -56,6 +56,9 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'finalThrust': flight?.finalThrustSetting ?? '',
       'finalFlap': flight?.finalFlapSetting ?? '',
       'atis': flight?.atisLetter ?? '',
+      'flightDeckCount': '${flight?.flightDeckCount ?? 3}',
+      'cabinCrewCount': '${flight?.cabinCrewCount ?? 10}',
+      'captainPayroll': flight?.captainPayrollNumber ?? '',
       'rlw': flight == null
           ? ''
           : flight.regulatedLandingWeight.isNotEmpty
@@ -540,6 +543,36 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                   Expanded(child: _weightField('RLW TO SEND', 'rlw')),
                 ],
               ),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final fields = [
+                    _loadsheetField('FLIGHT DECK CREW', 'flightDeckCount'),
+                    _loadsheetField('CABIN CREW', 'cabinCrewCount'),
+                    _loadsheetField('CAPTAIN PAYROLL NUMBER', 'captainPayroll'),
+                  ];
+                  if (constraints.maxWidth < 650) {
+                    return Column(
+                      children: fields
+                          .map(
+                            (field) => Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: field,
+                            ),
+                          )
+                          .toList(),
+                    );
+                  }
+                  return Row(
+                    children: [
+                      Expanded(child: fields[0]),
+                      const SizedBox(width: 10),
+                      Expanded(child: fields[1]),
+                      const SizedBox(width: 10),
+                      Expanded(child: fields[2]),
+                    ],
+                  );
+                },
+              ),
               const Text(
                 'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
                 style: TextStyle(color: Color(0xFF667069), fontSize: 12),
@@ -551,7 +584,10 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                   onPressed:
                       flight.loadsheetInitialized ||
                           flight.calculatedRtow.isEmpty ||
-                          _controllers['rlw']!.text.isEmpty
+                          _controllers['rlw']!.text.isEmpty ||
+                          _controllers['flightDeckCount']!.text.isEmpty ||
+                          _controllers['cabinCrewCount']!.text.isEmpty ||
+                          _controllers['captainPayroll']!.text.isEmpty
                       ? null
                       : _sendInitialLoadsheet,
                   icon: Icon(
@@ -596,12 +632,22 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     final flight = widget.flight;
     if (flight == null ||
         flight.calculatedRtow.isEmpty ||
-        _controllers['rlw']!.text.isEmpty) {
+        _controllers['rlw']!.text.isEmpty ||
+        _controllers['flightDeckCount']!.text.isEmpty ||
+        _controllers['cabinCrewCount']!.text.isEmpty ||
+        _controllers['captainPayroll']!.text.isEmpty) {
       return;
     }
     widget.onFlightChanged(
       flight.copyWith(
         regulatedLandingWeight: _controllers['rlw']!.text,
+        flightDeckCount:
+            int.tryParse(_controllers['flightDeckCount']!.text) ??
+            flight.flightDeckCount,
+        cabinCrewCount:
+            int.tryParse(_controllers['cabinCrewCount']!.text) ??
+            flight.cabinCrewCount,
+        captainPayrollNumber: _controllers['captainPayroll']!.text,
         loadsheetInitialized: true,
         regulatedWeightsSent: true,
       ),
@@ -659,6 +705,19 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     ),
   );
 
+  Widget _loadsheetField(String label, String key) => TextField(
+    controller: _controllers[key]!,
+    keyboardType: TextInputType.number,
+    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+    decoration: InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: Colors.white,
+      border: const OutlineInputBorder(),
+    ),
+    onChanged: (value) => _update(key, value),
+  );
+
   String _preliminaryTow(FlightBriefing flight) {
     final zfw = double.tryParse(flight.actualZeroFuelWeight);
     final rampFuel = double.tryParse(flight.blockFuel);
@@ -676,7 +735,11 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'actualZfw' => flight.copyWith(actualZeroFuelWeight: value),
       'actualTow' => flight.copyWith(actualTakeoffWeight: value),
       'actualLwt' => flight.copyWith(actualLandingWeight: value),
-      'rtow' => flight.copyWith(calculatedRtow: value),
+      'rtow' => flight.copyWith(
+        calculatedRtow: value,
+        loadsheetInitialized: false,
+        regulatedWeightsSent: false,
+      ),
       'zfwCg' => flight.copyWith(airbusZfwCg: value),
       'stabCg' => flight.copyWith(airbusStabCg: value),
       'prelimThrust' => flight.copyWith(preliminaryThrustSetting: value),
@@ -685,7 +748,26 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'finalThrust' => flight.copyWith(finalThrustSetting: value),
       'finalFlap' => flight.copyWith(finalFlapSetting: value),
       'atis' => flight.copyWith(atisLetter: value),
-      'rlw' => flight.copyWith(regulatedLandingWeight: value),
+      'rlw' => flight.copyWith(
+        regulatedLandingWeight: value,
+        loadsheetInitialized: false,
+        regulatedWeightsSent: false,
+      ),
+      'flightDeckCount' => flight.copyWith(
+        flightDeckCount: int.tryParse(value) ?? 0,
+        loadsheetInitialized: false,
+        regulatedWeightsSent: false,
+      ),
+      'cabinCrewCount' => flight.copyWith(
+        cabinCrewCount: int.tryParse(value) ?? 0,
+        loadsheetInitialized: false,
+        regulatedWeightsSent: false,
+      ),
+      'captainPayroll' => flight.copyWith(
+        captainPayrollNumber: value,
+        loadsheetInitialized: false,
+        regulatedWeightsSent: false,
+      ),
       _ => flight,
     });
   }

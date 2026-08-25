@@ -95,6 +95,7 @@ class FlightBriefing {
     this.regulatedWeightsSent = false,
     this.flightDeckCount = 3,
     this.cabinCrewCount = 10,
+    this.captainPayrollNumber = '',
     this.fsm = '',
     this.css = '',
     this.stand = '',
@@ -160,6 +161,7 @@ class FlightBriefing {
   final bool regulatedWeightsSent;
   final int flightDeckCount;
   final int cabinCrewCount;
+  final String captainPayrollNumber;
   final String fsm;
   final String css;
   final String stand;
@@ -226,6 +228,7 @@ class FlightBriefing {
     bool? regulatedWeightsSent,
     int? flightDeckCount,
     int? cabinCrewCount,
+    String? captainPayrollNumber,
     String? fsm,
     String? css,
     String? stand,
@@ -298,6 +301,7 @@ class FlightBriefing {
     regulatedWeightsSent: regulatedWeightsSent ?? this.regulatedWeightsSent,
     flightDeckCount: flightDeckCount ?? this.flightDeckCount,
     cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
+    captainPayrollNumber: captainPayrollNumber ?? this.captainPayrollNumber,
     fsm: fsm ?? this.fsm,
     css: css ?? this.css,
     stand: stand ?? this.stand,
