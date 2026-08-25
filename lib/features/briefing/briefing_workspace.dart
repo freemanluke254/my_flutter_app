@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
-import '../landing/tabs/briefing_tab.dart';
 import 'models/flight_briefing.dart';
 import 'services/briefing_storage.dart';
 import 'services/calendar_flight_source.dart';
@@ -11,6 +10,7 @@ import 'services/flight_package_validator.dart';
 import 'services/ofp_parser.dart';
 import 'services/ofp_time_resolver.dart';
 import 'tabs/calculations_tab.dart';
+import 'tabs/briefing_overview_tab.dart';
 import 'tabs/configuration_tab.dart';
 import 'tabs/documents_tab.dart';
 import 'tabs/flights_tab.dart';
@@ -62,14 +62,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         onClearAllFields: _clearConfiguration,
         onFlightChanged: (flight) => _changeFlight(flight, _active),
       ),
-      BriefingTab(
-        flight: _flight,
-        isActive: _active,
-        onFlightChanged: _changeFlight,
-        onSaveFlight: _saveFlight,
-        onClearFlight: _clearFlight,
-        onCloseFlight: _closeFlight,
-      ),
+      BriefingOverviewTab(flight: _flight),
       WeatherNotamsTab(flight: _flight),
       const CalculationsTab(),
       DocumentsTab(flight: _flight),
@@ -202,54 +195,6 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
     unawaited(_briefingStorage.saveCurrent(flight, active));
   });
 
-  Future<void> _saveFlight() async {
-    final flight = _flight;
-    if (flight == null) return;
-    await _briefingStorage.saveCurrent(flight, _active);
-  }
-
-  Future<void> _clearFlight() async {
-    await _briefingStorage.clearCurrent();
-    if (mounted) {
-      setState(() {
-        _flight = null;
-        _active = false;
-      });
-    }
-  }
-
-  Future<void> _closeFlight() async {
-    final flight = _flight;
-    if (flight == null) return;
-    final logbookFlight = FlightBriefing(
-      flightNumber: flight.flightNumber,
-      route: flight.route,
-      departureTime: flight.departureTime,
-      arrivalTime: flight.arrivalTime,
-      departureTimeUtc: flight.departureTimeUtc,
-      arrivalTimeUtc: flight.arrivalTimeUtc,
-      aircraftType: flight.aircraftType,
-      registration: flight.registration,
-      planType: 'Closed flight',
-      callsign: flight.callsign,
-      planId: flight.planId,
-      reportTime: flight.reportTime,
-      scheduledDepartureUtc: flight.scheduledDepartureUtc,
-      flightDate: flight.flightDate,
-      documents: const [],
-    );
-    await _briefingStorage.archiveForLogbook(logbookFlight);
-    await _briefingStorage.markFlightClosed(flight);
-    await _briefingStorage.clearCurrent();
-    if (!mounted) return;
-    setState(() {
-      _flight = null;
-      _active = false;
-      _selectedIndex = 0;
-    });
-    await _loadNextFlight();
-  }
-
   Future<void> _uploadDocuments() async {
     final current = _flight;
     if (current == null) return;
@@ -376,6 +321,10 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       contingencyFuel: ofp?.contingencyFuel ?? current.contingencyFuel,
       finalReserveFuel: ofp?.finalReserveFuel ?? current.finalReserveFuel,
       extraFuel: ofp?.extraFuel ?? current.extraFuel,
+      flightDeckCount: current.flightDeckCount,
+      cabinCrewCount: current.cabinCrewCount,
+      fsm: current.fsm,
+      css: current.css,
       documents: counts.entries
           .map(
             (entry) => BriefingDocument(
