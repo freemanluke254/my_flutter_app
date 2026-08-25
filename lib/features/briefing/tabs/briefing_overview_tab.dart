@@ -4,15 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
 import '../widgets/pdf_preview_thumbnail.dart';
+import '../widgets/pdf_full_page_viewer.dart';
+import 'weather_notams_tab.dart';
 
 class BriefingOverviewTab extends StatelessWidget {
-  const BriefingOverviewTab({
-    required this.flight,
-    required this.onOpenWeatherNotams,
-    super.key,
-  });
+  const BriefingOverviewTab({required this.flight, super.key});
   final FlightBriefing? flight;
-  final VoidCallback onOpenWeatherNotams;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +65,12 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$1} at STD\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_takeoff_rounded,
                 available: weather != null,
-                onTap: onOpenWeatherNotams,
+                onTap: () => showBriefingDocuments(
+                  context,
+                  document: weather,
+                  airportCodes: [route.$1],
+                  contentType: BriefingDocumentContentType.weather,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -79,7 +81,11 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${sigWx?.fileCount ?? 0} SIGWX chart${sigWx?.fileCount == 1 ? '' : 's'}\nloaded',
                 icon: Icons.thunderstorm_outlined,
                 available: sigWx != null,
-                onTap: onOpenWeatherNotams,
+                onTap: () => showBriefingDocuments(
+                  context,
+                  document: sigWx,
+                  charts: true,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -90,7 +96,12 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$2} at STA\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_land_rounded,
                 available: weather != null,
-                onTap: onOpenWeatherNotams,
+                onTap: () => showBriefingDocuments(
+                  context,
+                  document: weather,
+                  airportCodes: [route.$2],
+                  contentType: BriefingDocumentContentType.weather,
+                ),
               ),
             ),
           ],
@@ -108,7 +119,12 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$1}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_takeoff_rounded,
                 available: notams != null,
-                onTap: onOpenWeatherNotams,
+                onTap: () => showBriefingDocuments(
+                  context,
+                  document: notams,
+                  airportCodes: [route.$1],
+                  contentType: BriefingDocumentContentType.notam,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -119,7 +135,12 @@ class BriefingOverviewTab extends StatelessWidget {
                     'FIR and route\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.route_outlined,
                 available: notams != null,
-                onTap: onOpenWeatherNotams,
+                onTap: () => showBriefingDocuments(
+                  context,
+                  document: notams,
+                  airportCodes: [route.$1, route.$2],
+                  contentType: BriefingDocumentContentType.notam,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -130,7 +151,12 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$2}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_land_rounded,
                 available: notams != null,
-                onTap: onOpenWeatherNotams,
+                onTap: () => showBriefingDocuments(
+                  context,
+                  document: notams,
+                  airportCodes: [route.$2],
+                  contentType: BriefingDocumentContentType.notam,
+                ),
               ),
             ),
           ],
@@ -498,7 +524,7 @@ class _SigWxGallery extends StatelessWidget {
                     icon: const Icon(Icons.close_rounded),
                   ),
                 ),
-                Expanded(child: PdfPreviewThumbnail(path: chart.path)),
+                Expanded(child: PdfFullPageViewer(path: chart.path!)),
               ],
             ),
           ),

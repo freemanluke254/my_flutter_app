@@ -2,7 +2,90 @@ import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
 import '../services/pdf_document_reader.dart';
-import '../widgets/pdf_preview_thumbnail.dart';
+import '../widgets/pdf_full_page_viewer.dart';
+
+enum BriefingDocumentContentType { weather, notam, other }
+
+Future<void> showBriefingDocuments(
+  BuildContext context, {
+  required BriefingDocument? document,
+  List<String> airportCodes = const [],
+  BriefingDocumentContentType contentType = BriefingDocumentContentType.other,
+  bool charts = false,
+}) async {
+  final value = document;
+  if (value == null || value.fileCount == 0) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('No matching documents are loaded.')),
+    );
+    return;
+  }
+  final selected = await showDialog<int>(
+    context: context,
+    builder: (dialogContext) => SimpleDialog(
+      title: Text(value.title),
+      children: List.generate(value.fileCount, (index) {
+        final name = index < value.fileNames.length
+            ? value.fileNames[index]
+            : '${value.title} ${index + 1}';
+        return SimpleDialogOption(
+          onPressed: () => Navigator.pop(dialogContext, index),
+          child: ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.picture_as_pdf_rounded),
+            title: Text(name),
+            trailing: const Icon(Icons.open_in_new_rounded),
+          ),
+        );
+      }),
+    ),
+  );
+  if (selected == null || !context.mounted) return;
+  final name = selected < value.fileNames.length
+      ? value.fileNames[selected]
+      : '${value.title} ${selected + 1}';
+  final path = selected < value.filePaths.length
+      ? value.filePaths[selected]
+      : null;
+  if (path == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Reupload this document to open it.')),
+    );
+    return;
+  }
+  if (charts) {
+    await showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 760),
+          child: Column(
+            children: [
+              ListTile(
+                title: Text(name),
+                trailing: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close_rounded),
+                ),
+              ),
+              Expanded(child: PdfFullPageViewer(path: path)),
+            ],
+          ),
+        ),
+      ),
+    );
+    return;
+  }
+  await showDialog<void>(
+    context: context,
+    builder: (context) => _PdfTextDialog(
+      name: name,
+      path: path,
+      airportCodes: airportCodes,
+      contentType: contentType,
+    ),
+  );
+}
 
 class WeatherNotamsTab extends StatelessWidget {
   const WeatherNotamsTab({required this.flight, super.key});
@@ -34,7 +117,7 @@ class WeatherNotamsTab extends StatelessWidget {
           icon: Icons.cloud_outlined,
           document: _document(BriefingDocumentType.weather),
           airportCodes: [route.$1, route.$2],
-          contentType: _ContentType.weather,
+          contentType: BriefingDocumentContentType.weather,
         ),
         _DocumentSection(
           title: 'Departure, en-route and arrival NOTAMs',
@@ -42,7 +125,7 @@ class WeatherNotamsTab extends StatelessWidget {
           icon: Icons.campaign_outlined,
           document: _document(BriefingDocumentType.notams),
           airportCodes: [route.$1, route.$2],
-          contentType: _ContentType.notam,
+          contentType: BriefingDocumentContentType.notam,
         ),
         _DocumentSection(
           title: 'En-route significant weather',
@@ -81,7 +164,7 @@ class _DocumentSection extends StatelessWidget {
     required this.document,
     this.charts = false,
     this.airportCodes = const [],
-    this.contentType = _ContentType.other,
+    this.contentType = BriefingDocumentContentType.other,
   });
   final String title;
   final String subtitle;
@@ -89,7 +172,7 @@ class _DocumentSection extends StatelessWidget {
   final BriefingDocument? document;
   final bool charts;
   final List<String> airportCodes;
-  final _ContentType contentType;
+  final BriefingDocumentContentType contentType;
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +267,7 @@ class _DocumentSection extends StatelessWidget {
                     icon: const Icon(Icons.close_rounded),
                   ),
                 ),
-                Expanded(child: PdfPreviewThumbnail(path: path)),
+                Expanded(child: PdfFullPageViewer(path: path)),
               ],
             ),
           ),
@@ -196,8 +279,6 @@ class _DocumentSection extends StatelessWidget {
       );
 }
 
-enum _ContentType { weather, notam, other }
-
 class _PdfTextDialog extends StatefulWidget {
   const _PdfTextDialog({
     required this.name,
@@ -208,7 +289,7 @@ class _PdfTextDialog extends StatefulWidget {
   final String name;
   final String path;
   final List<String> airportCodes;
-  final _ContentType contentType;
+  final BriefingDocumentContentType contentType;
   @override
   State<_PdfTextDialog> createState() => _PdfTextDialogState();
 }
@@ -236,7 +317,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
               icon: const Icon(Icons.close_rounded),
             ),
           ),
-          if (widget.contentType != _ContentType.other)
+          if (widget.contentType != BriefingDocumentContentType.other)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
               child: SegmentedButton<bool>(
@@ -281,7 +362,8 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
 
   String _relevantText(String text) {
     if (widget.airportCodes.isEmpty) return text;
-    final relevantCodes = widget.contentType == _ContentType.notam
+    final relevantCodes =
+        widget.contentType == BriefingDocumentContentType.notam
         ? _notamScope(widget.airportCodes)
         : widget.airportCodes.toSet();
     final starts = RegExp(
@@ -304,7 +386,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
   }
 
   String _decodedText(String raw) {
-    if (widget.contentType == _ContentType.notam) {
+    if (widget.contentType == BriefingDocumentContentType.notam) {
       return _categorisedNotams(raw);
     }
     return raw

@@ -14,7 +14,7 @@ import 'tabs/briefing_overview_tab.dart';
 import 'tabs/configuration_tab.dart';
 import 'tabs/documents_tab.dart';
 import 'tabs/flights_tab.dart';
-import 'tabs/weather_notams_tab.dart';
+import 'tabs/fuel_performance_tab.dart';
 
 class BriefingWorkspace extends StatefulWidget {
   const BriefingWorkspace({this.refreshToken = 0, super.key});
@@ -63,11 +63,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         onFlightChanged: (flight) => _changeFlight(flight, _active),
         onSaved: () => setState(() => _selectedIndex = 2),
       ),
-      BriefingOverviewTab(
-        flight: _flight,
-        onOpenWeatherNotams: () => setState(() => _selectedIndex = 3),
-      ),
-      WeatherNotamsTab(flight: _flight),
+      BriefingOverviewTab(flight: _flight),
+      const FuelPerformanceTab(),
       const CalculationsTab(),
       DocumentsTab(flight: _flight),
     ];
@@ -95,9 +92,9 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
             label: 'Briefing',
           ),
           NavigationDestination(
-            icon: Icon(Icons.cloud_outlined),
-            selectedIcon: Icon(Icons.cloud_rounded),
-            label: 'WX & NOTAMs',
+            icon: Icon(Icons.local_gas_station_outlined),
+            selectedIcon: Icon(Icons.local_gas_station_rounded),
+            label: 'Fuel & Perf',
           ),
           NavigationDestination(
             icon: Icon(Icons.calculate_outlined),

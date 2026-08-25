@@ -42,6 +42,28 @@ class MainFlutterWindow: NSWindow {
           return
         }
         result(FlutterStandardTypedData(bytes: png))
+      case "renderPdfPage":
+        guard let arguments = call.arguments as? [String: Any],
+              let path = arguments["path"] as? String,
+              let pageIndex = arguments["page"] as? Int,
+              let width = arguments["width"] as? Double,
+              let height = arguments["height"] as? Double,
+              let document = PDFDocument(url: URL(fileURLWithPath: path)),
+              let page = document.page(at: pageIndex) else {
+          result(FlutterError(code: "invalid_pdf_page", message: "The requested PDF page could not be opened.", details: nil))
+          return
+        }
+        let image = page.thumbnail(
+          of: NSSize(width: width, height: height),
+          for: .mediaBox
+        )
+        guard let tiff = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiff),
+              let png = bitmap.representation(using: .png, properties: [:]) else {
+          result(FlutterError(code: "page_render_failed", message: "The PDF page could not be rendered.", details: nil))
+          return
+        }
+        result(FlutterStandardTypedData(bytes: png))
       default:
         result(FlutterMethodNotImplemented)
       }
