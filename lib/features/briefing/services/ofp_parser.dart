@@ -87,16 +87,19 @@ class OfpParser {
         'The flight number or route could not be decoded. Enter the details manually.',
       );
     }
-    final dateMatch = RegExp(
-      r'\b(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})\b',
+    final datePattern = RegExp(
+      r'(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})',
       caseSensitive: false,
+    );
+    final flightHeader = RegExp(
+      r'^[A-Z]{3}\d+[A-Z]?\s+(\d{2}(?:JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\d{2})',
+      caseSensitive: false,
+      multiLine: true,
     ).firstMatch(text);
+    final dateMatch = datePattern.firstMatch(flightHeader?.group(1) ?? text);
     final departure = route.group(1)!;
     final arrival = route.group(2)!;
-    final atcRoute = RegExp(
-      '^(${RegExp.escape(departure)}\\s+[\\s\\S]*?\\s+${RegExp.escape(arrival)})\\r?\\n${RegExp.escape(departure)}/',
-      multiLine: true,
-    ).firstMatch(text)?.group(1)?.replaceAll(RegExp(r'\s+'), ' ').trim();
+    final atcRoute = _frontPageRoute(text, departure, arrival);
     return OfpFlightDetails(
       flightNumber: flightNumber,
       departure: departure,
@@ -128,9 +131,9 @@ class OfpParser {
               }[dateMatch.group(2)!.toUpperCase()]!,
               int.parse(dateMatch.group(1)!),
             ),
-      scheduledFlightTime: match(r'\bSCH\s+(\d{1,2}[.:]\d{2})'),
-      flightPlanTime: match(r'\bTRIP\s+\d+\s+(\d{2}[.:]\d{2})'),
-      detailedRoute: atcRoute ?? '',
+      scheduledFlightTime: match(r'\bSCH\s*[: ]\s*(\d{1,2}[.:]\d{2})'),
+      flightPlanTime: match(r'\bTRIP\s+[\d,.]+(?:KG)?\s+(\d{1,2}[.:]\d{2})'),
+      detailedRoute: atcRoute,
       takeoffWeight: match(r'RLF1\s+(\d+)'),
       landingWeight: match(r'PAX\s+SOB\s+(\d+)'),
       zeroFuelWeight: match(r'NBR\s+PF/PNF\s+(\d+)'),
@@ -142,5 +145,24 @@ class OfpParser {
       finalReserveFuel: match(r'\bFNL\s+RES\s+(\d+)'),
       extraFuel: match(r'\bEXTRA\s+(\d+)'),
     );
+  }
+
+  String _frontPageRoute(String text, String departure, String arrival) {
+    final lines = text.split(RegExp(r'\r?\n'));
+    for (var index = 0; index < lines.length; index++) {
+      final line = lines[index].trim();
+      if (!line.startsWith('$departure ')) continue;
+      final routeLines = <String>[line];
+      for (var next = index + 1; next < lines.length; next++) {
+        final nextLine = lines[next].trim();
+        if (nextLine.startsWith('$departure/')) break;
+        if (nextLine.isNotEmpty) routeLines.add(nextLine);
+      }
+      final route = routeLines.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+      if (RegExp(r'\b' + RegExp.escape(arrival) + r'$').hasMatch(route)) {
+        return route;
+      }
+    }
+    return '';
   }
 }

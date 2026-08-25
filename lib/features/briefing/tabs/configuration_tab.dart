@@ -489,6 +489,7 @@ class _FlightPlanHeaderState extends State<_FlightPlanHeader> {
                 const SizedBox(height: 9),
                 _CountdownBadge(
                   label: _countdown(flight.scheduledDepartureUtc),
+                  color: _countdownColor(flight.scheduledDepartureUtc),
                 ),
               ],
             ),
@@ -533,17 +534,25 @@ class _FlightPlanHeaderState extends State<_FlightPlanHeader> {
     ].join(' ');
     return passed ? 'STD passed $value ago' : 'STD in $value';
   }
+
+  Color _countdownColor(DateTime? departureUtc) {
+    if (departureUtc == null) return const Color(0xFFBD7A17);
+    return departureUtc.isBefore(DateTime.now().toUtc())
+        ? const Color(0xFFB93B3B)
+        : const Color(0xFF28634A);
+  }
 }
 
 class _CountdownBadge extends StatelessWidget {
-  const _CountdownBadge({required this.label});
+  const _CountdownBadge({required this.label, required this.color});
   final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: Colors.white.withValues(alpha: 0.14),
+      color: color,
       borderRadius: BorderRadius.circular(20),
     ),
     child: Row(

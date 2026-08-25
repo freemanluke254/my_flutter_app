@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:trying_flutter/features/briefing/services/ofp_parser.dart';
+import 'package:trying_flutter/features/briefing/services/ofp_time_resolver.dart';
 
 void main() {
   test('decodes VS300 OFP front-page configuration values', () {
@@ -42,5 +43,27 @@ RAMP 51700 TD FUEL 9500
     expect(result.landingWeight, '171000');
     expect(result.blockFuel, '51700');
     expect(result.tripFuel, '41700');
+  });
+
+  test('uses the OFP date and local STD for the UTC countdown time', () {
+    final times = const OfpTimeResolver().resolve(
+      OfpFlightDetails(
+        flightNumber: 'VS300',
+        departure: 'EGLL',
+        arrival: 'VIDP',
+        departureTime: '1910',
+        arrivalTime: '0340+',
+        aircraftType: '787-9',
+        registration: 'GVZIG',
+        operation: 'NON ETOPS',
+        callsign: 'VIR300',
+        planId: '0023',
+        flightDate: DateTime(2026, 6, 22),
+      ),
+    );
+
+    expect(times.departureUtc, DateTime.utc(2026, 6, 22, 18, 10));
+    expect(times.departureLabel, '18:10');
+    expect(times.arrivalLabel, '22:10');
   });
 }

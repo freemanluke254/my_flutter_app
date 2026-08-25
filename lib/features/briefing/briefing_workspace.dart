@@ -9,6 +9,7 @@ import 'services/briefing_storage.dart';
 import 'services/calendar_flight_source.dart';
 import 'services/flight_package_validator.dart';
 import 'services/ofp_parser.dart';
+import 'services/ofp_time_resolver.dart';
 import 'tabs/calculations_tab.dart';
 import 'tabs/configuration_tab.dart';
 import 'tabs/documents_tab.dart';
@@ -276,6 +277,12 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         'The OFP could not be decoded, so its date, route and callsign could not be verified.'
       else
         'No OFP was selected, so the package date, route and callsign could not be fully verified.',
+      if (ofp != null && ofp.scheduledFlightTime.isEmpty)
+        'The OFP SCH time could not be decoded.',
+      if (ofp != null && ofp.flightPlanTime.isEmpty)
+        'The OFP flight-plan time could not be decoded.',
+      if (ofp != null && ofp.detailedRoute.isEmpty)
+        'The full ATC route could not be decoded from the OFP.',
       ..._filenameValidationIssues(current, files.map((file) => file.name)),
     ];
     final loadedWithWarnings = validationIssues.isNotEmpty;
@@ -328,27 +335,32 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       final type = _documentType(file.name);
       counts[type] = (counts[type] ?? 0) + 1;
     }
+    final ofpTimes = ofp == null ? null : const OfpTimeResolver().resolve(ofp);
     final updated = FlightBriefing(
       flightNumber: ofp?.flightNumber ?? current.flightNumber,
       route: ofp == null ? current.route : '${ofp.departure} → ${ofp.arrival}',
       departureTime: ofp?.departureTime ?? current.departureTime,
       arrivalTime: ofp?.arrivalTime ?? current.arrivalTime,
-      departureTimeUtc: current.departureTimeUtc,
-      arrivalTimeUtc: current.arrivalTimeUtc,
+      departureTimeUtc: ofp == null
+          ? current.departureTimeUtc
+          : ofpTimes?.departureLabel ?? '',
+      arrivalTimeUtc: ofp == null
+          ? current.arrivalTimeUtc
+          : ofpTimes?.arrivalLabel ?? '',
       aircraftType: ofp?.aircraftType ?? current.aircraftType,
       registration: ofp?.registration ?? current.registration,
       planType: 'Active flight package',
       callsign: ofp?.callsign ?? current.callsign,
       planId: ofp?.planId ?? current.planId,
       reportTime: current.reportTime,
-      scheduledDepartureUtc: current.scheduledDepartureUtc,
-      flightDate: current.flightDate,
+      scheduledDepartureUtc: ofp == null
+          ? current.scheduledDepartureUtc
+          : ofpTimes?.departureUtc,
+      flightDate: ofp?.flightDate ?? current.flightDate,
       scheduledFlightTime:
           ofp?.scheduledFlightTime ?? current.scheduledFlightTime,
       flightPlanTime: ofp?.flightPlanTime ?? current.flightPlanTime,
-      detailedRoute: ofp?.detailedRoute.isNotEmpty == true
-          ? ofp!.detailedRoute
-          : current.detailedRoute,
+      detailedRoute: ofp?.detailedRoute ?? current.detailedRoute,
       captain: current.captain,
       firstOfficer: current.firstOfficer,
       reliefPilot: current.reliefPilot,
