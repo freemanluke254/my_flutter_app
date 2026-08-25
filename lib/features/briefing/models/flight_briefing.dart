@@ -93,6 +93,7 @@ class FlightBriefing {
     this.loadsheetInitialized = false,
     this.regulatedLandingWeight = '',
     this.regulatedWeightsSent = false,
+    this.landingDispatchRequired = false,
     this.flightDeckCount = 3,
     this.cabinCrewCount = 10,
     this.captainPayrollNumber = '',
@@ -159,6 +160,7 @@ class FlightBriefing {
   final bool loadsheetInitialized;
   final String regulatedLandingWeight;
   final bool regulatedWeightsSent;
+  final bool landingDispatchRequired;
   final int flightDeckCount;
   final int cabinCrewCount;
   final String captainPayrollNumber;
@@ -226,6 +228,7 @@ class FlightBriefing {
     bool? loadsheetInitialized,
     String? regulatedLandingWeight,
     bool? regulatedWeightsSent,
+    bool? landingDispatchRequired,
     int? flightDeckCount,
     int? cabinCrewCount,
     String? captainPayrollNumber,
@@ -299,6 +302,8 @@ class FlightBriefing {
     regulatedLandingWeight:
         regulatedLandingWeight ?? this.regulatedLandingWeight,
     regulatedWeightsSent: regulatedWeightsSent ?? this.regulatedWeightsSent,
+    landingDispatchRequired:
+        landingDispatchRequired ?? this.landingDispatchRequired,
     flightDeckCount: flightDeckCount ?? this.flightDeckCount,
     cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
     captainPayrollNumber: captainPayrollNumber ?? this.captainPayrollNumber,

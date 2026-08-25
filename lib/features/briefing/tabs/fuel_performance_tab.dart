@@ -489,7 +489,19 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                 onOpenChecklist: _showRtowProcedure,
               ),
               const SizedBox(height: 8),
-              const _LandingDispatchCriteria(),
+              _LandingDispatchDecision(
+                required: flight.landingDispatchRequired,
+                onChanged: _setLandingDispatchRequired,
+                onOpenInfo: _showLandingDispatchCriteria,
+              ),
+              if (flight.landingDispatchRequired) ...[
+                const SizedBox(height: 8),
+                _CalculatedRlwField(
+                  controller: _controllers['rlw']!,
+                  onChanged: (value) => _update('rlw', value),
+                  onOpenChecklist: _showLandingDispatchProcedure,
+                ),
+              ],
             ],
           ),
         ),
@@ -627,6 +639,57 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       ],
     ),
   );
+
+  Future<void> _showLandingDispatchCriteria() => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Is a Landing Dispatch calculation required?'),
+      content: const SizedBox(
+        width: 680,
+        child: SingleChildScrollView(
+          child: _LandingDispatchCriteria(initiallyExpanded: true),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _showLandingDispatchProcedure() => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('How to calculate Landing Dispatch RLW'),
+      content: const SizedBox(
+        width: 680,
+        child: SingleChildScrollView(child: _LandingDispatchProcedure()),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
+
+  void _setLandingDispatchRequired(bool value) {
+    final flight = widget.flight;
+    if (flight == null) return;
+    final rlw = value ? '' : '192776';
+    _controllers['rlw']!.text = rlw;
+    widget.onFlightChanged(
+      flight.copyWith(
+        landingDispatchRequired: value,
+        regulatedLandingWeight: rlw,
+        loadsheetInitialized: false,
+        regulatedWeightsSent: false,
+      ),
+    );
+  }
 
   void _sendInitialLoadsheet() {
     final flight = widget.flight;
@@ -975,8 +1038,116 @@ class _RtowField extends StatelessWidget {
   );
 }
 
+class _CalculatedRlwField extends StatelessWidget {
+  const _CalculatedRlwField({
+    required this.controller,
+    required this.onChanged,
+    required this.onOpenChecklist,
+  });
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onOpenChecklist;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFF244A73),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Row(
+            children: [
+              const Text(
+                'CALCULATED RLW',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(width: 6),
+              IconButton(
+                onPressed: onOpenChecklist,
+                tooltip: 'Open Landing Dispatch procedure',
+                padding: const EdgeInsets.all(4),
+                visualDensity: VisualDensity.compact,
+                color: Colors.white,
+                icon: const Icon(Icons.fact_check_outlined, size: 21),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(
+          width: 220,
+          child: TextField(
+            controller: controller,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+            decoration: const InputDecoration(
+              hintText: 'Enter RLW',
+              hintStyle: TextStyle(color: Color(0xFFB8CADB)),
+              suffixText: 'kg',
+              suffixStyle: TextStyle(color: Colors.white),
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF8FA8C0)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Colors.white, width: 2),
+              ),
+            ),
+            onChanged: onChanged,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _LandingDispatchDecision extends StatelessWidget {
+  const _LandingDispatchDecision({
+    required this.required,
+    required this.onChanged,
+    required this.onOpenInfo,
+  });
+
+  final bool required;
+  final ValueChanged<bool> onChanged;
+  final VoidCallback onOpenInfo;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: const Color(0xFFEAF3FA),
+    borderRadius: BorderRadius.circular(10),
+    child: CheckboxListTile(
+      value: required,
+      onChanged: (value) => onChanged(value ?? false),
+      controlAffinity: ListTileControlAffinity.leading,
+      title: const Text(
+        'Is a Landing Dispatch calculation required?',
+        style: TextStyle(fontWeight: FontWeight.w800),
+      ),
+      secondary: IconButton(
+        tooltip: 'Check whether a calculation is required',
+        onPressed: onOpenInfo,
+        icon: const Icon(Icons.info_outline_rounded),
+      ),
+    ),
+  );
+}
+
 class _LandingDispatchCriteria extends StatelessWidget {
-  const _LandingDispatchCriteria();
+  const _LandingDispatchCriteria({this.initiallyExpanded = false});
+
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -986,17 +1157,18 @@ class _LandingDispatchCriteria extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
       side: const BorderSide(color: Color(0xFFB9D1E4)),
     ),
-    child: const ExpansionTile(
+    child: ExpansionTile(
+      initiallyExpanded: initiallyExpanded,
       dense: true,
-      leading: Icon(Icons.flight_land_rounded, color: Color(0xFF315F86)),
-      title: Text(
+      leading: const Icon(Icons.flight_land_rounded, color: Color(0xFF315F86)),
+      title: const Text(
         'Is a Landing Dispatch calculation needed?',
         style: TextStyle(fontWeight: FontWeight.w900),
       ),
-      subtitle: Text('Open to check all exemption criteria'),
-      childrenPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      subtitle: const Text('Check all exemption criteria'),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: const [
         Text(
           'You do not need a Landing Dispatch calculation if all of these apply:',
           style: TextStyle(fontWeight: FontWeight.w800),
@@ -1026,6 +1198,69 @@ class _LandingDispatchCriteria extends StatelessWidget {
           'When a Landing Dispatch calculation is required, enter estimated OAT and QNH in OPT using the best available information.',
         ),
       ],
+    ),
+  );
+}
+
+class _LandingDispatchProcedure extends StatelessWidget {
+  const _LandingDispatchProcedure();
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: Color(0xFFCBD5DE)),
+    ),
+    child: const ExpansionTile(
+      initiallyExpanded: true,
+      leading: Icon(Icons.fact_check_outlined, color: Color(0xFF315F86)),
+      title: Text(
+        'Landing Dispatch calculation',
+        style: TextStyle(fontWeight: FontWeight.w900),
+      ),
+      subtitle: Text('OPT landing dispatch setup sequence'),
+      childrenPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
+        _ReferenceStep(
+          number: 2,
+          text: 'Select or confirm LANDING DISPATCH in the tab bar.',
+        ),
+        _ReferenceStep(number: 3, text: 'Enter ARPT.'),
+        _ReferenceStep(number: 4, text: 'Enter RWY.'),
+        _ReferenceStep(number: 5, text: 'Enter MEL and CDL data.'),
+        _ReferenceStep(number: 6, text: 'Enter all remaining data.'),
+        SizedBox(height: 8),
+        _LandingDispatchEstimateNote(),
+        _ReferenceStep(number: 7, text: 'Press CALC.'),
+        SizedBox(height: 10),
+        Text(
+          'Reference aid only — verify against the current approved company and aircraft procedure.',
+          style: TextStyle(color: Color(0xFF667069), fontSize: 11),
+        ),
+      ],
+    ),
+  );
+}
+
+class _LandingDispatchEstimateNote extends StatelessWidget {
+  const _LandingDispatchEstimateNote();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFEAF3FA),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0xFFB9D1E4)),
+    ),
+    child: const Text(
+      'Note: The OAT and QNH entered will be estimates based upon the best available information.',
+      style: TextStyle(fontWeight: FontWeight.w700),
     ),
   );
 }

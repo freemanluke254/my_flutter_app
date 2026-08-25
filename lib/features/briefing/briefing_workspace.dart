@@ -334,6 +334,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       flightDeckCount: current.flightDeckCount,
       cabinCrewCount: current.cabinCrewCount,
       captainPayrollNumber: current.captainPayrollNumber,
+      landingDispatchRequired: current.landingDispatchRequired,
       fsm: current.fsm,
       css: current.css,
       stand: current.stand,
