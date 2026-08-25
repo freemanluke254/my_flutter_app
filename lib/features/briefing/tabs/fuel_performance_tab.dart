@@ -624,7 +624,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
   Future<void> _showRtowProcedure() => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('How to calculate RTOW'),
       content: const SizedBox(
         width: 680,
         child: SingleChildScrollView(
@@ -1316,20 +1315,14 @@ class _RtowCalculationReferenceState extends State<_RtowCalculationReference> {
         color: const Color(0xFF315F86),
       ),
       title: Text(
-        _portableEfbUnavailable ? 'No Portable EFB' : 'Portable EFB',
+        _portableEfbUnavailable
+            ? 'No Portable EFB'
+            : 'How to calculate RTOW on Portable EFB in the OPT app',
         style: TextStyle(fontWeight: FontWeight.w900),
       ),
       childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       expandedCrossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Portable EFB or OPT APP failure?'),
-          value: _portableEfbUnavailable,
-          onChanged: (value) =>
-              setState(() => _portableEfbUnavailable = value ?? false),
-        ),
         if (_portableEfbUnavailable)
           const _PortableEfbUnavailableNote()
         else ...const [
@@ -1364,6 +1357,15 @@ class _RtowCalculationReferenceState extends State<_RtowCalculationReference> {
         const Text(
           'Reference aid only — verify against the current approved company and aircraft procedure.',
           style: TextStyle(color: Color(0xFF667069), fontSize: 11),
+        ),
+        const Divider(height: 22),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          controlAffinity: ListTileControlAffinity.leading,
+          title: const Text('Portable EFB or OPT APP failure?'),
+          value: _portableEfbUnavailable,
+          onChanged: (value) =>
+              setState(() => _portableEfbUnavailable = value ?? false),
         ),
       ],
     ),
