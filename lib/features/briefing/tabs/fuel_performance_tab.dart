@@ -390,125 +390,156 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     );
   }
 
-  Widget _atisAndLoadsheetSetup(FlightBriefing flight) => Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: const Color(0xFFF0F3F6),
+  Widget _atisAndLoadsheetSetup(FlightBriefing flight) => Material(
+    color: const Color(0xFFF0F3F6),
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: const Color(0xFFCBD5DE)),
+      side: const BorderSide(color: Color(0xFFCBD5DE)),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Text(
-          'ATIS & LOADSHEET SETUP',
-          style: TextStyle(
-            color: Color(0xFF315F86),
-            fontWeight: FontWeight.w900,
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'ATIS & LOADSHEET SETUP',
+            style: TextStyle(
+              color: Color(0xFF315F86),
+              fontWeight: FontWeight.w900,
+            ),
           ),
-        ),
-        const SizedBox(height: 12),
-        _stepHeader('1', 'Obtain and retain the ATIS'),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            SizedBox(
-              width: 180,
-              child: TextField(
-                controller: _controllers['atis']!,
-                textCapitalization: TextCapitalization.characters,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(1),
-                  FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]')),
-                  TextInputFormatter.withFunction(
-                    (oldValue, newValue) => newValue.copyWith(
-                      text: newValue.text.toUpperCase(),
-                      selection: newValue.selection,
+          const SizedBox(height: 12),
+          _stepHeader('1', 'ATIS · Obtain, as needed', role: 'F/O'),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(35, 5, 0, 9),
+            child: Text(
+              'COMM  ›  FLIGHT INFORMATION  ›  ATIS REQUEST',
+              style: TextStyle(
+                color: Color(0xFF315F86),
+                fontSize: 12,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              SizedBox(
+                width: 180,
+                child: TextField(
+                  controller: _controllers['atis']!,
+                  textCapitalization: TextCapitalization.characters,
+                  inputFormatters: [
+                    LengthLimitingTextInputFormatter(1),
+                    FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]')),
+                    TextInputFormatter.withFunction(
+                      (oldValue, newValue) => newValue.copyWith(
+                        text: newValue.text.toUpperCase(),
+                        selection: newValue.selection,
+                      ),
                     ),
+                  ],
+                  decoration: const InputDecoration(
+                    labelText: 'ATIS letter',
+                    hintText: 'A–Z',
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(),
                   ),
-                ],
-                decoration: const InputDecoration(
-                  labelText: 'ATIS letter',
-                  hintText: 'A–Z',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(),
+                  onChanged: (value) => _update('atis', value),
                 ),
-                onChanged: (value) => _update('atis', value),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text(
-                  'ATIS printed and retained with aircraft paperwork',
+              const SizedBox(width: 12),
+              Expanded(
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text(
+                    'ATIS printed and retained with aircraft paperwork',
+                  ),
+                  value: flight.atisPrintedAndRetained,
+                  onChanged: flight.atisLetter.isEmpty
+                      ? null
+                      : (value) => _updateFlag('atisRetained', value ?? false),
                 ),
-                value: flight.atisPrintedAndRetained,
-                onChanged: flight.atisLetter.isEmpty
-                    ? null
-                    : (value) => _updateFlag('atisRetained', value ?? false),
               ),
-            ),
-          ],
-        ),
-        const Divider(height: 28),
-        _stepHeader('2', 'Calculate and record RTOW'),
-        const SizedBox(height: 8),
-        IgnorePointer(
-          ignoring: flight.atisLetter.isEmpty,
-          child: Opacity(
-            opacity: flight.atisLetter.isEmpty ? 0.5 : 1,
-            child: _RtowField(
-              controller: _controllers['rtow']!,
-              onChanged: (value) => _update('rtow', value),
+            ],
+          ),
+          const Divider(height: 28),
+          _stepHeader('2', 'RTOW · Calculate', role: 'C, F/O'),
+          const SizedBox(height: 8),
+          IgnorePointer(
+            ignoring: flight.atisLetter.isEmpty,
+            child: Opacity(
+              opacity: flight.atisLetter.isEmpty ? 0.5 : 1,
+              child: _RtowField(
+                controller: _controllers['rtow']!,
+                onChanged: (value) => _update('rtow', value),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        const _RtowCalculationReference(),
-        const Divider(height: 28),
-        _stepHeader('3', 'Initialise the loadsheet in the aircraft COMM page'),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Loadsheet initialised'),
-          value: flight.loadsheetInitialized,
-          onChanged: flight.calculatedRtow.isEmpty
-              ? null
-              : (value) => _updateFlag('loadsheetInitialized', value ?? false),
-        ),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(
-              child: _ActualValue(
-                label: 'RTOW TO SEND',
-                value: flight.calculatedRtow,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(child: _weightField('RLW TO SEND', 'rlw')),
-          ],
-        ),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('RTOW and RLW sent through COMM'),
-          subtitle: const Text(
-            'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
+          const SizedBox(height: 8),
+          const _RtowCalculationReference(),
+          const SizedBox(height: 8),
+          const _ProcedureNote(
+            title: 'LANDING DISPATCH',
+            text:
+                'Landing Dispatch calculations should be completed during planning if the applicable criteria in the QRH OI section have not been met.',
           ),
-          value: flight.regulatedWeightsSent,
-          onChanged:
-              !flight.loadsheetInitialized ||
-                  flight.calculatedRtow.isEmpty ||
-                  _controllers['rlw']!.text.isEmpty
-              ? null
-              : (value) => _updateFlag('weightsSent', value ?? false),
-        ),
-      ],
+          const SizedBox(height: 8),
+          const _ProcedureNote(
+            title: 'PORTABLE EFB / OPT APP UNAVAILABLE',
+            text:
+                'If no portable pilot-attached EFB OPT app is available—for example following portable EFB or OPT app failures—refer to OPT Device Failures in Chapter SP, Section 20.',
+            warning: true,
+          ),
+          const Divider(height: 28),
+          _stepHeader(
+            '3',
+            'Initialise the loadsheet in the aircraft COMM page',
+          ),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Loadsheet initialised'),
+            value: flight.loadsheetInitialized,
+            onChanged: flight.calculatedRtow.isEmpty
+                ? null
+                : (value) =>
+                      _updateFlag('loadsheetInitialized', value ?? false),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(
+                child: _ActualValue(
+                  label: 'RTOW TO SEND',
+                  value: flight.calculatedRtow,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(child: _weightField('RLW TO SEND', 'rlw')),
+            ],
+          ),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('RTOW and RLW sent through COMM'),
+            subtitle: const Text(
+              'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
+            ),
+            value: flight.regulatedWeightsSent,
+            onChanged:
+                !flight.loadsheetInitialized ||
+                    flight.calculatedRtow.isEmpty ||
+                    _controllers['rlw']!.text.isEmpty
+                ? null
+                : (value) => _updateFlag('weightsSent', value ?? false),
+          ),
+        ],
+      ),
     ),
   );
 
-  Widget _stepHeader(String number, String title) => Row(
+  Widget _stepHeader(String number, String title, {String? role}) => Row(
     children: [
       CircleAvatar(
         radius: 13,
@@ -526,6 +557,22 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       Expanded(
         child: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
       ),
+      if (role != null)
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE1E9F1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            role,
+            style: const TextStyle(
+              color: Color(0xFF315F86),
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
     ],
   );
 
@@ -902,6 +949,67 @@ class _ReferenceWarning extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _ProcedureNote extends StatelessWidget {
+  const _ProcedureNote({
+    required this.title,
+    required this.text,
+    this.warning = false,
+  });
+
+  final String title;
+  final String text;
+  final bool warning;
+
+  @override
+  Widget build(BuildContext context) {
+    final background = warning
+        ? const Color(0xFFFFF1DA)
+        : const Color(0xFFEAF3FA);
+    final border = warning ? const Color(0xFFE3B96F) : const Color(0xFFB9D1E4);
+    final foreground = warning
+        ? const Color(0xFF8A5B13)
+        : const Color(0xFF315F86);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            warning ? Icons.warning_amber_rounded : Icons.info_outline,
+            size: 19,
+            color: foreground,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: foreground,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(text),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _CrosswindReferenceNote extends StatelessWidget {
