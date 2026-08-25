@@ -411,10 +411,10 @@ class _MaxPayloadPlanNote extends StatelessWidget {
           '• Ensure GLC are advised of any change to flight plan fuel figures that may affect the PLN ZFW.',
         ),
         Text(
-          '• If RTOW > OFP PLN TOW, calculate additional fuel to be carried and send free-text ACARS to GLC.',
+          '• If RTOW is greater than the OFP planned take-off weight, calculate the additional fuel to be carried and send free-text ACARS to GLC.',
         ),
         Text(
-          '• If RTOW < OFP PLN TOW, calculate the reduction in fuel to be carried and send free-text ACARS to GLC.',
+          '• If RTOW is less than the OFP planned take-off weight, calculate the reduction in fuel to be carried and send free-text ACARS to GLC.',
         ),
         Text(
           '• Whenever additional fuel is needed regardless of RTOW—for example due to destination weather—send free-text ACARS to GLC.',
@@ -425,9 +425,22 @@ class _MaxPayloadPlanNote extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w900),
         ),
         SizedBox(height: 4),
-        SelectableText(
-          'PRED FUEL FP + (or -) x.x T.',
-          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: Color(0xFFFFF8EC),
+            borderRadius: BorderRadius.all(Radius.circular(8)),
+          ),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+            child: SelectableText(
+              'PRED FUEL FP + (or -) x.x T.',
+              style: TextStyle(
+                fontSize: 13,
+                fontFamily: 'monospace',
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ),
         SizedBox(height: 10),
         Text(
