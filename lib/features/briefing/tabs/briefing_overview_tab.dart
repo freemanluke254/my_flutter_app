@@ -36,6 +36,7 @@ class BriefingOverviewTab extends StatelessWidget {
     final weather = _document(current, BriefingDocumentType.weather);
     final sigWx = _document(current, BriefingDocumentType.significantWeather);
     final notams = _document(current, BriefingDocumentType.notams);
+    final notamWindow = _notamWindow(current);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -69,7 +70,6 @@ class BriefingOverviewTab extends StatelessWidget {
                   document: weather,
                   airportCodes: [route.$1],
                   contentType: BriefingDocumentContentType.weather,
-                  flightDate: current.flightDate,
                 ),
               ),
             ),
@@ -86,7 +86,6 @@ class BriefingOverviewTab extends StatelessWidget {
                   airportCodes: [route.$1, route.$2],
                   contentType: BriefingDocumentContentType.weather,
                   includeOtherSections: true,
-                  flightDate: current.flightDate,
                 ),
               ),
             ),
@@ -102,7 +101,6 @@ class BriefingOverviewTab extends StatelessWidget {
                   document: weather,
                   airportCodes: [route.$2],
                   contentType: BriefingDocumentContentType.weather,
-                  flightDate: current.flightDate,
                 ),
               ),
             ),
@@ -125,7 +123,8 @@ class BriefingOverviewTab extends StatelessWidget {
                   document: notams,
                   airportCodes: [route.$1],
                   contentType: BriefingDocumentContentType.notam,
-                  flightDate: current.flightDate,
+                  relevanceStart: notamWindow?.$1,
+                  relevanceEnd: notamWindow?.$2,
                 ),
               ),
             ),
@@ -142,7 +141,8 @@ class BriefingOverviewTab extends StatelessWidget {
                   airportCodes: [route.$1, route.$2],
                   contentType: BriefingDocumentContentType.notam,
                   includeOtherSections: true,
-                  flightDate: current.flightDate,
+                  relevanceStart: notamWindow?.$1,
+                  relevanceEnd: notamWindow?.$2,
                 ),
               ),
             ),
@@ -158,7 +158,8 @@ class BriefingOverviewTab extends StatelessWidget {
                   document: notams,
                   airportCodes: [route.$2],
                   contentType: BriefingDocumentContentType.notam,
-                  flightDate: current.flightDate,
+                  relevanceStart: notamWindow?.$1,
+                  relevanceEnd: notamWindow?.$2,
                 ),
               ),
             ),
@@ -191,6 +192,38 @@ class BriefingOverviewTab extends StatelessWidget {
   (String, String) _route(String value) {
     final parts = value.split(RegExp(r'\s*[→–-]\s*'));
     return (parts.firstOrNull ?? 'DEP', parts.length > 1 ? parts.last : 'ARR');
+  }
+
+  (DateTime, DateTime)? _notamWindow(FlightBriefing flight) {
+    final departure = flight.scheduledDepartureUtc;
+    if (departure == null) return null;
+    final arrival = _scheduledArrivalUtc(flight, departure);
+    if (arrival == null) return null;
+    return (
+      departure.subtract(const Duration(hours: 2)),
+      arrival.add(const Duration(hours: 2)),
+    );
+  }
+
+  DateTime? _scheduledArrivalUtc(FlightBriefing flight, DateTime departure) {
+    final value = flight.arrivalTimeUtc.replaceAll(':', '').replaceAll(' ', '');
+    final match = RegExp(r'^(\d{2})(\d{2})(?:\+(\d*))?$').firstMatch(value);
+    if (match == null) return null;
+    final hasDaySuffix = value.contains('+');
+    final statedDayOffset = hasDaySuffix
+        ? int.tryParse(match.group(3) ?? '') ?? 1
+        : null;
+    var arrival = DateTime.utc(
+      departure.year,
+      departure.month,
+      departure.day,
+      int.parse(match.group(1)!),
+      int.parse(match.group(2)!),
+    ).add(Duration(days: statedDayOffset ?? 0));
+    if (statedDayOffset == null && !arrival.isAfter(departure)) {
+      arrival = arrival.add(const Duration(days: 1));
+    }
+    return arrival;
   }
 
   void _loadChecker(BuildContext context) => showDialog<void>(

@@ -14,7 +14,8 @@ Future<void> showBriefingDocuments(
   BriefingDocumentContentType contentType = BriefingDocumentContentType.other,
   bool charts = false,
   bool includeOtherSections = false,
-  DateTime? flightDate,
+  DateTime? relevanceStart,
+  DateTime? relevanceEnd,
 }) async {
   final value = document;
   if (value == null || value.fileCount == 0) {
@@ -89,7 +90,8 @@ Future<void> showBriefingDocuments(
       airportCodes: airportCodes,
       contentType: contentType,
       includeOtherSections: includeOtherSections,
-      flightDate: flightDate,
+      relevanceStart: relevanceStart,
+      relevanceEnd: relevanceEnd,
     ),
   );
 }
@@ -293,14 +295,16 @@ class _PdfTextDialog extends StatefulWidget {
     required this.airportCodes,
     required this.contentType,
     this.includeOtherSections = false,
-    this.flightDate,
+    this.relevanceStart,
+    this.relevanceEnd,
   });
   final String name;
   final String path;
   final List<String> airportCodes;
   final BriefingDocumentContentType contentType;
   final bool includeOtherSections;
-  final DateTime? flightDate;
+  final DateTime? relevanceStart;
+  final DateTime? relevanceEnd;
   @override
   State<_PdfTextDialog> createState() => _PdfTextDialogState();
 }
@@ -450,17 +454,21 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     final summary = [
       'Flight-relevance filter',
       if (excluded > 0)
-        '$excluded notice${excluded == 1 ? '' : 's'} outside the flight date hidden',
+        '$excluded notice${excluded == 1 ? '' : 's'} outside the operational window hidden',
       if (ambiguous > 0)
         '$ambiguous notice${ambiguous == 1 ? '' : 's'} retained because validity could not be proven',
+      'Window: STD −2 hours to STA +2 hours',
       'Scope: selected airport/FIR sections from the uploaded flight package',
     ].join('\n');
     return '$summary\n\n══════════════════════════════════\n\n$categories';
   }
 
   _NotamRelevance _relevance(String entry) {
-    final flightDate = widget.flightDate;
-    if (flightDate == null) return _NotamRelevance.ambiguous;
+    final relevanceStart = widget.relevanceStart;
+    final relevanceEnd = widget.relevanceEnd;
+    if (relevanceStart == null || relevanceEnd == null) {
+      return _NotamRelevance.ambiguous;
+    }
     final match = RegExp(
       r'(\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})\s+(\d{2}):(\d{2})\s*-\s*(\d{2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\s+(\d{4})\s+(\d{2}):(\d{2})',
       caseSensitive: false,
@@ -468,13 +476,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     if (match == null) return _NotamRelevance.ambiguous;
     final start = _notamDate(match, 1);
     final end = _notamDate(match, 6);
-    final dayStart = DateTime.utc(
-      flightDate.year,
-      flightDate.month,
-      flightDate.day,
-    );
-    final dayEnd = dayStart.add(const Duration(days: 1));
-    return !end.isAfter(dayStart) || !start.isBefore(dayEnd)
+    return !end.isAfter(relevanceStart) || !start.isBefore(relevanceEnd)
         ? _NotamRelevance.outsideFlightWindow
         : _NotamRelevance.relevant;
   }
