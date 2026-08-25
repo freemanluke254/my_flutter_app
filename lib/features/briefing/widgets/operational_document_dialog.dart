@@ -192,38 +192,86 @@ class _TrackInformationCard extends StatelessWidget {
   final DecodedTrackInformationGroup group;
 
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            group.title,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 9),
-          for (final item in group.items)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: SelectableText.rich(
-                TextSpan(
-                  style: const TextStyle(color: Color(0xFF202522), height: 1.4),
-                  children: [
-                    TextSpan(
-                      text: '${item.label}: ',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    TextSpan(text: item.value),
-                  ],
-                ),
+  Widget build(BuildContext context) {
+    final colours = _colours();
+    return Card(
+      elevation: 0,
+      color: colours.$1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: colours.$2),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              group.title,
+              style: TextStyle(
+                color: colours.$3,
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
               ),
             ),
-        ],
+            const SizedBox(height: 9),
+            for (final item in group.items)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: SelectableText.rich(
+                  TextSpan(
+                    style: const TextStyle(
+                      color: Color(0xFF202522),
+                      height: 1.4,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '${item.label}: ',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      TextSpan(text: item.value),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
+    );
+  }
+
+  (Color, Color, Color) _colours() => switch (group.title) {
+    'Flight and package details' => (
+      const Color(0xFFE8EEF6),
+      const Color(0xFF9BB1CB),
+      const Color(0xFF315F86),
     ),
-  );
+    'Operational requirements and remarks' => (
+      const Color(0xFFFFF1DA),
+      const Color(0xFFE3B96F),
+      const Color(0xFF8A5B13),
+    ),
+    'PACOTS message details' => (
+      const Color(0xFFE9F3F2),
+      const Color(0xFF8CC3BE),
+      const Color(0xFF287A78),
+    ),
+    'PACOTS routes' => (
+      const Color(0xFFEDE7F6),
+      const Color(0xFFBAA3D5),
+      const Color(0xFF704C9F),
+    ),
+    'TDM tracks' => (
+      const Color(0xFFE5F0F8),
+      const Color(0xFF9EC2DC),
+      const Color(0xFF356D9E),
+    ),
+    _ => (
+      const Color(0xFFF0F2F1),
+      const Color(0xFFC6CECA),
+      const Color(0xFF59645E),
+    ),
+  };
 }
 
 class _TerrainDecodedView extends StatelessWidget {

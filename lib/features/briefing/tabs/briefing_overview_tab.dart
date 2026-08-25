@@ -321,7 +321,7 @@ class _TrackTerrainSection extends StatelessWidget {
       }
     }
     return SizedBox(
-      height: 112,
+      height: 150,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: files.length,
@@ -331,36 +331,14 @@ class _TrackTerrainSection extends StatelessWidget {
           final terrain = file.type == BriefingDocumentType.terrain;
           return SizedBox(
             width: 230,
-            child: Card(
-              elevation: 0,
-              color: terrain
-                  ? const Color(0xFFF3EBDD)
-                  : const Color(0xFFE3EEF7),
-              child: ListTile(
-                leading: Icon(
-                  terrain ? Icons.terrain_rounded : Icons.public_rounded,
-                  color: terrain
-                      ? const Color(0xFF8A6235)
-                      : const Color(0xFF315F86),
-                ),
-                title: Text(
-                  terrain ? 'Terrain' : 'Track',
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                subtitle: Text(
-                  file.name,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                trailing: const Icon(Icons.open_in_new_rounded),
-                onTap: file.path == null
-                    ? () => ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Reupload this document to open it.'),
-                        ),
-                      )
-                    : () => _open(context, file.name, file.path!, file.type),
-              ),
+            child: _StatusBlock(
+              title: terrain ? 'Terrain' : 'Track message',
+              subtitle: file.name,
+              icon: terrain ? Icons.terrain_rounded : Icons.public_rounded,
+              available: file.path != null,
+              onTap: file.path == null
+                  ? null
+                  : () => _open(context, file.name, file.path!, file.type),
             ),
           );
         },

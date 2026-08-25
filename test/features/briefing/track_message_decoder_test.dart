@@ -42,19 +42,23 @@ E) TRACK 1 AVAILABLE
       contains('Performance-based communication and surveillance'),
     );
     final pacots = result.informationGroups.firstWhere(
-      (group) => group.title == 'PACOTS and additional track messages',
+      (group) => group.title == 'TDM tracks',
     );
     expect(
       pacots.items.map((item) => item.label),
-      contains('Track definition message'),
+      contains('Track definition'),
     );
     final notam = result.informationGroups.firstWhere(
-      (group) => group.title == 'Associated NOTAM fields',
+      (group) => group.title == 'PACOTS message details',
     );
-    expect(notam.items.first.label, 'Qualified NOTAM code');
     expect(
       notam.items.map((item) => item.label),
-      containsAll(['Affected FIR or location', 'Valid from', 'Valid until']),
+      containsAll([
+        'Qualified NOTAM code',
+        'Affected FIR',
+        'Valid from',
+        'Valid until',
+      ]),
     );
   });
 }

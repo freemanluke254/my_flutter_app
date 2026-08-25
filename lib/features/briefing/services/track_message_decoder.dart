@@ -143,7 +143,14 @@ class TrackMessageDecoder {
       }
       additional.add(line);
     }
-    final informationGroups = _informationGroups(remarks, additional);
+    final informationLines = <String>[];
+    for (var index = 0; index < lines.length; index++) {
+      final line = lines[index];
+      if (!consumed.contains(index) && line != title && line != validity) {
+        informationLines.add(line);
+      }
+    }
+    final informationGroups = _informationGroups(informationLines);
     return DecodedTrackMessage(
       title: title,
       validity: validity,
@@ -155,45 +162,162 @@ class TrackMessageDecoder {
     );
   }
 
-  List<DecodedTrackInformationGroup> _informationGroups(
-    List<String> remarks,
-    List<String> additional,
-  ) {
+  List<DecodedTrackInformationGroup> _informationGroups(List<String> lines) {
     final grouped = <String, List<DecodedTrackInformation>>{};
-    void add(String group, String line) {
-      final decoded = _decodeInformation(line);
-      (grouped[group] ??= []).add(decoded);
+    var currentGroup = 'Other source information';
+    void add(String group, String label, String value) {
+      currentGroup = group;
+      (grouped[group] ??= []).add(
+        DecodedTrackInformation(label: label, value: value),
+      );
     }
 
-    for (final line in remarks) {
-      add('Operational requirements and remarks', line);
+    void append(String value) {
+      final items = grouped[currentGroup];
+      if (items == null || items.isEmpty) {
+        add('Other source information', 'Additional information', value);
+        return;
+      }
+      final previous = items.removeLast();
+      items.add(
+        DecodedTrackInformation(
+          label: previous.label,
+          value: '${previous.value} $value',
+        ),
+      );
     }
-    var currentTrackSystem = false;
-    for (final line in additional) {
-      if (RegExp(
-        r'\b(PACOTS|TDM|TRACK DEFINITION MESSAGE)\b',
+
+    var inRemarks = false;
+    for (var line in lines) {
+      line = line.trim();
+      if (line == r'$B' ||
+          line == 'B' ||
+          RegExp(r'^PAGE\s+\d+$').hasMatch(line)) {
+        continue;
+      }
+      if (line == 'REMARKS.') {
+        inRemarks = true;
+        continue;
+      }
+      if (line.startsWith('END OF PART THREE')) inRemarks = false;
+      if (inRemarks ||
+          RegExp(r'^\d+\.\s').hasMatch(line) ||
+          RegExp(
+            r'\b(TMI|RCL|PBCS|SLOP|SQUAWK|ADS[ -]C|CPDLC|LOGON|GNSS)\b',
+          ).hasMatch(line)) {
+        final numbered = RegExp(r'^(\d+)\.\s*(.*)$').firstMatch(line);
+        if (numbered != null) {
+          add(
+            'Operational requirements and remarks',
+            _operationalLabel(numbered.group(2)!, number: numbered.group(1)),
+            numbered.group(2)!,
+          );
+        } else {
+          add(
+            'Operational requirements and remarks',
+            _operationalLabel(line),
+            line.replaceAll(RegExp(r'-$'), ''),
+          );
+        }
+      } else if (RegExp(
+        r'^(?:END OF )?PART\s+',
         caseSensitive: false,
       ).hasMatch(line)) {
-        currentTrackSystem = true;
-      }
-      if (RegExp(r'^[QABCE]\)').hasMatch(line)) {
-        add('Associated NOTAM fields', line);
-      } else if (currentTrackSystem ||
-          RegExp(r'\b(PACOTS|TDM)\b', caseSensitive: false).hasMatch(line)) {
-        add('PACOTS and additional track messages', line);
+        add('Message structure', 'Message part', line.replaceAll(')', ''));
+      } else if (RegExp(r'^\([QA]\d{4}/\d{2}\s+NOTAMN').hasMatch(line)) {
+        add(
+          'PACOTS message details',
+          'NOTAM identifier',
+          line.replaceFirst('(', ''),
+        );
+      } else if (line.contains('PACOTS TRACK MESSAGE')) {
+        add('PACOTS message details', 'Message type', line);
+      } else if (line.startsWith('Q)')) {
+        add(
+          'PACOTS message details',
+          'Qualified NOTAM code',
+          line.substring(2),
+        );
+      } else if (line.startsWith('A)')) {
+        final fields = RegExp(
+          r'^A\)(\S+)\s+B\)(\d{10})\s+C\)(\d{10})',
+        ).firstMatch(line);
+        if (fields == null) {
+          add(
+            'PACOTS message details',
+            'Affected FIR',
+            line.substring(2).trim(),
+          );
+        } else {
+          add('PACOTS message details', 'Affected FIR', fields.group(1)!);
+          add(
+            'PACOTS message details',
+            'Valid from',
+            _compactDate(fields.group(2)!),
+          );
+          add(
+            'PACOTS message details',
+            'Valid until',
+            _compactDate(fields.group(3)!),
+          );
+        }
+      } else if (line.startsWith('B)')) {
+        add(
+          'PACOTS message details',
+          'Valid from',
+          _compactDate(line.substring(2).trim()),
+        );
+      } else if (line.startsWith('C)')) {
+        add(
+          'PACOTS message details',
+          'Valid until',
+          _compactDate(line.substring(2).trim()),
+        );
+      } else if (line.startsWith('E)') && !line.contains('TDM TRK')) {
+        add('PACOTS message details', 'Track requirement', line.substring(2));
+      } else if (RegExp(
+        r'^TRACK\s+\d+\.?$',
+        caseSensitive: false,
+      ).hasMatch(line)) {
+        add('PACOTS routes', 'Track', line.replaceAll('.', ''));
+      } else if (RegExp(
+        r'^(FLEX|JAPAN|NAR|PHNL|RCTP/VHHH) ROUTE\s*:',
+        caseSensitive: false,
+      ).hasMatch(line)) {
+        final separator = line.indexOf(':');
+        add(
+          'PACOTS routes',
+          _routeLabel(line.substring(0, separator)),
+          line.substring(separator + 1).trim(),
+        );
+      } else if (line.startsWith('RMK :')) {
+        add('PACOTS routes', 'Track remarks', line.substring(5).trim());
+      } else if (line.startsWith('ATM CENTER TEL:')) {
+        add('PACOTS routes', 'ATM centre contact', line.substring(15).trim());
+      } else if (line.contains('TDM TRK')) {
+        line = line.replaceFirst(RegExp(r'^E\)\(?'), '');
+        add('TDM tracks', 'Track definition', line);
+      } else if (line.startsWith('RTS/')) {
+        add('TDM tracks', 'Published routing', line.substring(4));
+      } else if (line.startsWith('RMK/')) {
+        add('TDM tracks', 'Track remarks', line.substring(4));
       } else if (RegExp(
         r'^[A-Z]{3}\d+\b|\b[A-Z]{4}\s*[-/]\s*[A-Z]{4}\b',
       ).hasMatch(line)) {
-        add('Flight and package details', line);
+        add('Flight and package details', 'Flight', line);
+      } else if (RegExp(r'^(NAT-|INCLUSIVE$)').hasMatch(line)) {
+        add('Message structure', 'Track message part', line);
       } else {
-        add('Other source information', line);
+        append(line.replaceAll(RegExp(r'[)-]+$'), ''));
       }
     }
     const order = <String>[
-      'Operational requirements and remarks',
       'Flight and package details',
-      'PACOTS and additional track messages',
-      'Associated NOTAM fields',
+      'Message structure',
+      'Operational requirements and remarks',
+      'PACOTS message details',
+      'PACOTS routes',
+      'TDM tracks',
       'Other source information',
     ];
     return [
@@ -203,40 +327,40 @@ class TrackMessageDecoder {
     ];
   }
 
-  DecodedTrackInformation _decodeInformation(String line) {
-    final upper = line.toUpperCase();
-    const notamLabels = <String, String>{
-      'Q)': 'Qualified NOTAM code',
-      'A)': 'Affected FIR or location',
-      'B)': 'Valid from',
-      'C)': 'Valid until',
-      'E)': 'Details',
+  String _routeLabel(String source) => switch (source.trim().toUpperCase()) {
+    'FLEX ROUTE' => 'Flexible route',
+    'JAPAN ROUTE' => 'Japan route',
+    'NAR ROUTE' => 'North American route',
+    'PHNL ROUTE' => 'Honolulu route',
+    'RCTP/VHHH ROUTE' => 'Taipei / Hong Kong route',
+    _ => source.trim(),
+  };
+
+  String _operationalLabel(String value, {String? number}) {
+    final upper = value.toUpperCase();
+    final label = switch (upper) {
+      _ when upper.contains('TMI') => 'Track message identification',
+      _ when upper.contains('RCL') => 'Oceanic clearance request',
+      _ when upper.contains('PBCS') =>
+        'Performance-based communication and surveillance',
+      _ when upper.contains('SLOP') => 'Strategic lateral offset procedure',
+      _ when upper.contains('SQUAWK') => 'Transponder setting',
+      _
+          when upper.contains('ADS C') ||
+              upper.contains('ADS-C') ||
+              upper.contains('CPDLC') =>
+        'Data-link requirement',
+      _ when upper.contains('LOGON') => 'Data-link logon',
+      _ when upper.contains('GNSS') => 'GNSS interference reporting',
+      _ => 'Operational remark',
     };
-    for (final entry in notamLabels.entries) {
-      if (upper.startsWith(entry.key)) {
-        return DecodedTrackInformation(
-          label: entry.value,
-          value: line.substring(entry.key.length).trim(),
-        );
-      }
-    }
-    final labels = <(RegExp, String)>[
-      (RegExp(r'\bTMI\b'), 'Track Message Identification'),
-      (RegExp(r'\bRCL\b'), 'Oceanic clearance request'),
-      (RegExp(r'\bPBCS\b'), 'Performance-based communication and surveillance'),
-      (RegExp(r'\bSLOP\b'), 'Strategic lateral offset procedure'),
-      (RegExp(r'\bSQUAWK\b'), 'Transponder setting'),
-      (RegExp(r'\bADS-C\b|\bCPDLC\b'), 'Data-link requirement'),
-      (RegExp(r'\bLOGON\b'), 'Data-link logon'),
-      (RegExp(r'\bPACOTS\b'), 'Pacific organised track system'),
-      (RegExp(r'\bTDM\b'), 'Track definition message'),
-    ];
-    for (final item in labels) {
-      if (item.$1.hasMatch(upper)) {
-        return DecodedTrackInformation(label: item.$2, value: line);
-      }
-    }
-    return DecodedTrackInformation(label: 'Source information', value: line);
+    return number == null ? label : '$label · $number';
+  }
+
+  String _compactDate(String value) {
+    if (!RegExp(r'^\d{10}$').hasMatch(value)) return value;
+    return '20${value.substring(0, 2)}-${value.substring(2, 4)}-${value.substring(4, 6)} '
+        '${value.substring(6, 8)}:${value.substring(8, 10)} UTC';
   }
 
   bool _looksLikeRoute(String value) =>
