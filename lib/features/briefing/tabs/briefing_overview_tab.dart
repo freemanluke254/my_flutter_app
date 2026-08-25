@@ -6,8 +6,13 @@ import '../models/flight_briefing.dart';
 import '../widgets/pdf_preview_thumbnail.dart';
 
 class BriefingOverviewTab extends StatelessWidget {
-  const BriefingOverviewTab({required this.flight, super.key});
+  const BriefingOverviewTab({
+    required this.flight,
+    required this.onOpenWeatherNotams,
+    super.key,
+  });
   final FlightBriefing? flight;
+  final VoidCallback onOpenWeatherNotams;
 
   @override
   Widget build(BuildContext context) {
@@ -63,6 +68,7 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$1} at STD\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_takeoff_rounded,
                 available: weather != null,
+                onTap: onOpenWeatherNotams,
               ),
             ),
             const SizedBox(width: 8),
@@ -73,6 +79,7 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${sigWx?.fileCount ?? 0} SIGWX chart${sigWx?.fileCount == 1 ? '' : 's'}\nloaded',
                 icon: Icons.thunderstorm_outlined,
                 available: sigWx != null,
+                onTap: onOpenWeatherNotams,
               ),
             ),
             const SizedBox(width: 8),
@@ -83,6 +90,7 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$2} at STA\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_land_rounded,
                 available: weather != null,
+                onTap: onOpenWeatherNotams,
               ),
             ),
           ],
@@ -100,6 +108,7 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$1}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_takeoff_rounded,
                 available: notams != null,
+                onTap: onOpenWeatherNotams,
               ),
             ),
             const SizedBox(width: 8),
@@ -110,6 +119,7 @@ class BriefingOverviewTab extends StatelessWidget {
                     'FIR and route\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.route_outlined,
                 available: notams != null,
+                onTap: onOpenWeatherNotams,
               ),
             ),
             const SizedBox(width: 8),
@@ -120,6 +130,7 @@ class BriefingOverviewTab extends StatelessWidget {
                     '${route.$2}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_land_rounded,
                 available: notams != null,
+                onTap: onOpenWeatherNotams,
               ),
             ),
           ],
@@ -328,46 +339,56 @@ class _StatusBlock extends StatelessWidget {
     required this.subtitle,
     required this.icon,
     required this.available,
+    this.onTap,
   });
   final String title;
   final String subtitle;
   final IconData icon;
   final bool available;
+  final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(
-        color: available ? const Color(0xFF86B79E) : const Color(0xFFE0B96F),
+  Widget build(BuildContext context) => InkWell(
+    onTap: available ? onTap : null,
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: available ? const Color(0xFF86B79E) : const Color(0xFFE0B96F),
+        ),
       ),
-    ),
-    child: Column(
-      children: [
-        Icon(
-          icon,
-          color: available ? const Color(0xFF28634A) : const Color(0xFFBD7A17),
-        ),
-        const SizedBox(height: 7),
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: const TextStyle(color: Color(0xFF667069), fontSize: 12),
-        ),
-        const SizedBox(height: 7),
-        Icon(
-          available ? Icons.check_circle_rounded : Icons.pending_outlined,
-          size: 18,
-          color: available ? const Color(0xFF28634A) : const Color(0xFFBD7A17),
-        ),
-      ],
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: available
+                ? const Color(0xFF28634A)
+                : const Color(0xFFBD7A17),
+          ),
+          const SizedBox(height: 7),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Color(0xFF667069), fontSize: 12),
+          ),
+          const SizedBox(height: 7),
+          Icon(
+            available ? Icons.check_circle_rounded : Icons.pending_outlined,
+            size: 18,
+            color: available
+                ? const Color(0xFF28634A)
+                : const Color(0xFFBD7A17),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -404,48 +425,54 @@ class _SigWxGallery extends StatelessWidget {
               separatorBuilder: (_, _) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
                 final chart = charts[index];
-                return Container(
-                  width: 190,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF2F5F3),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFD8E0DC)),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(13),
-                        ),
-                        child: SizedBox(
-                          height: 118,
-                          width: double.infinity,
-                          child: PdfPreviewThumbnail(path: chart.path),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 9, 10, 0),
-                        child: Text(
-                          chart.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        child: Text(
-                          chart.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF667069),
-                            fontSize: 11,
+                return InkWell(
+                  onTap: chart.path == null
+                      ? null
+                      : () => _showChart(context, chart),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Container(
+                    width: 190,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF2F5F3),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFD8E0DC)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(13),
+                          ),
+                          child: SizedBox(
+                            height: 118,
+                            width: double.infinity,
+                            child: PdfPreviewThumbnail(path: chart.path),
                           ),
                         ),
-                      ),
-                    ],
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 9, 10, 0),
+                          child: Text(
+                            chart.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Text(
+                            chart.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF667069),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -454,6 +481,29 @@ class _SigWxGallery extends StatelessWidget {
       ],
     );
   }
+
+  Future<void> _showChart(BuildContext context, _SigWxChart chart) =>
+      showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1000, maxHeight: 760),
+            child: Column(
+              children: [
+                ListTile(
+                  title: Text(chart.title),
+                  subtitle: Text(chart.name),
+                  trailing: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ),
+                Expanded(child: PdfPreviewThumbnail(path: chart.path)),
+              ],
+            ),
+          ),
+        ),
+      );
 
   List<_SigWxChart> _charts(BriefingDocument? document) {
     final value = document;

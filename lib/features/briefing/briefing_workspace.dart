@@ -63,7 +63,10 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         onFlightChanged: (flight) => _changeFlight(flight, _active),
         onSaved: () => setState(() => _selectedIndex = 2),
       ),
-      BriefingOverviewTab(flight: _flight),
+      BriefingOverviewTab(
+        flight: _flight,
+        onOpenWeatherNotams: () => setState(() => _selectedIndex = 3),
+      ),
       WeatherNotamsTab(flight: _flight),
       const CalculationsTab(),
       DocumentsTab(flight: _flight),

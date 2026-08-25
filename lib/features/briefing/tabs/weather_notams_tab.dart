@@ -33,12 +33,16 @@ class WeatherNotamsTab extends StatelessWidget {
           subtitle: '${route.$1} at STD · ${route.$2} at STA',
           icon: Icons.cloud_outlined,
           document: _document(BriefingDocumentType.weather),
+          airportCodes: [route.$1, route.$2],
+          contentType: _ContentType.weather,
         ),
         _DocumentSection(
           title: 'Departure, en-route and arrival NOTAMs',
           subtitle: '${route.$1} · route/FIR · ${route.$2}',
           icon: Icons.campaign_outlined,
           document: _document(BriefingDocumentType.notams),
+          airportCodes: [route.$1, route.$2],
+          contentType: _ContentType.notam,
         ),
         _DocumentSection(
           title: 'En-route significant weather',
@@ -76,12 +80,16 @@ class _DocumentSection extends StatelessWidget {
     required this.icon,
     required this.document,
     this.charts = false,
+    this.airportCodes = const [],
+    this.contentType = _ContentType.other,
   });
   final String title;
   final String subtitle;
   final IconData icon;
   final BriefingDocument? document;
   final bool charts;
+  final List<String> airportCodes;
+  final _ContentType contentType;
 
   @override
   Widget build(BuildContext context) {
@@ -154,7 +162,12 @@ class _DocumentSection extends StatelessWidget {
   void _showText(BuildContext context, String name, String path) =>
       showDialog<void>(
         context: context,
-        builder: (context) => _PdfTextDialog(name: name, path: path),
+        builder: (context) => _PdfTextDialog(
+          name: name,
+          path: path,
+          airportCodes: airportCodes,
+          contentType: contentType,
+        ),
       );
   Future<void> _showChart(BuildContext context, String name, String path) =>
       showDialog<void>(
@@ -183,10 +196,19 @@ class _DocumentSection extends StatelessWidget {
       );
 }
 
+enum _ContentType { weather, notam, other }
+
 class _PdfTextDialog extends StatefulWidget {
-  const _PdfTextDialog({required this.name, required this.path});
+  const _PdfTextDialog({
+    required this.name,
+    required this.path,
+    required this.airportCodes,
+    required this.contentType,
+  });
   final String name;
   final String path;
+  final List<String> airportCodes;
+  final _ContentType contentType;
   @override
   State<_PdfTextDialog> createState() => _PdfTextDialogState();
 }
@@ -195,6 +217,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
   late final Future<String> _text = const PdfDocumentReader().extractText(
     widget.path,
   );
+  bool _raw = true;
   @override
   Widget build(BuildContext context) => Dialog(
     child: ConstrainedBox(
@@ -203,12 +226,29 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
         children: [
           ListTile(
             title: Text(widget.name),
-            subtitle: const Text('Extracted from the loaded PDF'),
+            subtitle: Text(
+              widget.airportCodes.isEmpty
+                  ? 'Extracted from the loaded PDF'
+                  : 'Showing ${widget.airportCodes.join(' and ')} sections',
+            ),
             trailing: IconButton(
               onPressed: () => Navigator.pop(context),
               icon: const Icon(Icons.close_rounded),
             ),
           ),
+          if (widget.contentType != _ContentType.other)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+              child: SegmentedButton<bool>(
+                segments: const [
+                  ButtonSegment(value: true, label: Text('RAW')),
+                  ButtonSegment(value: false, label: Text('Decoded')),
+                ],
+                selected: {_raw},
+                onSelectionChanged: (value) =>
+                    setState(() => _raw = value.first),
+              ),
+            ),
           const Divider(height: 1),
           Expanded(
             child: FutureBuilder<String>(
@@ -225,9 +265,11 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
                     ),
                   );
                 }
+                final rawText = _relevantText(snapshot.data ?? '');
+                final displayText = _raw ? rawText : _decodedText(rawText);
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(18),
-                  child: SelectableText(snapshot.data ?? 'No text found.'),
+                  child: SelectableText(displayText),
                 );
               },
             ),
@@ -236,4 +278,61 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
       ),
     ),
   );
+
+  String _relevantText(String text) {
+    if (widget.airportCodes.isEmpty) return text;
+    final starts = RegExp(
+      r'^([A-Z]{4})\s*(?:-|/)',
+      multiLine: true,
+    ).allMatches(text).toList();
+    final sections = <String>[];
+    for (var index = 0; index < starts.length; index++) {
+      final code = starts[index].group(1)!;
+      if (!widget.airportCodes.contains(code)) continue;
+      final end = index + 1 < starts.length
+          ? starts[index + 1].start
+          : text.length;
+      sections.add(text.substring(starts[index].start, end).trim());
+    }
+    if (sections.isEmpty) {
+      return 'No ${widget.airportCodes.join(' or ')} section was found in this document.\n\n$text';
+    }
+    return sections.join('\n\n────────────────────\n\n');
+  }
+
+  String _decodedText(String raw) {
+    if (widget.contentType == _ContentType.notam) {
+      return raw
+          .replaceAll(RegExp(r'\n(?=[A-Z0-9])'), ' ')
+          .replaceAll(RegExp(r'(?=\b[A-Z]{4}[A-Z]\d{4}/\d{2}\b)'), '\n\nNOTAM ')
+          .replaceAll(' E)', '\nDetails: ')
+          .replaceAll(' D)', '\nSchedule: ')
+          .replaceAll(' F)', '\nLower limit: ')
+          .replaceAll(' G)', '\nUpper limit: ')
+          .trim();
+    }
+    return raw
+        .replaceAllMapped(
+          RegExp(r'\bMETAR\s+([^=]+)=', dotAll: true),
+          (match) => 'OBSERVATION (METAR)\n${match.group(1)!.trim()}\n',
+        )
+        .replaceAllMapped(
+          RegExp(r'\bTAF\s+([^=]+)=', dotAll: true),
+          (match) => 'FORECAST (TAF)\n${match.group(1)!.trim()}\n',
+        )
+        .replaceAllMapped(
+          RegExp(r'\b(\d{3}|VRB)(\d{2})(G(\d{2}))?KT\b'),
+          (match) =>
+              'Wind ${match.group(1)}° at ${match.group(2)} kt${match.group(4) == null ? '' : ', gusting ${match.group(4)} kt'}',
+        )
+        .replaceAllMapped(
+          RegExp(r'\bQ(\d{4})\b'),
+          (match) => 'QNH ${match.group(1)} hPa',
+        )
+        .replaceAllMapped(
+          RegExp(r'\b(\d{2})/(M?\d{2})\b'),
+          (match) =>
+              'Temperature ${match.group(1)}°C, dew point ${match.group(2)!.replaceFirst('M', '-')}°C',
+        );
+  }
 }
