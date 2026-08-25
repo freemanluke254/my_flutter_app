@@ -719,25 +719,34 @@ class _DecodedContentView extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w900),
           ),
         );
+      } else if (RegExp(r'^[A-Z]{4}[A-Z]\d{4}/\d{2}\b').hasMatch(line)) {
+        spans.add(
+          TextSpan(
+            text: line,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        );
       } else {
-        final separator = line.indexOf(':');
-        if (separator > 0 && separator < 32) {
-          spans.add(
-            TextSpan(
-              text: line.substring(0, separator + 1),
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-          );
-          spans.add(TextSpan(text: line.substring(separator + 1)));
-        } else if (RegExp(r'^[A-Z]{4}[A-Z]\d{4}/\d{2}\b').hasMatch(line)) {
-          spans.add(
-            TextSpan(
-              text: line,
-              style: const TextStyle(fontWeight: FontWeight.w800),
-            ),
-          );
-        } else {
+        final matches = _labelPattern().allMatches(line).toList();
+        if (matches.isEmpty) {
           spans.add(TextSpan(text: line));
+        } else {
+          var cursor = 0;
+          for (final match in matches) {
+            if (match.start > cursor) {
+              spans.add(TextSpan(text: line.substring(cursor, match.start)));
+            }
+            spans.add(
+              TextSpan(
+                text: line.substring(match.start, match.end),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+            );
+            cursor = match.end;
+          }
+          if (cursor < line.length) {
+            spans.add(TextSpan(text: line.substring(cursor)));
+          }
         }
       }
       if (index < lines.length - 1) spans.add(const TextSpan(text: '\n'));
@@ -752,6 +761,39 @@ class _DecodedContentView extends StatelessWidget {
         children: spans,
       ),
     );
+  }
+
+  RegExp _labelPattern() {
+    final labels = contentType == BriefingDocumentContentType.weather
+        ? const <String>[
+            'Wind varying',
+            'Other groups',
+            'Temperature',
+            'dew point',
+            'Visibility',
+            'Altimeter',
+            'Station',
+            'Issued',
+            'Valid',
+            'FROM',
+            'Wind',
+            'CAVOK',
+            'Cloud',
+            'QNH',
+            'Weather',
+          ]
+        : const <String>[
+            'Lower limit',
+            'Upper limit',
+            'Details',
+            'Schedule',
+            'Window',
+            'UTC',
+            'Local',
+            'Scope',
+          ];
+    final alternatives = labels.map(RegExp.escape).join('|');
+    return RegExp('(?:^|(?<= · ))(?:$alternatives):');
   }
 
   (Color, Color) _notamColour(String title) {
