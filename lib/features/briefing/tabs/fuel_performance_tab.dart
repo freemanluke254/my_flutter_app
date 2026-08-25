@@ -656,7 +656,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
   Future<void> _showLandingDispatchProcedure() => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text('How to calculate Landing Dispatch RLW'),
       content: const SizedBox(
         width: 680,
         child: SingleChildScrollView(child: _LandingDispatchProcedure()),
@@ -1005,18 +1004,21 @@ class _RtowField extends StatelessWidget {
           width: 220,
           child: TextField(
             controller: controller,
+            cursorColor: const Color(0xFF173D31),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF173D31),
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
             decoration: const InputDecoration(
               hintText: 'Enter RTOW',
-              hintStyle: TextStyle(color: Color(0xFFB8CADB)),
+              hintStyle: TextStyle(color: Color(0xFF6D7E8D)),
               suffixText: 'kg',
-              suffixStyle: TextStyle(color: Colors.white),
+              suffixStyle: TextStyle(color: Color(0xFF315F86)),
+              filled: true,
+              fillColor: Colors.white,
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Color(0xFF8FA8C0)),
               ),
@@ -1079,18 +1081,21 @@ class _CalculatedRlwField extends StatelessWidget {
           width: 220,
           child: TextField(
             controller: controller,
+            cursorColor: const Color(0xFF173D31),
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF173D31),
               fontSize: 20,
               fontWeight: FontWeight.w900,
             ),
             decoration: const InputDecoration(
               hintText: 'Enter RLW',
-              hintStyle: TextStyle(color: Color(0xFFB8CADB)),
+              hintStyle: TextStyle(color: Color(0xFF6D7E8D)),
               suffixText: 'kg',
-              suffixStyle: TextStyle(color: Colors.white),
+              suffixStyle: TextStyle(color: Color(0xFF315F86)),
+              filled: true,
+              fillColor: Colors.white,
               enabledBorder: OutlineInputBorder(
                 borderSide: BorderSide(color: Color(0xFF8FA8C0)),
               ),
@@ -1195,35 +1200,43 @@ class _LandingDispatchProcedure extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       side: const BorderSide(color: Color(0xFFCBD5DE)),
     ),
-    child: const ExpansionTile(
-      initiallyExpanded: true,
-      leading: Icon(Icons.fact_check_outlined, color: Color(0xFF315F86)),
-      title: Text(
-        'Landing Dispatch calculation',
-        style: TextStyle(fontWeight: FontWeight.w900),
+    child: const Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.tablet_mac_rounded, color: Color(0xFF315F86)),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'How to calculate RLW on Portable EFB in the OPT app',
+                  style: TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          _ReferenceStep(
+            number: 1,
+            text: 'Confirm PERFORMANCE – LANDING – DISPATCH.',
+          ),
+          _ReferenceStep(number: 2, text: 'Confirm the correct aircraft.'),
+          _ReferenceStep(number: 3, text: 'Enter MEL and CDL data.'),
+          _ReferenceStep(number: 4, text: 'Enter ARPT.'),
+          _ReferenceStep(number: 5, text: 'Enter RWY.'),
+          _ReferenceStep(number: 6, text: 'Enter all remaining data.'),
+          SizedBox(height: 8),
+          _LandingDispatchEstimateNote(),
+          _ReferenceStep(number: 7, text: 'Press CALC.'),
+          SizedBox(height: 10),
+          Text(
+            'Reference aid only — verify against the current approved company and aircraft procedure.',
+            style: TextStyle(color: Color(0xFF667069), fontSize: 11),
+          ),
+        ],
       ),
-      subtitle: Text('OPT landing dispatch setup sequence'),
-      childrenPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
-        _ReferenceStep(
-          number: 2,
-          text: 'Confirm PERFORMANCE – LANDING – DISPATCH.',
-        ),
-        _ReferenceStep(number: 3, text: 'Enter ARPT.'),
-        _ReferenceStep(number: 4, text: 'Enter RWY.'),
-        _ReferenceStep(number: 5, text: 'Enter MEL and CDL data.'),
-        _ReferenceStep(number: 6, text: 'Enter all remaining data.'),
-        SizedBox(height: 8),
-        _LandingDispatchEstimateNote(),
-        _ReferenceStep(number: 7, text: 'Press CALC.'),
-        SizedBox(height: 10),
-        Text(
-          'Reference aid only — verify against the current approved company and aircraft procedure.',
-          style: TextStyle(color: Color(0xFF667069), fontSize: 11),
-        ),
-      ],
     ),
   );
 }
@@ -1316,25 +1329,25 @@ class _RtowCalculationReferenceState extends State<_RtowCalculationReference> {
           if (_portableEfbUnavailable)
             const _PortableEfbUnavailableNote()
           else ...const [
-            _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
             _ReferenceStep(
-              number: 2,
+              number: 1,
               text: 'Confirm PERFORMANCE – TAKEOFF in the top tab bar.',
             ),
-            _ReferenceStep(number: 3, text: 'Enter ARPT.'),
-            _ReferenceStep(number: 4, text: 'Enter RWY.'),
+            _ReferenceStep(number: 2, text: 'Confirm the correct aircraft.'),
             _ReferenceStep(
-              number: 5,
+              number: 3,
               text: 'Select AIRPORT INFO and confirm AIRPORT DATA.',
             ),
-            _ReferenceStep(number: 6, text: 'Enter NOTAM, MEL and CDL data.'),
-            _ReferenceStep(number: 7, text: 'Enter all remaining data.'),
+            _ReferenceStep(number: 4, text: 'Enter NOTAM, MEL and CDL data.'),
+            _ReferenceStep(number: 5, text: 'Enter ARPT.'),
+            _ReferenceStep(number: 6, text: 'Enter RWY.'),
             _ReferenceStep(
-              number: 8,
+              number: 7,
               text:
                   'Use OPTIMUM RTG and OPTIMUM FLAP unless conditions dictate otherwise.',
             ),
-            _ReferenceStep(number: 9, text: 'Do not enter TOW, ZFW or CG.'),
+            _ReferenceStep(number: 8, text: 'Do not enter TOW, ZFW or CG.'),
+            _ReferenceStep(number: 9, text: 'Enter all remaining data.'),
             _ReferenceStep(number: 10, text: 'Press CALC.'),
             SizedBox(height: 10),
             _RtowOutputSection(),
