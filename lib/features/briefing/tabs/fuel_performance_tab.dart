@@ -50,6 +50,11 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'rtow': flight?.calculatedRtow ?? '',
       'zfwCg': flight?.airbusZfwCg ?? '',
       'stabCg': flight?.airbusStabCg ?? '',
+      'prelimThrust': flight?.preliminaryThrustSetting ?? '',
+      'prelimFlap': flight?.preliminaryFlapSetting ?? '',
+      'actualCg': flight?.actualTakeoffCg ?? '',
+      'finalThrust': flight?.finalThrustSetting ?? '',
+      'finalFlap': flight?.finalFlapSetting ?? '',
     };
     for (final entry in values.entries) {
       final existing = _controllers[entry.key];
@@ -140,6 +145,10 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
             );
           },
         ),
+        if (isB787) ...[
+          const SizedBox(height: 16),
+          _takeoffPerformance(flight),
+        ],
         if (flight.maxPayloadPlan) ...[
           const SizedBox(height: 16),
           const _MaxPayloadPlanNote(),
@@ -187,6 +196,219 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
         onChanged: (value) => _update(key, value),
       );
 
+  Widget _takeoffPerformance(FlightBriefing flight) {
+    final preliminaryTow = _preliminaryTow(flight);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Take-off performance',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE8EEF6),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'PRELIMINARY OPT CALCULATION',
+                style: TextStyle(
+                  color: Color(0xFF315F86),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Final ZFW received'),
+                subtitle: const Text(
+                  'ACT ZFW above is treated as the Final ZFW.',
+                ),
+                value: flight.finalZfwReceived,
+                onChanged: (value) =>
+                    _updateFlag('finalZfwReceived', value ?? false),
+              ),
+              _PerformanceFormula(
+                finalZfw: flight.actualZeroFuelWeight,
+                rampFuel: flight.blockFuel,
+                takeoffWeight: preliminaryTow,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Preliminary input assumptions: no weight buffer, taxi fuel not deducted, CG 25%.',
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 12),
+              IgnorePointer(
+                ignoring: !flight.finalZfwReceived,
+                child: Opacity(
+                  opacity: flight.finalZfwReceived ? 1 : 0.5,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _performanceField(
+                          'Take-off thrust setting',
+                          'prelimThrust',
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _performanceField('Flap setting', 'prelimFlap'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Preliminary OPT calculation completed'),
+                value: flight.preliminaryPerformanceComplete,
+                onChanged: flight.finalZfwReceived
+                    ? (value) =>
+                          _updateFlag('preliminaryComplete', value ?? false)
+                    : null,
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'Thrust and flap settings entered in the aircraft EFB',
+                ),
+                value: flight.efbPerformanceEntered,
+                onChanged: flight.preliminaryPerformanceComplete
+                    ? (value) => _updateFlag('efbEntered', value ?? false)
+                    : null,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE7F4EA),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'FINAL OPT CALCULATION',
+                style: TextStyle(
+                  color: Color(0xFF28634A),
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Final loadsheet received'),
+                subtitle: const Text(
+                  'Transfer the actual figures from the FMC and use the actual CG from the loadsheet.',
+                ),
+                value: flight.finalLoadsheetReceived,
+                onChanged: (value) =>
+                    _updateFlag('loadsheetReceived', value ?? false),
+              ),
+              IgnorePointer(
+                ignoring: !flight.finalLoadsheetReceived,
+                child: Opacity(
+                  opacity: flight.finalLoadsheetReceived ? 1 : 0.5,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _ActualValue(
+                              label: 'ACT ZFW',
+                              value: flight.actualZeroFuelWeight,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _ActualValue(
+                              label: 'ACT TOW',
+                              value: flight.actualTakeoffWeight,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _decimalField(
+                              'ACTUAL CG',
+                              'actualCg',
+                              suffix: '%',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _performanceField(
+                              'Final thrust setting',
+                              'finalThrust',
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: _performanceField(
+                              'Final flap setting',
+                              'finalFlap',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Final OPT calculation completed'),
+                value: flight.finalPerformanceComplete,
+                onChanged: flight.finalLoadsheetReceived
+                    ? (value) => _updateFlag('finalComplete', value ?? false)
+                    : null,
+              ),
+              const Text(
+                'Use the approved aircraft OPT/EFB. This app records the workflow and inputs; it does not calculate certified take-off performance.',
+                style: TextStyle(color: Color(0xFF52635A), fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _performanceField(String label, String key) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: TextField(
+      controller: _controllers[key]!,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        border: const OutlineInputBorder(),
+      ),
+      onChanged: (value) => _update(key, value),
+    ),
+  );
+
+  String _preliminaryTow(FlightBriefing flight) {
+    final zfw = double.tryParse(flight.actualZeroFuelWeight);
+    final rampFuel = double.tryParse(flight.blockFuel);
+    if (zfw == null || rampFuel == null) return '';
+    final value = zfw + rampFuel;
+    return value == value.roundToDouble()
+        ? value.toInt().toString()
+        : value.toStringAsFixed(1);
+  }
+
   void _update(String field, String value) {
     final flight = widget.flight;
     if (flight == null) return;
@@ -197,6 +419,26 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'rtow' => flight.copyWith(calculatedRtow: value),
       'zfwCg' => flight.copyWith(airbusZfwCg: value),
       'stabCg' => flight.copyWith(airbusStabCg: value),
+      'prelimThrust' => flight.copyWith(preliminaryThrustSetting: value),
+      'prelimFlap' => flight.copyWith(preliminaryFlapSetting: value),
+      'actualCg' => flight.copyWith(actualTakeoffCg: value),
+      'finalThrust' => flight.copyWith(finalThrustSetting: value),
+      'finalFlap' => flight.copyWith(finalFlapSetting: value),
+      _ => flight,
+    });
+  }
+
+  void _updateFlag(String field, bool value) {
+    final flight = widget.flight;
+    if (flight == null) return;
+    widget.onFlightChanged(switch (field) {
+      'finalZfwReceived' => flight.copyWith(finalZfwReceived: value),
+      'preliminaryComplete' => flight.copyWith(
+        preliminaryPerformanceComplete: value,
+      ),
+      'efbEntered' => flight.copyWith(efbPerformanceEntered: value),
+      'loadsheetReceived' => flight.copyWith(finalLoadsheetReceived: value),
+      'finalComplete' => flight.copyWith(finalPerformanceComplete: value),
       _ => flight,
     });
   }
@@ -368,6 +610,100 @@ class _RtowField extends StatelessWidget {
             ),
             onChanged: onChanged,
           ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _PerformanceFormula extends StatelessWidget {
+  const _PerformanceFormula({
+    required this.finalZfw,
+    required this.rampFuel,
+    required this.takeoffWeight,
+  });
+  final String finalZfw;
+  final String rampFuel;
+  final String takeoffWeight;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFC7D4E2)),
+    ),
+    child: Row(
+      children: [
+        Expanded(child: _value('FINAL ZFW', finalZfw)),
+        const Text(
+          '+',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        Expanded(child: _value('RAMP FUEL', rampFuel)),
+        const Text(
+          '=',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        Expanded(child: _value('PRELIM TOW', takeoffWeight, highlight: true)),
+        const SizedBox(width: 8),
+        const Column(
+          children: [
+            Text(
+              'ASSUMED CG',
+              style: TextStyle(fontSize: 10, color: Color(0xFF667069)),
+            ),
+            Text('25%', style: TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+      ],
+    ),
+  );
+
+  Widget _value(String label, String value, {bool highlight = false}) => Column(
+    children: [
+      Text(
+        label,
+        style: const TextStyle(fontSize: 10, color: Color(0xFF667069)),
+      ),
+      Text(
+        value.isEmpty ? 'Pending' : '$value kg',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: highlight ? const Color(0xFF315F86) : null,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    ],
+  );
+}
+
+class _ActualValue extends StatelessWidget {
+  const _ActualValue({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 10),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFC6DCCD)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(color: Color(0xFF667069), fontSize: 12),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value.isEmpty ? 'Pending' : '$value kg',
+          style: const TextStyle(fontWeight: FontWeight.w900),
         ),
       ],
     ),

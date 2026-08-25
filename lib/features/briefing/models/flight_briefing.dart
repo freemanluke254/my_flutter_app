@@ -78,6 +78,16 @@ class FlightBriefing {
     this.airbusZfwCg = '',
     this.airbusStabCg = '',
     this.maxPayloadPlan = false,
+    this.finalZfwReceived = false,
+    this.preliminaryThrustSetting = '',
+    this.preliminaryFlapSetting = '',
+    this.preliminaryPerformanceComplete = false,
+    this.efbPerformanceEntered = false,
+    this.finalLoadsheetReceived = false,
+    this.actualTakeoffCg = '',
+    this.finalThrustSetting = '',
+    this.finalFlapSetting = '',
+    this.finalPerformanceComplete = false,
     this.flightDeckCount = 3,
     this.cabinCrewCount = 10,
     this.fsm = '',
@@ -128,6 +138,16 @@ class FlightBriefing {
   final String airbusZfwCg;
   final String airbusStabCg;
   final bool maxPayloadPlan;
+  final bool finalZfwReceived;
+  final String preliminaryThrustSetting;
+  final String preliminaryFlapSetting;
+  final bool preliminaryPerformanceComplete;
+  final bool efbPerformanceEntered;
+  final bool finalLoadsheetReceived;
+  final String actualTakeoffCg;
+  final String finalThrustSetting;
+  final String finalFlapSetting;
+  final bool finalPerformanceComplete;
   final int flightDeckCount;
   final int cabinCrewCount;
   final String fsm;
@@ -179,6 +199,16 @@ class FlightBriefing {
     String? airbusZfwCg,
     String? airbusStabCg,
     bool? maxPayloadPlan,
+    bool? finalZfwReceived,
+    String? preliminaryThrustSetting,
+    String? preliminaryFlapSetting,
+    bool? preliminaryPerformanceComplete,
+    bool? efbPerformanceEntered,
+    bool? finalLoadsheetReceived,
+    String? actualTakeoffCg,
+    String? finalThrustSetting,
+    String? finalFlapSetting,
+    bool? finalPerformanceComplete,
     int? flightDeckCount,
     int? cabinCrewCount,
     String? fsm,
@@ -229,6 +259,21 @@ class FlightBriefing {
     airbusZfwCg: airbusZfwCg ?? this.airbusZfwCg,
     airbusStabCg: airbusStabCg ?? this.airbusStabCg,
     maxPayloadPlan: maxPayloadPlan ?? this.maxPayloadPlan,
+    finalZfwReceived: finalZfwReceived ?? this.finalZfwReceived,
+    preliminaryThrustSetting:
+        preliminaryThrustSetting ?? this.preliminaryThrustSetting,
+    preliminaryFlapSetting:
+        preliminaryFlapSetting ?? this.preliminaryFlapSetting,
+    preliminaryPerformanceComplete:
+        preliminaryPerformanceComplete ?? this.preliminaryPerformanceComplete,
+    efbPerformanceEntered: efbPerformanceEntered ?? this.efbPerformanceEntered,
+    finalLoadsheetReceived:
+        finalLoadsheetReceived ?? this.finalLoadsheetReceived,
+    actualTakeoffCg: actualTakeoffCg ?? this.actualTakeoffCg,
+    finalThrustSetting: finalThrustSetting ?? this.finalThrustSetting,
+    finalFlapSetting: finalFlapSetting ?? this.finalFlapSetting,
+    finalPerformanceComplete:
+        finalPerformanceComplete ?? this.finalPerformanceComplete,
     flightDeckCount: flightDeckCount ?? this.flightDeckCount,
     cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
     fsm: fsm ?? this.fsm,
