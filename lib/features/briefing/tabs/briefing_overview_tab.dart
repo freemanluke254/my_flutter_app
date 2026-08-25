@@ -177,7 +177,8 @@ class _AircraftDetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasDefects = flight.melCdlReferences.isNotEmpty ||
+    final hasDefects =
+        flight.melCdlReferences.isNotEmpty ||
         flight.defectSummary.isNotEmpty ||
         flight.operationalRestrictions.isNotEmpty;
     return Card(
@@ -242,16 +243,16 @@ class _AircraftDetailsCard extends StatelessWidget {
   }
 
   Widget _detail(String label, String value) => Column(
-        children: [
-          Text(label, style: const TextStyle(color: Color(0xFF667069))),
-          const SizedBox(height: 3),
-          Text(
-            _value(value),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontWeight: FontWeight.w900),
-          ),
-        ],
-      );
+    children: [
+      Text(label, style: const TextStyle(color: Color(0xFF667069))),
+      const SizedBox(height: 3),
+      Text(
+        _value(value),
+        textAlign: TextAlign.center,
+        style: const TextStyle(fontWeight: FontWeight.w900),
+      ),
+    ],
+  );
 
   String _value(String value) => value.trim().isEmpty ? 'Pending' : value;
 }

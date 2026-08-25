@@ -190,8 +190,7 @@ class BriefingStorage {
     stand: json['stand'] as String? ?? '',
     melCdlReferences: json['melCdlReferences'] as String? ?? '',
     defectSummary: json['defectSummary'] as String? ?? '',
-    operationalRestrictions:
-        json['operationalRestrictions'] as String? ?? '',
+    operationalRestrictions: json['operationalRestrictions'] as String? ?? '',
     documents: (json['documents']! as List<Object?>).map((value) {
       final item = (value! as Map<Object?, Object?>).cast<String, Object?>();
       return BriefingDocument(
