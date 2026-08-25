@@ -465,6 +465,8 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        const _RtowCalculationReference(),
         const Divider(height: 28),
         _stepHeader('3', 'Initialise the loadsheet in the aircraft COMM page'),
         CheckboxListTile(
@@ -760,6 +762,173 @@ class _RtowField extends StatelessWidget {
             ),
             onChanged: onChanged,
           ),
+        ),
+      ],
+    ),
+  );
+}
+
+class _RtowCalculationReference extends StatelessWidget {
+  const _RtowCalculationReference();
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: Colors.white,
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: Color(0xFFCBD5DE)),
+    ),
+    child: const ExpansionTile(
+      leading: Icon(Icons.fact_check_outlined, color: Color(0xFF315F86)),
+      title: Text(
+        'How to calculate RTOW',
+        style: TextStyle(fontWeight: FontWeight.w900),
+      ),
+      subtitle: Text('Open for the OPT take-off setup sequence'),
+      childrenPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _ReferenceStep(
+          number: 1,
+          text: 'Confirm the correct aircraft is displayed at the top left.',
+        ),
+        _ReferenceStep(
+          number: 2,
+          text: 'Select or confirm TAKEOFF in the tab bar.',
+        ),
+        _ReferenceStep(
+          number: 3,
+          text: 'Confirm the selected module shows PERFORMANCE – TAKEOFF.',
+        ),
+        _ReferenceStep(number: 4, text: 'Enter ARPT.'),
+        _ReferenceStep(number: 5, text: 'Enter RWY.'),
+        _ReferenceStep(
+          number: 6,
+          text: 'Select AIRPORT INFO and confirm AIRPORT DATA as needed.',
+        ),
+        _ReferenceStep(
+          number: 7,
+          text: 'Enter NOTAM, MEL and CDL data as appropriate.',
+        ),
+        _ReferenceStep(
+          number: 8,
+          text: 'Enter all remaining appropriate data.',
+        ),
+        _ReferenceStep(
+          number: 9,
+          text:
+              'Use OPTIMUM RTG and OPTIMUM FLAP unless conditions dictate otherwise.',
+        ),
+        _ReferenceStep(number: 10, text: 'Do not enter TOW, ZFW or CG.'),
+        _ReferenceStep(number: 11, text: 'Press CALC.'),
+        SizedBox(height: 8),
+        _ReferenceWarning(),
+        _ReferenceStep(number: 12, text: 'Press DONE.'),
+        SizedBox(height: 8),
+        _CrosswindReferenceNote(),
+        _ReferenceStep(
+          number: 13,
+          text: 'Verify the correct RWY / INTX position.',
+        ),
+        _ReferenceStep(number: 14, text: 'Note TOGW.'),
+        _ReferenceStep(
+          number: 15,
+          text: 'Notify the Captain that the RTOW calculation is complete.',
+        ),
+        SizedBox(height: 10),
+        Text(
+          'Reference aid only — verify against the current approved company and aircraft procedure.',
+          style: TextStyle(color: Color(0xFF667069), fontSize: 11),
+        ),
+      ],
+    ),
+  );
+}
+
+class _ReferenceStep extends StatelessWidget {
+  const _ReferenceStep({required this.number, required this.text});
+  final int number;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 7),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 25,
+          child: Text(
+            '$number.',
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+        ),
+        Expanded(child: Text(text)),
+      ],
+    ),
+  );
+}
+
+class _ReferenceWarning extends StatelessWidget {
+  const _ReferenceWarning();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(11),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF1DA),
+      borderRadius: BorderRadius.circular(9),
+      border: Border.all(color: const Color(0xFFE3B96F)),
+    ),
+    child: const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'MESSAGE INSTRUCTION',
+          style: TextStyle(
+            color: Color(0xFF8A5B13),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text('Ignore the following message:'),
+        SizedBox(height: 3),
+        Text(
+          '“For limit weight calculation, maximum crosswind has not been checked for this runway condition”.',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ],
+    ),
+  );
+}
+
+class _CrosswindReferenceNote extends StatelessWidget {
+  const _CrosswindReferenceNote();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(11),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE8EEF6),
+      borderRadius: BorderRadius.circular(9),
+      border: Border.all(color: const Color(0xFF9BB1CB)),
+    ),
+    child: const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'CROSSWIND LIMIT CONSIDERATION',
+          style: TextStyle(
+            color: Color(0xFF315F86),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        SizedBox(height: 4),
+        Text(
+          'At this stage, refer to “Take-off Crosswind Guidelines – TALPA ARC” in FCTM Chapter 3, section “Crosswind Take-off”, or QRH OI “Runway Condition Matrix and Crosswind Limits”.',
         ),
       ],
     ),
