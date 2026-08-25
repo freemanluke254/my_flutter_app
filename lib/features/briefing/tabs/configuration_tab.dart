@@ -86,100 +86,69 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
             ),
             const SizedBox(height: 14),
           ],
-          _FlightPlanHeader(flight: flight),
-          const SizedBox(height: 14),
-          _section(
-            title: 'Aircraft and crew',
-            child: Column(
-              children: [
-                _row([
-                  _field('registration', 'Registration'),
-                  _field('aircraftType', 'Aircraft type'),
-                ]),
-                _crewAssignmentRow('captain', 'Captain', 'Captain'),
-                _crewAssignmentRow(
-                  'firstOfficer',
-                  'First officer',
-                  'First officer',
-                ),
-                _row([
-                  _field('reliefPilot', 'SO / Relief'),
-                  _field('otherCrew', 'Other'),
-                ]),
-              ],
-            ),
-          ),
-          _section(
-            title: 'Flight times',
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _timeValue(
-                  'STD',
-                  _dualTime(flight.departureTime, flight.departureTimeUtc),
-                ),
-                _timeValue(
-                  'STA',
-                  _dualTime(flight.arrivalTime, flight.arrivalTimeUtc),
-                ),
-                _timeValue('SCH', flight.scheduledFlightTime),
-                _timeValue('FP flight time', flight.flightPlanTime),
-              ],
-            ),
-          ),
-          _section(
-            title: 'Route',
-            child: TextField(
-              controller: _controllers['detailedRoute'],
-              minLines: 3,
-              maxLines: 6,
-              decoration: const InputDecoration(
-                labelText: 'Planned ATC route',
-                alignLabelWithHint: true,
+          if (hasUploadedPackage) ...[
+            _FlightPlanHeader(flight: flight),
+            const SizedBox(height: 14),
+            _section(
+              title: 'Aircraft and crew',
+              child: Column(
+                children: [
+                  _row([
+                    _field('registration', 'Registration'),
+                    _field('aircraftType', 'Aircraft type'),
+                  ]),
+                  _crewAssignmentRow('captain', 'Captain', 'Captain'),
+                  _crewAssignmentRow(
+                    'firstOfficer',
+                    'First officer',
+                    'First officer',
+                  ),
+                  _row([
+                    _field('reliefPilot', 'SO / Relief'),
+                    _field('otherCrew', 'Other'),
+                  ]),
+                ],
               ),
             ),
-          ),
-          _section(
-            title: 'Planned weights',
-            child: Column(
-              children: [
-                _row([
-                  _field('takeoffWeight', 'TOW'),
-                  _field('landingWeight', 'LAW'),
-                ]),
-                _row([
-                  _field('zeroFuelWeight', 'ZFW'),
-                  _field('payload', 'Payload'),
-                ]),
-              ],
+            _section(
+              title: 'Flight times',
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _timeValue(
+                    'STD',
+                    _dualTime(flight.departureTime, flight.departureTimeUtc),
+                  ),
+                  _timeValue(
+                    'STA',
+                    _dualTime(flight.arrivalTime, flight.arrivalTimeUtc),
+                  ),
+                  _timeValue(
+                    'SCH',
+                    _formatDuration(flight.scheduledFlightTime),
+                  ),
+                  _flightPlanTimeValue(flight),
+                ],
+              ),
             ),
-          ),
-          _section(
-            title: 'Fuel plan',
-            child: Column(
-              children: [
-                _row([
-                  _field('blockFuel', 'Block fuel'),
-                  _field('taxiFuel', 'Taxi fuel'),
-                ]),
-                _row([
-                  _field('tripFuel', 'Trip fuel'),
-                  _field('contingencyFuel', 'Contingency'),
-                ]),
-                _row([
-                  _field('finalReserveFuel', 'Final reserve'),
-                  _field('extraFuel', 'Extra fuel'),
-                ]),
-              ],
+            _section(
+              title: 'Route',
+              child: TextField(
+                controller: _controllers['detailedRoute'],
+                minLines: 3,
+                maxLines: 6,
+                decoration: const InputDecoration(
+                  labelText: 'Planned ATC route',
+                  alignLabelWithHint: true,
+                ),
+              ),
             ),
-          ),
-          FilledButton.icon(
-            onPressed: _save,
-            icon: const Icon(Icons.save_outlined),
-            label: const Text('Save flight setup'),
-          ),
-          if (hasUploadedPackage) ...[
+            FilledButton.icon(
+              onPressed: _save,
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('Save flight setup'),
+            ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: _confirmReupload,
@@ -195,8 +164,8 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                 foregroundColor: const Color(0xFFB93B3B),
               ),
             ),
+            const SizedBox(height: 20),
           ],
-          const SizedBox(height: 20),
         ],
       ],
     );
@@ -294,6 +263,81 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
 
   String _dualTime(String local, String utc) =>
       '${_formatLocalTime(local)} local\n${utc.isEmpty ? 'Pending' : _formatLocalTime(utc)} UTC';
+
+  String _formatDuration(String value) {
+    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value.trim());
+    if (match == null) return value;
+    return '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
+  }
+
+  Widget _flightPlanTimeValue(FlightBriefing flight) {
+    final scheduled = _durationMinutes(flight.scheduledFlightTime);
+    final planned = _durationMinutes(flight.flightPlanTime);
+    String? difference;
+    Color? differenceColor;
+    if (scheduled != null && planned != null) {
+      final minutes = (planned - scheduled).abs();
+      if (planned < scheduled) {
+        difference = '${_differenceLabel(minutes)} shorter than SCH';
+        differenceColor = const Color(0xFF28634A);
+      } else if (planned > scheduled) {
+        difference = '${_differenceLabel(minutes)} longer than SCH';
+        differenceColor = const Color(0xFFB93B3B);
+      } else {
+        difference = 'Same as SCH';
+        differenceColor = const Color(0xFF667069);
+      }
+    }
+    return Container(
+      width: 145,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F5F3),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'FP flight time',
+            style: TextStyle(color: Color(0xFF667069)),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            flight.flightPlanTime.isEmpty
+                ? 'Pending'
+                : _formatDuration(flight.flightPlanTime),
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          if (difference != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              difference,
+              style: TextStyle(
+                color: differenceColor,
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  int? _durationMinutes(String value) {
+    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value.trim());
+    if (match == null) return null;
+    return int.parse(match.group(1)!) * 60 + int.parse(match.group(2)!);
+  }
+
+  String _differenceLabel(int minutes) {
+    final hours = minutes ~/ 60;
+    final remainder = minutes % 60;
+    return hours == 0
+        ? '${remainder}m'
+        : '${hours}h ${remainder.toString().padLeft(2, '0')}m';
+  }
 
   void _load(FlightBriefing? flight) {
     final values = <String, String>{
@@ -480,7 +524,7 @@ class _FlightPlanHeaderState extends State<_FlightPlanHeader> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'STD ${_localTime(flight.departureTime)} local / ${flight.departureTimeUtc.isEmpty ? 'Pending' : _localTime(flight.departureTimeUtc)} UTC\nSTA ${_localTime(flight.arrivalTime)} local / ${flight.arrivalTimeUtc.isEmpty ? 'Pending' : _localTime(flight.arrivalTimeUtc)} UTC   SCH ${flight.scheduledFlightTime.isEmpty ? 'Pending' : flight.scheduledFlightTime}',
+                  'STD ${_localTime(flight.departureTime)} local / ${flight.departureTimeUtc.isEmpty ? 'Pending' : _localTime(flight.departureTimeUtc)} UTC\nSTA ${_localTime(flight.arrivalTime)} local / ${flight.arrivalTimeUtc.isEmpty ? 'Pending' : _localTime(flight.arrivalTimeUtc)} UTC   SCH ${flight.scheduledFlightTime.isEmpty ? 'Pending' : _duration(flight.scheduledFlightTime)}',
                   style: const TextStyle(
                     color: Color(0xFFDCE8F3),
                     fontWeight: FontWeight.w700,
@@ -517,6 +561,12 @@ class _FlightPlanHeaderState extends State<_FlightPlanHeader> {
     final match = RegExp(r'^(\d{2})(\d{2})(\+?)$').firstMatch(value.trim());
     if (match == null) return value;
     return '${match.group(1)}:${match.group(2)}${match.group(3)}';
+  }
+
+  String _duration(String value) {
+    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value.trim());
+    if (match == null) return value;
+    return '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
   }
 
   String _countdown(DateTime? departureUtc) {
