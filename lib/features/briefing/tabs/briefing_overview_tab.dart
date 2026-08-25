@@ -50,11 +50,7 @@ class BriefingOverviewTab extends StatelessWidget {
       children: [
         _heading(context),
         const SizedBox(height: 14),
-        _BriefingFlightTile(flight: current),
-        if (routeCharts != null) ...[
-          const SizedBox(height: 12),
-          _RouteChartGallery(document: routeCharts),
-        ],
+        _BriefingFlightTile(flight: current, routeCharts: routeCharts),
         const SizedBox(height: 16),
         _sectionTitle(context, 'Aircraft'),
         _AircraftDetailsCard(flight: current),
@@ -64,9 +60,6 @@ class BriefingOverviewTab extends StatelessWidget {
           flight: current,
           onLoadChecker: () => _loadChecker(context),
         ),
-        const SizedBox(height: 16),
-        _sectionTitle(context, 'Flight time'),
-        _FlightTimeCard(flight: current),
         const SizedBox(height: 16),
         _sectionTitle(context, 'Weather'),
         Row(
@@ -469,137 +462,6 @@ class _OriginalDocumentsSection extends StatelessWidget {
                   leading: const Icon(Icons.picture_as_pdf_rounded),
                   title: Text(name),
                   subtitle: const Text('Original loaded document'),
-                  trailing: IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close_rounded),
-                  ),
-                ),
-                const Divider(height: 1),
-                Expanded(child: PdfFullPageViewer(path: path)),
-              ],
-            ),
-          ),
-        ),
-      );
-}
-
-class _RouteChartGallery extends StatelessWidget {
-  const _RouteChartGallery({required this.document});
-  final BriefingDocument document;
-
-  @override
-  Widget build(BuildContext context) {
-    final charts = List.generate(document.fileCount, (index) {
-      return (
-        name: index < document.fileNames.length
-            ? document.fileNames[index]
-            : 'Route chart ${index + 1}',
-        path: index < document.filePaths.length
-            ? document.filePaths[index]
-            : null,
-      );
-    });
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF193B60),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Row(
-            children: [
-              Icon(Icons.route_rounded, color: Colors.white, size: 19),
-              SizedBox(width: 7),
-              Text(
-                'Route charts',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 170,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: charts.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) {
-                final chart = charts[index];
-                return InkWell(
-                  onTap: chart.path == null
-                      ? () => ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Reupload this route chart to open it.',
-                            ),
-                          ),
-                        )
-                      : () => _open(context, chart.name, chart.path!),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Container(
-                    width: 210,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: PdfPreviewThumbnail(path: chart.path),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 9),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.picture_as_pdf, size: 16),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  chart.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _open(BuildContext context, String name, String path) =>
-      showDialog<void>(
-        context: context,
-        builder: (context) => Dialog(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.route_rounded),
-                  title: const Text('Route chart'),
-                  subtitle: Text(name),
                   trailing: IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close_rounded),
@@ -1030,126 +892,10 @@ class _SigWxChart {
   final String title;
 }
 
-class _FlightTimeCard extends StatelessWidget {
-  const _FlightTimeCard({required this.flight});
-  final FlightBriefing flight;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheduledMinutes = _minutes(flight.scheduledFlightTime);
-    final planMinutes = _minutes(flight.flightPlanTime);
-    final difference = scheduledMinutes == null || planMinutes == null
-        ? null
-        : planMinutes - scheduledMinutes;
-    final eta = _estimatedArrival(difference);
-    final status = _arrivalStatus(difference);
-    final statusColor = difference == null
-        ? const Color(0xFF667069)
-        : difference <= 0
-        ? const Color(0xFF28634A)
-        : const Color(0xFFB93B3B);
-
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Expanded(child: _time('SCH', flight.scheduledFlightTime)),
-            Container(width: 1, height: 34, color: const Color(0xFFE2E7E4)),
-            Expanded(child: _time('FP', flight.flightPlanTime)),
-            Container(width: 1, height: 34, color: const Color(0xFFE2E7E4)),
-            Expanded(
-              flex: 2,
-              child: Column(
-                children: [
-                  const Text(
-                    'Estimated arrival · local',
-                    style: TextStyle(color: Color(0xFF667069), fontSize: 12),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    eta,
-                    style: const TextStyle(
-                      fontSize: 19,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    status,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _time(String label, String value) => Column(
-    children: [
-      Text(label, style: const TextStyle(color: Color(0xFF667069))),
-      const SizedBox(height: 2),
-      Text(
-        _duration(value),
-        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
-      ),
-    ],
-  );
-
-  int? _minutes(String value) {
-    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value.trim());
-    if (match == null) return null;
-    return int.parse(match.group(1)!) * 60 + int.parse(match.group(2)!);
-  }
-
-  String _estimatedArrival(int? difference) {
-    if (difference == null) return 'Pending';
-    final match = RegExp(
-      r'^(\d{2}):?(\d{2})(\+?)$',
-    ).firstMatch(flight.arrivalTime.trim());
-    if (match == null) return 'Pending';
-    final scheduledDay = match.group(3)!.isEmpty ? 0 : 1;
-    final total =
-        scheduledDay * 1440 +
-        int.parse(match.group(1)!) * 60 +
-        int.parse(match.group(2)!) +
-        difference;
-    final day = total ~/ 1440;
-    final clockMinutes = total.remainder(1440);
-    final hour = (clockMinutes ~/ 60).toString().padLeft(2, '0');
-    final minute = (clockMinutes % 60).toString().padLeft(2, '0');
-    return '$hour:$minute${day > 0 ? ' +$day' : ''}';
-  }
-
-  String _arrivalStatus(int? difference) {
-    if (difference == null) return 'Comparison pending';
-    if (difference == 0) return 'On schedule';
-    final amount = difference.abs();
-    final duration = amount >= 60
-        ? '${amount ~/ 60}h ${amount % 60}m'
-        : '${amount}m';
-    return difference < 0 ? '$duration early' : '$duration late';
-  }
-
-  String _duration(String value) {
-    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value);
-    return match == null
-        ? (value.isEmpty ? 'Pending' : value)
-        : '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
-  }
-}
-
 class _BriefingFlightTile extends StatefulWidget {
-  const _BriefingFlightTile({required this.flight});
+  const _BriefingFlightTile({required this.flight, required this.routeCharts});
   final FlightBriefing flight;
+  final BriefingDocument? routeCharts;
   @override
   State<_BriefingFlightTile> createState() => _BriefingFlightTileState();
 }
@@ -1179,6 +925,14 @@ class _BriefingFlightTileState extends State<_BriefingFlightTile> {
         : '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
     final passed =
         f.scheduledDepartureUtc?.isBefore(DateTime.now().toUtc()) ?? false;
+    final routeChart = widget.routeCharts;
+    final routeChartPath = routeChart?.filePaths.firstOrNull;
+    final routeChartName = routeChart?.fileNames.firstOrNull ?? 'Route chart';
+    final scheduledMinutes = _minutes(f.scheduledFlightTime);
+    final planMinutes = _minutes(f.flightPlanTime);
+    final difference = scheduledMinutes == null || planMinutes == null
+        ? null
+        : planMinutes - scheduledMinutes;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1235,6 +989,67 @@ class _BriefingFlightTileState extends State<_BriefingFlightTile> {
             ),
           ),
           const SizedBox(width: 12),
+          _flightTimes(f, difference),
+          const SizedBox(width: 14),
+          if (routeChart != null) ...[
+            Tooltip(
+              message: 'Open $routeChartName',
+              child: InkWell(
+                onTap: routeChartPath == null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Reupload this route chart to open it.',
+                          ),
+                        ),
+                      )
+                    : () => _openRouteChart(
+                        context,
+                        routeChartName,
+                        routeChartPath,
+                      ),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 145,
+                  height: 122,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      PdfPreviewThumbnail(path: routeChartPath),
+                      Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 7,
+                            vertical: 5,
+                          ),
+                          color: const Color(0xD9193B60),
+                          child: Text(
+                            routeChart.fileCount > 1
+                                ? 'Route charts (${routeChart.fileCount})'
+                                : 'Route chart',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 14),
+          ],
           Column(
             children: [
               const Text('PLAN ID', style: TextStyle(color: Color(0xFFDCE8F3))),
@@ -1251,6 +1066,142 @@ class _BriefingFlightTileState extends State<_BriefingFlightTile> {
         ],
       ),
     );
+  }
+
+  Future<void> _openRouteChart(
+    BuildContext context,
+    String name,
+    String path,
+  ) => showDialog<void>(
+    context: context,
+    builder: (context) => Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
+        child: Column(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.route_rounded),
+              title: const Text('Route chart'),
+              subtitle: Text(name),
+              trailing: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.close_rounded),
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(child: PdfFullPageViewer(path: path)),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  Widget _flightTimes(FlightBriefing flight, int? difference) {
+    final status = _arrivalStatus(difference);
+    final statusColor = difference == null
+        ? const Color(0xFFDCE8F3)
+        : difference <= 0
+        ? const Color(0xFF8FE0AD)
+        : const Color(0xFFFFA29A);
+    return Container(
+      width: 190,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF193B60),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _tileTime('SCH', flight.scheduledFlightTime),
+              Container(width: 1, height: 30, color: const Color(0xFF557391)),
+              _tileTime('FP', flight.flightPlanTime),
+            ],
+          ),
+          const Divider(color: Color(0xFF557391), height: 15),
+          const Text(
+            'EST ARRIVAL · LOCAL',
+            style: TextStyle(color: Color(0xFFDCE8F3), fontSize: 10),
+          ),
+          Text(
+            _estimatedArrival(flight, difference),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          Text(
+            status,
+            style: TextStyle(
+              color: statusColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _tileTime(String label, String value) => Column(
+    children: [
+      Text(
+        label,
+        style: const TextStyle(color: Color(0xFFDCE8F3), fontSize: 10),
+      ),
+      Text(
+        _duration(value),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    ],
+  );
+
+  int? _minutes(String value) {
+    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value.trim());
+    if (match == null) return null;
+    return int.parse(match.group(1)!) * 60 + int.parse(match.group(2)!);
+  }
+
+  String _estimatedArrival(FlightBriefing flight, int? difference) {
+    if (difference == null) return 'Pending';
+    final match = RegExp(
+      r'^(\d{2}):?(\d{2})(\+?)$',
+    ).firstMatch(flight.arrivalTime.trim());
+    if (match == null) return 'Pending';
+    final scheduledDay = match.group(3)!.isEmpty ? 0 : 1;
+    final total =
+        scheduledDay * 1440 +
+        int.parse(match.group(1)!) * 60 +
+        int.parse(match.group(2)!) +
+        difference;
+    final day = total ~/ 1440;
+    final clockMinutes = total.remainder(1440);
+    final hour = (clockMinutes ~/ 60).toString().padLeft(2, '0');
+    final minute = (clockMinutes % 60).toString().padLeft(2, '0');
+    return '$hour:$minute${day > 0 ? ' +$day' : ''}';
+  }
+
+  String _arrivalStatus(int? difference) {
+    if (difference == null) return 'Comparison pending';
+    if (difference == 0) return 'On schedule';
+    final amount = difference.abs();
+    final duration = amount >= 60
+        ? '${amount ~/ 60}h ${amount % 60}m'
+        : '${amount}m';
+    return difference < 0 ? '$duration early' : '$duration late';
+  }
+
+  String _duration(String value) {
+    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value);
+    return match == null
+        ? (value.isEmpty ? 'Pending' : value)
+        : '${match.group(1)!.padLeft(2, '0')}:${match.group(2)}';
   }
 
   String _clock(String value) {
