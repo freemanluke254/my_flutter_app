@@ -64,7 +64,10 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         onSaved: () => setState(() => _selectedIndex = 2),
       ),
       BriefingOverviewTab(flight: _flight),
-      const FuelPerformanceTab(),
+      FuelPerformanceTab(
+        flight: _flight,
+        onFlightChanged: (flight) => _changeFlight(flight, _active),
+      ),
       const CalculationsTab(),
       DocumentsTab(flight: _flight),
     ];
