@@ -64,6 +64,13 @@ class MainFlutterWindow: NSWindow {
           return
         }
         result(FlutterStandardTypedData(bytes: png))
+      case "pdfPageCount":
+        guard let path = call.arguments as? String,
+              let document = PDFDocument(url: URL(fileURLWithPath: path)) else {
+          result(FlutterError(code: "invalid_pdf_path", message: "The PDF could not be opened.", details: nil))
+          return
+        }
+        result(document.pageCount)
       default:
         result(FlutterMethodNotImplemented)
       }

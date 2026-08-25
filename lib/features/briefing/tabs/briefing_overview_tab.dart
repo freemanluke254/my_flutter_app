@@ -37,6 +37,12 @@ class BriefingOverviewTab extends StatelessWidget {
     final sigWx = _document(current, BriefingDocumentType.significantWeather);
     final notams = _document(current, BriefingDocumentType.notams);
     final notamWindow = _notamWindow(current);
+    final localNotamWindow = _localNotamWindow(current);
+    final hasTrackOrTerrain = current.documents.any(
+      (document) =>
+          document.type == BriefingDocumentType.tracks ||
+          document.type == BriefingDocumentType.terrain,
+    );
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -125,6 +131,7 @@ class BriefingOverviewTab extends StatelessWidget {
                   contentType: BriefingDocumentContentType.notam,
                   relevanceStart: notamWindow?.$1,
                   relevanceEnd: notamWindow?.$2,
+                  relevanceLocalWindow: localNotamWindow,
                 ),
               ),
             ),
@@ -143,6 +150,7 @@ class BriefingOverviewTab extends StatelessWidget {
                   includeOtherSections: true,
                   relevanceStart: notamWindow?.$1,
                   relevanceEnd: notamWindow?.$2,
+                  relevanceLocalWindow: localNotamWindow,
                 ),
               ),
             ),
@@ -160,11 +168,20 @@ class BriefingOverviewTab extends StatelessWidget {
                   contentType: BriefingDocumentContentType.notam,
                   relevanceStart: notamWindow?.$1,
                   relevanceEnd: notamWindow?.$2,
+                  relevanceLocalWindow: localNotamWindow,
                 ),
               ),
             ),
           ],
         ),
+        if (hasTrackOrTerrain) ...[
+          const SizedBox(height: 16),
+          _sectionTitle(context, 'Track & terrain'),
+          _TrackTerrainSection(flight: current),
+        ],
+        const SizedBox(height: 20),
+        _sectionTitle(context, 'Original flight documents'),
+        _OriginalDocumentsSection(flight: current),
         const SizedBox(height: 20),
       ],
     );
@@ -226,6 +243,41 @@ class BriefingOverviewTab extends StatelessWidget {
     return arrival;
   }
 
+  String? _localNotamWindow(FlightBriefing flight) {
+    final date = flight.flightDate;
+    if (date == null) return null;
+    final departure = _localDateTime(date, flight.departureTime);
+    final arrival = _localDateTime(date, flight.arrivalTime);
+    if (departure == null || arrival == null) return null;
+    var adjustedArrival = arrival;
+    if (!adjustedArrival.isAfter(departure)) {
+      adjustedArrival = adjustedArrival.add(const Duration(days: 1));
+    }
+    final start = departure.subtract(const Duration(hours: 2));
+    final end = adjustedArrival.add(const Duration(hours: 2));
+    return '${_dateTime(start)} – ${_dateTime(end)} local';
+  }
+
+  DateTime? _localDateTime(DateTime date, String value) {
+    final compact = value.replaceAll(':', '').replaceAll(' ', '');
+    final match = RegExp(r'^(\d{2})(\d{2})(?:\+(\d*))?$').firstMatch(compact);
+    if (match == null) return null;
+    final hasDaySuffix = compact.contains('+');
+    final dayOffset = hasDaySuffix
+        ? int.tryParse(match.group(3) ?? '') ?? 1
+        : 0;
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      int.parse(match.group(1)!),
+      int.parse(match.group(2)!),
+    ).add(Duration(days: dayOffset));
+  }
+
+  String _dateTime(DateTime value) =>
+      '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')} ${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
   void _loadChecker(BuildContext context) => showDialog<void>(
     context: context,
     builder: (context) => AlertDialog(
@@ -242,6 +294,197 @@ class BriefingOverviewTab extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _TrackTerrainSection extends StatelessWidget {
+  const _TrackTerrainSection({required this.flight});
+  final FlightBriefing flight;
+
+  @override
+  Widget build(BuildContext context) {
+    final documents = flight.documents.where(
+      (document) =>
+          document.type == BriefingDocumentType.tracks ||
+          document.type == BriefingDocumentType.terrain,
+    );
+    final files = <({String name, String? path, BriefingDocumentType type})>[];
+    for (final document in documents) {
+      for (var index = 0; index < document.fileCount; index++) {
+        files.add((
+          name: index < document.fileNames.length
+              ? document.fileNames[index]
+              : '${document.title} ${index + 1}',
+          path: index < document.filePaths.length
+              ? document.filePaths[index]
+              : null,
+          type: document.type,
+        ));
+      }
+    }
+    return SizedBox(
+      height: 112,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: files.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final file = files[index];
+          final terrain = file.type == BriefingDocumentType.terrain;
+          return SizedBox(
+            width: 230,
+            child: Card(
+              elevation: 0,
+              color: terrain
+                  ? const Color(0xFFF3EBDD)
+                  : const Color(0xFFE3EEF7),
+              child: ListTile(
+                leading: Icon(
+                  terrain ? Icons.terrain_rounded : Icons.public_rounded,
+                  color: terrain
+                      ? const Color(0xFF8A6235)
+                      : const Color(0xFF315F86),
+                ),
+                title: Text(
+                  terrain ? 'Terrain' : 'Track',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                subtitle: Text(
+                  file.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: const Icon(Icons.open_in_new_rounded),
+                onTap: file.path == null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Reupload this document to open it.'),
+                        ),
+                      )
+                    : () => _open(context, file.name, file.path!),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _open(BuildContext context, String name, String path) =>
+      showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 800),
+            child: Column(
+              children: [
+                ListTile(
+                  title: Text(name),
+                  trailing: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(child: PdfFullPageViewer(path: path)),
+              ],
+            ),
+          ),
+        ),
+      );
+}
+
+class _OriginalDocumentsSection extends StatelessWidget {
+  const _OriginalDocumentsSection({required this.flight});
+  final FlightBriefing flight;
+
+  @override
+  Widget build(BuildContext context) {
+    final files = <({String name, String? path, String type})>[];
+    for (final document in flight.documents) {
+      if (document.type == BriefingDocumentType.significantWeather ||
+          document.type == BriefingDocumentType.operationalFlightPlan) {
+        continue;
+      }
+      for (var index = 0; index < document.fileCount; index++) {
+        files.add((
+          name: index < document.fileNames.length
+              ? document.fileNames[index]
+              : '${document.title} ${index + 1}',
+          path: index < document.filePaths.length
+              ? document.filePaths[index]
+              : null,
+          type: document.title,
+        ));
+      }
+    }
+    if (files.isEmpty) {
+      return const Card(
+        elevation: 0,
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Text('No additional flight documents loaded.'),
+        ),
+      );
+    }
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      child: Column(
+        children: List.generate(files.length, (index) {
+          final file = files[index];
+          return Column(
+            children: [
+              if (index > 0) const Divider(height: 1),
+              ListTile(
+                leading: const Icon(
+                  Icons.picture_as_pdf_rounded,
+                  color: Color(0xFFB93B3B),
+                ),
+                title: Text(
+                  file.name,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                subtitle: Text(file.type),
+                trailing: const Icon(Icons.open_in_new_rounded),
+                onTap: file.path == null
+                    ? () => ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Reupload this document to open it.'),
+                        ),
+                      )
+                    : () => _open(context, file.name, file.path!),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Future<void> _open(BuildContext context, String name, String path) =>
+      showDialog<void>(
+        context: context,
+        builder: (context) => Dialog(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 800),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.picture_as_pdf_rounded),
+                  title: Text(name),
+                  subtitle: const Text('Original loaded document'),
+                  trailing: IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ),
+                const Divider(height: 1),
+                Expanded(child: PdfFullPageViewer(path: path)),
+              ],
+            ),
+          ),
+        ),
+      );
 }
 
 class _AircraftDetailsCard extends StatelessWidget {

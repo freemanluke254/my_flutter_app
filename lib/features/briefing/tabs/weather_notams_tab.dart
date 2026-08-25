@@ -16,6 +16,7 @@ Future<void> showBriefingDocuments(
   bool includeOtherSections = false,
   DateTime? relevanceStart,
   DateTime? relevanceEnd,
+  String? relevanceLocalWindow,
 }) async {
   final value = document;
   if (value == null || value.fileCount == 0) {
@@ -92,6 +93,7 @@ Future<void> showBriefingDocuments(
       includeOtherSections: includeOtherSections,
       relevanceStart: relevanceStart,
       relevanceEnd: relevanceEnd,
+      relevanceLocalWindow: relevanceLocalWindow,
     ),
   );
 }
@@ -297,6 +299,7 @@ class _PdfTextDialog extends StatefulWidget {
     this.includeOtherSections = false,
     this.relevanceStart,
     this.relevanceEnd,
+    this.relevanceLocalWindow,
   });
   final String name;
   final String path;
@@ -305,6 +308,7 @@ class _PdfTextDialog extends StatefulWidget {
   final bool includeOtherSections;
   final DateTime? relevanceStart;
   final DateTime? relevanceEnd;
+  final String? relevanceLocalWindow;
   @override
   State<_PdfTextDialog> createState() => _PdfTextDialogState();
 }
@@ -463,9 +467,18 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
       if (ambiguous > 0)
         '$ambiguous notice${ambiguous == 1 ? '' : 's'} retained because validity could not be proven',
       'Window: STD −2 hours to STA +2 hours',
+      if (widget.relevanceStart != null && widget.relevanceEnd != null)
+        'UTC: ${_utc(widget.relevanceStart!)} – ${_utc(widget.relevanceEnd!)}',
+      if (widget.relevanceLocalWindow != null)
+        'Local: ${widget.relevanceLocalWindow}',
       'Scope: selected airport/FIR sections from the uploaded flight package',
     ].join('\n');
     return '$summary\n\n══════════════════════════════════\n\n$categories';
+  }
+
+  String _utc(DateTime value) {
+    final utc = value.toUtc();
+    return '${utc.day.toString().padLeft(2, '0')}/${utc.month.toString().padLeft(2, '0')} ${utc.hour.toString().padLeft(2, '0')}:${utc.minute.toString().padLeft(2, '0')}Z';
   }
 
   _NotamRelevance _relevance(String entry) {
