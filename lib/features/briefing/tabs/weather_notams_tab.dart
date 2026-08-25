@@ -421,27 +421,27 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
   }
 
   String _categorisedNotams(String raw) {
-    final matches = RegExp(
-      r'(?=^[A-Z]{4}[A-Z]\d{4}/\d{2}\b)',
+    final headingMatches = RegExp(
+      r'^([A-Z]{4})\s*[-/]\s*([^\n]+)$',
       multiLine: true,
     ).allMatches(raw).toList();
-    if (matches.isEmpty) return raw;
-    final grouped = <String, List<String>>{};
+    final sourceSections = <({String heading, String body})>[];
+    if (headingMatches.isEmpty) {
+      sourceSections.add((heading: 'Selected NOTAMs', body: raw));
+    } else {
+      for (var index = 0; index < headingMatches.length; index++) {
+        final match = headingMatches[index];
+        final end = index + 1 < headingMatches.length
+            ? headingMatches[index + 1].start
+            : raw.length;
+        sourceSections.add((
+          heading: '${match.group(1)} · ${match.group(2)!.trim()}',
+          body: raw.substring(match.end, end).trim(),
+        ));
+      }
+    }
     var excluded = 0;
     var ambiguous = 0;
-    for (var index = 0; index < matches.length; index++) {
-      final end = index + 1 < matches.length
-          ? matches[index + 1].start
-          : raw.length;
-      final entry = raw.substring(matches[index].start, end).trim();
-      final relevance = _relevance(entry);
-      if (relevance == _NotamRelevance.outsideFlightWindow) {
-        excluded++;
-        continue;
-      }
-      if (relevance == _NotamRelevance.ambiguous) ambiguous++;
-      (grouped[_notamCategory(entry)] ??= []).add(_formatNotam(entry));
-    }
     const order = <String>[
       'Runways',
       'Taxiways, aprons and stands',
@@ -453,13 +453,41 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
       'Aerodrome facilities',
       'Other operational NOTAMs',
     ];
-    final categories = order
-        .where((category) => grouped[category]?.isNotEmpty == true)
-        .map(
-          (category) =>
-              '$category (${grouped[category]!.length})\n${'─' * 34}\n${grouped[category]!.join('\n\n')}',
-        )
-        .join('\n\n══════════════════════════════════\n\n');
+    final decodedSections = <String>[];
+    for (final sourceSection in sourceSections) {
+      final matches = RegExp(
+        r'(?=^(?:\*?[A-Z]{4}[A-Z]\d{4}/\d{2}\b|[^\n]+\bVIR\s+\d{5}/\d{2}\s+\(\d{2}\s+[A-Z]{3}\s+\d{2}\)$))',
+        multiLine: true,
+      ).allMatches(sourceSection.body).toList();
+      if (matches.isEmpty) continue;
+      final grouped = <String, List<String>>{};
+      for (var index = 0; index < matches.length; index++) {
+        final end = index + 1 < matches.length
+            ? matches[index + 1].start
+            : sourceSection.body.length;
+        final entry = sourceSection.body
+            .substring(matches[index].start, end)
+            .trim();
+        final relevance = _relevance(entry);
+        if (relevance == _NotamRelevance.outsideFlightWindow) {
+          excluded++;
+          continue;
+        }
+        if (relevance == _NotamRelevance.ambiguous) ambiguous++;
+        (grouped[_notamCategory(entry)] ??= []).add(_formatNotam(entry));
+      }
+      final categories = order
+          .where((category) => grouped[category]?.isNotEmpty == true)
+          .map(
+            (category) =>
+                '$category (${grouped[category]!.length})\n${grouped[category]!.join('\n\n')}',
+          )
+          .join('\n\n§§CATEGORY§§\n\n');
+      if (categories.isNotEmpty) {
+        decodedSections.add('${sourceSection.heading}\n\n$categories');
+      }
+    }
+    if (decodedSections.isEmpty) return raw;
     final summary = [
       'Flight-relevance filter',
       if (excluded > 0)
@@ -473,7 +501,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
         'Local: ${widget.relevanceLocalWindow}',
       'Scope: selected airport/FIR sections from the uploaded flight package',
     ].join('\n');
-    return '$summary\n\n══════════════════════════════════\n\n$categories';
+    return '$summary\n\n══════════════════════════════════\n\n${decodedSections.join('\n\n══════════════════════════════════\n\n')}';
   }
 
   String _utc(DateTime value) {
@@ -555,11 +583,40 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
   }
 
   String _formatNotam(String entry) {
-    var decoded = entry
-        .replaceAll(' E)', '\nDetails: ')
-        .replaceAll(' D)', '\nSchedule: ')
-        .replaceAll(' F)', '\nLower limit: ')
-        .replaceAll(' G)', '\nUpper limit: ');
+    var decoded = entry;
+    final standardHeader = RegExp(
+      r'^\*?([A-Z]{4}[A-Z]\d{4}/\d{2})\s+\((\d{2}\s+[A-Z]{3}\s+\d{2})\)',
+    ).firstMatch(decoded);
+    if (standardHeader != null) {
+      decoded = decoded.replaceRange(
+        standardHeader.start,
+        standardHeader.end,
+        'NOTAM: ${standardHeader.group(1)}\nPublished: ${standardHeader.group(2)}',
+      );
+    } else {
+      final bulletinHeader = RegExp(
+        r'^(.+?)\s+(VIR\s+\d{5}/\d{2})\s+\((\d{2}\s+[A-Z]{3}\s+\d{2})\)',
+      ).firstMatch(decoded);
+      if (bulletinHeader != null) {
+        decoded = decoded.replaceRange(
+          bulletinHeader.start,
+          bulletinHeader.end,
+          'Bulletin: ${bulletinHeader.group(1)!.trim()}\nReference: ${bulletinHeader.group(2)}\nPublished: ${bulletinHeader.group(3)}',
+        );
+      }
+    }
+    decoded = decoded
+        .replaceAllMapped(
+          RegExp(
+            r'^\*(\d{2}\s+[A-Z]{3}\s+\d{4}\s+\d{2}:\d{2}\s*-\s*\d{2}\s+[A-Z]{3}\s+\d{4}\s+\d{2}:\d{2})\*$',
+            multiLine: true,
+          ),
+          (match) => 'Validity: ${match.group(1)}',
+        )
+        .replaceAll(RegExp(r'^\s*E\)', multiLine: true), 'Details:')
+        .replaceAll(RegExp(r'^\s*D\)', multiLine: true), 'Schedule:')
+        .replaceAll(RegExp(r'^\s*F\)', multiLine: true), 'Lower limit:')
+        .replaceAll(RegExp(r'^\s*G\)', multiLine: true), 'Upper limit:');
     const contractions = <String, String>{
       'ABV': 'above',
       'ACFT': 'aircraft',
@@ -631,7 +688,7 @@ class _DecodedContentView extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: 12),
           child: contentType == BriefingDocumentContentType.weather
               ? _weatherCard(section, index)
-              : _notamCard(section),
+              : _notamCard(section, index),
         );
       }),
     );
@@ -693,7 +750,46 @@ class _DecodedContentView extends StatelessWidget {
     );
   }
 
-  Widget _notamCard(String section) {
+  Widget _notamCard(String section, int index) {
+    if (RegExp(r'^[A-Z]{4}\s+·').hasMatch(section)) {
+      final lineEnd = section.indexOf('\n');
+      final heading = lineEnd < 0 ? section : section.substring(0, lineEnd);
+      final body = lineEnd < 0 ? '' : section.substring(lineEnd).trim();
+      final categories = body
+          .split(RegExp(r'\n\n§§CATEGORY§§\n\n'))
+          .where((part) => part.trim().isNotEmpty);
+      return Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: index.isEven ? Colors.white : const Color(0xFFF0F2F1),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFD7DDDA)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              heading,
+              style: const TextStyle(
+                color: Color(0xFF173E67),
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+            for (final category in categories)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: _notamCategoryCard(category.trim()),
+              ),
+          ],
+        ),
+      );
+    }
+    return _notamCategoryCard(section);
+  }
+
+  Widget _notamCategoryCard(String section) {
     final title = section.split('\n').first;
     final colour = _notamColour(title);
     return Container(
@@ -719,7 +815,7 @@ class _DecodedContentView extends StatelessWidget {
             style: const TextStyle(fontWeight: FontWeight.w900),
           ),
         );
-      } else if (RegExp(r'^[A-Z]{4}[A-Z]\d{4}/\d{2}\b').hasMatch(line)) {
+      } else if (RegExp(r'^\*?[A-Z]{4}[A-Z]\d{4}/\d{2}\b').hasMatch(line)) {
         spans.add(
           TextSpan(
             text: line,
@@ -783,6 +879,28 @@ class _DecodedContentView extends StatelessWidget {
             'Weather',
           ]
         : const <String>[
+            'Affected FIR',
+            'Affected location',
+            'Affected area',
+            'Qualified code',
+            'Q-code',
+            'Valid from',
+            'Valid until',
+            'Effective from',
+            'Effective until',
+            'Coordinates',
+            'Radius',
+            'Traffic',
+            'Purpose',
+            'Scope',
+            'Series',
+            'Type',
+            'Created',
+            'NOTAM',
+            'Published',
+            'Validity',
+            'Bulletin',
+            'Reference',
             'Lower limit',
             'Upper limit',
             'Details',
@@ -790,7 +908,6 @@ class _DecodedContentView extends StatelessWidget {
             'Window',
             'UTC',
             'Local',
-            'Scope',
           ];
     final alternatives = labels.map(RegExp.escape).join('|');
     return RegExp('(?:^|(?<= · ))(?:$alternatives):');
