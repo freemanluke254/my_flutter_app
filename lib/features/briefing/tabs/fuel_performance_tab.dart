@@ -671,12 +671,19 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
               children: [
                 _stepHeader('3', 'Fuel'),
                 const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: SizedBox(
-                    width: 180,
-                    child: _weightField('FINAL ZFW', 'actualZfw'),
-                  ),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 2,
+                  crossAxisAlignment: WrapCrossAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 180,
+                      child: _weightField('FINAL ZFW', 'actualZfw'),
+                    ),
+                    _FuelCorrectionFactor(
+                      value: flight.fuelBurnCorrectionFactor,
+                    ),
+                  ],
                 ),
                 Builder(
                   builder: (context) {
@@ -687,12 +694,24 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                     if (difference == null || factor == null) {
                       return const SizedBox.shrink();
                     }
-                    final burnAdjustment =
-                        (difference / 1000) * factor * (1 + factor / 1000);
+                    final zfwBurnAdjustment = _burnAdjustment(
+                      factor,
+                      difference,
+                    );
+                    final plannedEtp =
+                        double.tryParse(flight.etpAdjustmentFuel) ?? 0;
+                    final amendedEtp = double.tryParse(
+                      flight.amendedFuelFigures['etpAdj'] ??
+                          flight.etpAdjustmentFuel,
+                    );
+                    final etpBurnAdjustment = amendedEtp == null
+                        ? 0.0
+                        : _burnAdjustment(factor, amendedEtp - plannedEtp);
                     return _FuelAdjustmentSummary(
                       difference: difference,
                       correctionFactor: factor,
-                      burnAdjustment: burnAdjustment,
+                      zfwBurnAdjustment: zfwBurnAdjustment,
+                      etpBurnAdjustment: etpBurnAdjustment,
                     );
                   },
                 ),
@@ -780,6 +799,8 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                             ],
                           );
                         }),
+                        const SizedBox(height: 4),
+                        _fuelCalculationBreakdown(flight),
                       ],
                     );
                   },
@@ -997,6 +1018,13 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       final key = field.substring(5);
       final amended = {...flight.amendedFuelFigures, key: value};
       if (key != 'ramp') {
+        if (key == 'etpAdj') {
+          final adjustedTrip = _tripAfterEtpAdjustment(flight, value);
+          if (adjustedTrip != null) {
+            amended['trip'] = adjustedTrip;
+            _controllers['fuel_trip']!.text = adjustedTrip;
+          }
+        }
         final ramp = amended.entries
             .where((entry) => entry.key != 'ramp')
             .fold<double>(
@@ -1071,16 +1099,23 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     final enteredZfw = double.tryParse(finalZfw);
     final correction = double.tryParse(flight.fuelBurnCorrectionFactor);
     if (plannedZfw != null && enteredZfw != null && correction != null) {
-      final deltaTonnes = (enteredZfw - plannedZfw) / 1000;
-      final burnAdjustment = deltaTonnes * correction * (1 + correction / 1000);
-      final plannedTrip = double.tryParse(flight.tripFuel);
-      if (plannedTrip != null) {
-        planned['trip'] = (plannedTrip + burnAdjustment).round().toString();
-      }
+      final zfwDifference = enteredZfw - plannedZfw;
+      final deltaTonnes = zfwDifference / 1000;
       final plannedEtp = double.tryParse(flight.etpAdjustmentFuel);
       if (plannedEtp != null && plannedEtp > 0) {
         planned['etpAdj'] = (plannedEtp - (deltaTonnes * 100))
             .clamp(0, double.infinity)
+            .round()
+            .toString();
+      }
+      final plannedTrip = double.tryParse(flight.tripFuel);
+      if (plannedTrip != null) {
+        final amendedEtp = double.tryParse(planned['etpAdj'] ?? '') ?? 0;
+        final etpDifference = amendedEtp - (plannedEtp ?? 0);
+        final totalBurnAdjustment =
+            _burnAdjustment(correction, zfwDifference) +
+            _burnAdjustment(correction, etpDifference);
+        planned['trip'] = (plannedTrip + totalBurnAdjustment)
             .round()
             .toString();
       }
@@ -1090,6 +1125,67 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       (total, value) => total + (double.tryParse(value) ?? 0),
     );
     return {...planned, 'ramp': ramp.round().toString()};
+  }
+
+  String? _tripAfterEtpAdjustment(FlightBriefing flight, String amendedEtp) {
+    final plannedTrip = double.tryParse(flight.tripFuel);
+    final plannedEtp = double.tryParse(flight.etpAdjustmentFuel) ?? 0;
+    final enteredEtp = double.tryParse(amendedEtp);
+    final correction = double.tryParse(flight.fuelBurnCorrectionFactor);
+    if (plannedTrip == null || enteredEtp == null || correction == null) {
+      return null;
+    }
+    final zfwDifference = _zfwDifference(flight) ?? 0;
+    final totalBurnAdjustment =
+        _burnAdjustment(correction, zfwDifference) +
+        _burnAdjustment(correction, enteredEtp - plannedEtp);
+    return (plannedTrip + totalBurnAdjustment).round().toString();
+  }
+
+  double _burnAdjustment(double correctionFactor, double weightDifferenceKg) =>
+      (weightDifferenceKg / 1000) *
+      correctionFactor *
+      (1 + correctionFactor / 1000);
+
+  Widget _fuelCalculationBreakdown(FlightBriefing flight) {
+    String fuelValue(String key, String planned) =>
+        flight.amendedFuelFigures[key] ?? planned;
+
+    final components = <(String, String)>[
+      ('TRIP', fuelValue('trip', flight.tripFuel)),
+      ('CONT', fuelValue('cont', flight.contingencyFuel)),
+      ('ALTN', fuelValue('altn', flight.alternateFuel)),
+      ('FNL RES', fuelValue('fnlRes', flight.finalReserveFuel)),
+      ('ETP ADJ', fuelValue('etpAdj', flight.etpAdjustmentFuel)),
+      ('ADDNL', fuelValue('addnl', flight.additionalFuel)),
+      ('UNUSABLE', fuelValue('unusable', flight.unusableFuel)),
+      ('ARR DLY', fuelValue('arrDly', flight.arrivalDelayFuel)),
+      ('EXTRA', fuelValue('extra', flight.extraFuel)),
+      ('DISC', fuelValue('disc', flight.discretionaryFuel)),
+      ('TAXI/APU', fuelValue('taxiApu', flight.taxiFuel)),
+    ];
+    final ramp = fuelValue('ramp', flight.blockFuel);
+    final factor = double.tryParse(flight.fuelBurnCorrectionFactor);
+    final zfwDifference = _zfwDifference(flight);
+    final plannedEtp = double.tryParse(flight.etpAdjustmentFuel) ?? 0;
+    final amendedEtp = double.tryParse(
+      fuelValue('etpAdj', flight.etpAdjustmentFuel),
+    );
+    final zfwAdjustment = factor == null || zfwDifference == null
+        ? null
+        : _burnAdjustment(factor, zfwDifference);
+    final etpAdjustment = factor == null || amendedEtp == null
+        ? null
+        : _burnAdjustment(factor, amendedEtp - plannedEtp);
+
+    return _FuelCalculationBreakdown(
+      plannedTrip: flight.tripFuel,
+      amendedTrip: fuelValue('trip', flight.tripFuel),
+      zfwAdjustment: zfwAdjustment,
+      etpAdjustment: etpAdjustment,
+      components: components,
+      ramp: ramp,
+    );
   }
 
   double? _zfwDifference(FlightBriefing flight) {
@@ -1210,18 +1306,21 @@ class _FuelAdjustmentSummary extends StatelessWidget {
   const _FuelAdjustmentSummary({
     required this.difference,
     required this.correctionFactor,
-    required this.burnAdjustment,
+    required this.zfwBurnAdjustment,
+    required this.etpBurnAdjustment,
   });
 
   final double difference;
   final double correctionFactor;
-  final double burnAdjustment;
+  final double zfwBurnAdjustment;
+  final double etpBurnAdjustment;
 
   @override
   Widget build(BuildContext context) {
     final requiresNewPlan = difference.abs() > 5000;
     final sign = difference >= 0 ? '+' : '−';
-    final burnSign = burnAdjustment >= 0 ? '+' : '−';
+    final zfwBurnSign = zfwBurnAdjustment >= 0 ? '+' : '−';
+    final etpBurnSign = etpBurnAdjustment >= 0 ? '+' : '−';
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(11),
@@ -1242,7 +1341,8 @@ class _FuelAdjustmentSummary extends StatelessWidget {
           Text(
             'ZFW difference: $sign${difference.abs().round()} kg  ·  '
             'Burn factor: ${correctionFactor.round()} kg/1,000 kg  ·  '
-            'Trip burn adjustment: $burnSign${burnAdjustment.abs().round()} kg',
+            'ZFW trip adjustment: $zfwBurnSign${zfwBurnAdjustment.abs().round()} kg  ·  '
+            'ETP trip adjustment: $etpBurnSign${etpBurnAdjustment.abs().round()} kg',
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
           if (requiresNewPlan) ...[
@@ -1259,6 +1359,105 @@ class _FuelAdjustmentSummary extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FuelCorrectionFactor extends StatelessWidget {
+  const _FuelCorrectionFactor({required this.value});
+
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 230,
+    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE8EEF6),
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: const Color(0xFFC7D4E2)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'OFP CORRECTION FACTOR',
+          style: TextStyle(
+            color: Color(0xFF315F86),
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value.isEmpty ? 'Not found in OFP' : '$value kg per 1,000 kg',
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ],
+    ),
+  );
+}
+
+class _FuelCalculationBreakdown extends StatelessWidget {
+  const _FuelCalculationBreakdown({
+    required this.plannedTrip,
+    required this.amendedTrip,
+    required this.zfwAdjustment,
+    required this.etpAdjustment,
+    required this.components,
+    required this.ramp,
+  });
+
+  final String plannedTrip;
+  final String amendedTrip;
+  final double? zfwAdjustment;
+  final double? etpAdjustment;
+  final List<(String, String)> components;
+  final String ramp;
+
+  String _signed(double value) =>
+      '${value >= 0 ? '+' : '−'} ${value.abs().round()} kg';
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(13),
+    decoration: BoxDecoration(
+      color: const Color(0xFFEAF3FA),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFFB9D1E4)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'FUEL CALCULATION',
+          style: TextStyle(
+            color: Color(0xFF315F86),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 7),
+        if (zfwAdjustment != null && etpAdjustment != null)
+          Text(
+            'TRIP: ${plannedTrip.isEmpty ? '0' : plannedTrip} kg '
+            '${_signed(zfwAdjustment!)} ${_signed(etpAdjustment!)} '
+            '= ${amendedTrip.isEmpty ? '0' : amendedTrip} kg',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        if (zfwAdjustment != null && etpAdjustment != null)
+          const Padding(
+            padding: EdgeInsets.only(top: 3),
+            child: Text(
+              'OFP Trip ± ZFW burn adjustment ± ETP burn adjustment',
+              style: TextStyle(color: Color(0xFF667069), fontSize: 12),
+            ),
+          ),
+        const SizedBox(height: 8),
+        Text(
+          '${components.map((item) => '${item.$1} ${item.$2.isEmpty ? '0' : item.$2}').join('  +  ')}  =  RAMP ${ramp.isEmpty ? '0' : ramp} kg',
+          style: const TextStyle(fontWeight: FontWeight.w800, height: 1.45),
+        ),
+      ],
+    ),
+  );
 }
 
 class _EntryField extends StatelessWidget {
