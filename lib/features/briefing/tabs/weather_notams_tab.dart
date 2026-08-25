@@ -12,6 +12,7 @@ Future<void> showBriefingDocuments(
   List<String> airportCodes = const [],
   BriefingDocumentContentType contentType = BriefingDocumentContentType.other,
   bool charts = false,
+  bool includeOtherSections = false,
 }) async {
   final value = document;
   if (value == null || value.fileCount == 0) {
@@ -20,26 +21,28 @@ Future<void> showBriefingDocuments(
     );
     return;
   }
-  final selected = await showDialog<int>(
-    context: context,
-    builder: (dialogContext) => SimpleDialog(
-      title: Text(value.title),
-      children: List.generate(value.fileCount, (index) {
-        final name = index < value.fileNames.length
-            ? value.fileNames[index]
-            : '${value.title} ${index + 1}';
-        return SimpleDialogOption(
-          onPressed: () => Navigator.pop(dialogContext, index),
-          child: ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.picture_as_pdf_rounded),
-            title: Text(name),
-            trailing: const Icon(Icons.open_in_new_rounded),
+  final selected = value.fileCount == 1
+      ? 0
+      : await showDialog<int>(
+          context: context,
+          builder: (dialogContext) => SimpleDialog(
+            title: Text(value.title),
+            children: List.generate(value.fileCount, (index) {
+              final name = index < value.fileNames.length
+                  ? value.fileNames[index]
+                  : '${value.title} ${index + 1}';
+              return SimpleDialogOption(
+                onPressed: () => Navigator.pop(dialogContext, index),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.picture_as_pdf_rounded),
+                  title: Text(name),
+                  trailing: const Icon(Icons.open_in_new_rounded),
+                ),
+              );
+            }),
           ),
         );
-      }),
-    ),
-  );
   if (selected == null || !context.mounted) return;
   final name = selected < value.fileNames.length
       ? value.fileNames[selected]
@@ -83,6 +86,7 @@ Future<void> showBriefingDocuments(
       path: path,
       airportCodes: airportCodes,
       contentType: contentType,
+      includeOtherSections: includeOtherSections,
     ),
   );
 }
@@ -285,11 +289,13 @@ class _PdfTextDialog extends StatefulWidget {
     required this.path,
     required this.airportCodes,
     required this.contentType,
+    this.includeOtherSections = false,
   });
   final String name;
   final String path;
   final List<String> airportCodes;
   final BriefingDocumentContentType contentType;
+  final bool includeOtherSections;
   @override
   State<_PdfTextDialog> createState() => _PdfTextDialogState();
 }
@@ -298,7 +304,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
   late final Future<String> _text = const PdfDocumentReader().extractText(
     widget.path,
   );
-  bool _raw = true;
+  bool _raw = false;
   @override
   Widget build(BuildContext context) => Dialog(
     child: ConstrainedBox(
@@ -373,14 +379,20 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     final sections = <String>[];
     for (var index = 0; index < starts.length; index++) {
       final code = starts[index].group(1)!;
-      if (!relevantCodes.contains(code)) continue;
+      final selected = widget.includeOtherSections
+          ? !relevantCodes.contains(code)
+          : relevantCodes.contains(code);
+      if (!selected) continue;
       final end = index + 1 < starts.length
           ? starts[index + 1].start
           : text.length;
       sections.add(text.substring(starts[index].start, end).trim());
     }
     if (sections.isEmpty) {
-      return 'No ${widget.airportCodes.join(' or ')} section was found in this document.\n\n$text';
+      final scope = widget.includeOtherSections
+          ? 'en-route or alternate'
+          : widget.airportCodes.join(' or ');
+      return 'No $scope section was found in this document.\n\n$text';
     }
     return sections.join('\n\n────────────────────\n\n');
   }

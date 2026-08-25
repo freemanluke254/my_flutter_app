@@ -61,8 +61,7 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Departure WX',
-                subtitle:
-                    '${route.$1} at STD\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
+                subtitle: '${route.$1} at STD\nMETAR & TAF',
                 icon: Icons.flight_takeoff_rounded,
                 available: weather != null,
                 onTap: () => showBriefingDocuments(
@@ -77,14 +76,15 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'En-route WX',
-                subtitle:
-                    '${sigWx?.fileCount ?? 0} SIGWX chart${sigWx?.fileCount == 1 ? '' : 's'}\nloaded',
+                subtitle: 'Alternates and route\nweather',
                 icon: Icons.thunderstorm_outlined,
-                available: sigWx != null,
+                available: weather != null,
                 onTap: () => showBriefingDocuments(
                   context,
-                  document: sigWx,
-                  charts: true,
+                  document: weather,
+                  airportCodes: [route.$1, route.$2],
+                  contentType: BriefingDocumentContentType.weather,
+                  includeOtherSections: true,
                 ),
               ),
             ),
@@ -92,8 +92,7 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Arrival WX',
-                subtitle:
-                    '${route.$2} at STA\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
+                subtitle: '${route.$2} at STA\nMETAR & TAF',
                 icon: Icons.flight_land_rounded,
                 available: weather != null,
                 onTap: () => showBriefingDocuments(
@@ -115,8 +114,7 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Departure',
-                subtitle:
-                    '${route.$1}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
+                subtitle: '${route.$1}\nAerodrome + FIR',
                 icon: Icons.flight_takeoff_rounded,
                 available: notams != null,
                 onTap: () => showBriefingDocuments(
@@ -131,8 +129,7 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'En-route',
-                subtitle:
-                    'FIR and route\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
+                subtitle: 'Route, FIR\nand alternates',
                 icon: Icons.route_outlined,
                 available: notams != null,
                 onTap: () => showBriefingDocuments(
@@ -140,6 +137,7 @@ class BriefingOverviewTab extends StatelessWidget {
                   document: notams,
                   airportCodes: [route.$1, route.$2],
                   contentType: BriefingDocumentContentType.notam,
+                  includeOtherSections: true,
                 ),
               ),
             ),
@@ -147,8 +145,7 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Arrival',
-                subtitle:
-                    '${route.$2}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
+                subtitle: '${route.$2}\nAerodrome + FIR',
                 icon: Icons.flight_land_rounded,
                 available: notams != null,
                 onTap: () => showBriefingDocuments(
