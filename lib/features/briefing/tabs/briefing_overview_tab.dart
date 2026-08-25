@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
+import '../widgets/pdf_preview_thumbnail.dart';
 
 class BriefingOverviewTab extends StatelessWidget {
   const BriefingOverviewTab({required this.flight, super.key});
@@ -30,9 +31,9 @@ class BriefingOverviewTab extends StatelessWidget {
       );
     }
     final route = _route(current.route);
-    final weather = _has(current, BriefingDocumentType.weather);
+    final weather = _document(current, BriefingDocumentType.weather);
     final sigWx = _document(current, BriefingDocumentType.significantWeather);
-    final notams = _has(current, BriefingDocumentType.notams);
+    final notams = _document(current, BriefingDocumentType.notams);
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -55,16 +56,18 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Departure WX',
-                subtitle: '${route.$1}\nAt STD',
+                subtitle:
+                    '${route.$1} at STD\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_takeoff_rounded,
-                available: weather,
+                available: weather != null,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _StatusBlock(
                 title: 'En-route WX',
-                subtitle: 'SIGWX\ncharts',
+                subtitle:
+                    '${sigWx?.fileCount ?? 0} SIGWX chart${sigWx?.fileCount == 1 ? '' : 's'}\nloaded',
                 icon: Icons.thunderstorm_outlined,
                 available: sigWx != null,
               ),
@@ -73,9 +76,10 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Arrival WX',
-                subtitle: '${route.$2}\nAt STA',
+                subtitle:
+                    '${route.$2} at STA\n${weather?.fileCount ?? 0} file${weather?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_land_rounded,
-                available: weather,
+                available: weather != null,
               ),
             ),
           ],
@@ -89,27 +93,30 @@ class BriefingOverviewTab extends StatelessWidget {
             Expanded(
               child: _StatusBlock(
                 title: 'Departure',
-                subtitle: '${route.$1}\nNOTAMs',
+                subtitle:
+                    '${route.$1}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_takeoff_rounded,
-                available: notams,
+                available: notams != null,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _StatusBlock(
                 title: 'En-route',
-                subtitle: 'FIR and route\nNOTAMs',
+                subtitle:
+                    'FIR and route\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.route_outlined,
-                available: notams,
+                available: notams != null,
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: _StatusBlock(
                 title: 'Arrival',
-                subtitle: '${route.$2}\nNOTAMs',
+                subtitle:
+                    '${route.$2}\n${notams?.fileCount ?? 0} file${notams?.fileCount == 1 ? '' : 's'} loaded',
                 icon: Icons.flight_land_rounded,
-                available: notams,
+                available: notams != null,
               ),
             ),
           ],
@@ -134,8 +141,6 @@ class BriefingOverviewTab extends StatelessWidget {
       ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
     ),
   );
-  bool _has(FlightBriefing flight, BriefingDocumentType type) =>
-      flight.documents.any((item) => item.type == type);
   BriefingDocument? _document(
     FlightBriefing flight,
     BriefingDocumentType type,
@@ -284,6 +289,7 @@ class _SigWxGallery extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final count = document?.fileCount ?? 0;
+    final charts = _charts(document);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -302,74 +308,266 @@ class _SigWxGallery extends StatelessWidget {
           )
         else
           SizedBox(
-            height: 145,
+            height: 190,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: count,
+              itemCount: charts.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, index) => Container(
-                width: 150,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF2F5F3),
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.picture_as_pdf_rounded,
-                      color: Color(0xFFB93B3B),
-                      size: 42,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'SIGWX chart ${index + 1}',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'PDF preview',
-                      style: TextStyle(color: Color(0xFF667069), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
+              itemBuilder: (context, index) {
+                final chart = charts[index];
+                return Container(
+                  width: 190,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF2F5F3),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFD8E0DC)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(13),
+                        ),
+                        child: SizedBox(
+                          height: 118,
+                          width: double.infinity,
+                          child: PdfPreviewThumbnail(path: chart.path),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 9, 10, 0),
+                        child: Text(
+                          chart.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        child: Text(
+                          chart.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Color(0xFF667069),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
       ],
     );
   }
+
+  List<_SigWxChart> _charts(BriefingDocument? document) {
+    final value = document;
+    if (value == null) return const [];
+    final charts = List<_SigWxChart>.generate(value.fileCount, (index) {
+      final name = index < value.fileNames.length
+          ? value.fileNames[index]
+          : 'SIGWX chart ${index + 1}';
+      final path = index < value.filePaths.length
+          ? value.filePaths[index]
+          : null;
+      final validAt = _validTime(name);
+      return _SigWxChart(
+        name: name,
+        path: path,
+        validAt: validAt,
+        title: validAt == null ? 'SIGWX chart ${index + 1}' : _title(validAt),
+      );
+    });
+    charts.sort((a, b) {
+      if (a.validAt == null && b.validAt == null) {
+        return a.name.compareTo(b.name);
+      }
+      if (a.validAt == null) return 1;
+      if (b.validAt == null) return -1;
+      return a.validAt!.compareTo(b.validAt!);
+    });
+    return charts;
+  }
+
+  DateTime? _validTime(String name) {
+    final match = RegExp(
+      r'(\d{2}):(\d{2})\s+(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})',
+      caseSensitive: false,
+    ).firstMatch(name);
+    if (match == null) return null;
+    const months = <String>[
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    final month = months.indexOf(match.group(4)!.toUpperCase()) + 1;
+    return DateTime.utc(
+      2000 + int.parse(match.group(5)!),
+      month,
+      int.parse(match.group(3)!),
+      int.parse(match.group(1)!),
+      int.parse(match.group(2)!),
+    );
+  }
+
+  String _title(DateTime date) {
+    const months = <String>[
+      'JAN',
+      'FEB',
+      'MAR',
+      'APR',
+      'MAY',
+      'JUN',
+      'JUL',
+      'AUG',
+      'SEP',
+      'OCT',
+      'NOV',
+      'DEC',
+    ];
+    final hour = date.hour.toString().padLeft(2, '0');
+    final minute = date.minute.toString().padLeft(2, '0');
+    return '${date.day} ${months[date.month - 1]} · $hour:$minute UTC';
+  }
+}
+
+class _SigWxChart {
+  const _SigWxChart({
+    required this.name,
+    required this.path,
+    required this.validAt,
+    required this.title,
+  });
+  final String name;
+  final String? path;
+  final DateTime? validAt;
+  final String title;
 }
 
 class _FlightTimeCard extends StatelessWidget {
   const _FlightTimeCard({required this.flight});
   final FlightBriefing flight;
+
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    color: Colors.white,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        children: [
-          Expanded(child: _time('SCH', flight.scheduledFlightTime)),
-          const Icon(Icons.compare_arrows_rounded, color: Color(0xFF667069)),
-          Expanded(child: _time('FP flight time', flight.flightPlanTime)),
-        ],
+  Widget build(BuildContext context) {
+    final scheduledMinutes = _minutes(flight.scheduledFlightTime);
+    final planMinutes = _minutes(flight.flightPlanTime);
+    final difference = scheduledMinutes == null || planMinutes == null
+        ? null
+        : planMinutes - scheduledMinutes;
+    final eta = _estimatedArrival(difference);
+    final status = _arrivalStatus(difference);
+    final statusColor = difference == null
+        ? const Color(0xFF667069)
+        : difference <= 0
+        ? const Color(0xFF28634A)
+        : const Color(0xFFB93B3B);
+
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Expanded(child: _time('SCH', flight.scheduledFlightTime)),
+            Container(width: 1, height: 34, color: const Color(0xFFE2E7E4)),
+            Expanded(child: _time('FP', flight.flightPlanTime)),
+            Container(width: 1, height: 34, color: const Color(0xFFE2E7E4)),
+            Expanded(
+              flex: 2,
+              child: Column(
+                children: [
+                  const Text(
+                    'Estimated arrival · local',
+                    style: TextStyle(color: Color(0xFF667069), fontSize: 12),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    eta,
+                    style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  Text(
+                    status,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
+
   Widget _time(String label, String value) => Column(
     children: [
       Text(label, style: const TextStyle(color: Color(0xFF667069))),
-      const SizedBox(height: 4),
+      const SizedBox(height: 2),
       Text(
         _duration(value),
-        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900),
+        style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
       ),
     ],
   );
+
+  int? _minutes(String value) {
+    final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value.trim());
+    if (match == null) return null;
+    return int.parse(match.group(1)!) * 60 + int.parse(match.group(2)!);
+  }
+
+  String _estimatedArrival(int? difference) {
+    if (difference == null) return 'Pending';
+    final match = RegExp(
+      r'^(\d{2}):?(\d{2})(\+?)$',
+    ).firstMatch(flight.arrivalTime.trim());
+    if (match == null) return 'Pending';
+    final scheduledDay = match.group(3)!.isEmpty ? 0 : 1;
+    final total =
+        scheduledDay * 1440 +
+        int.parse(match.group(1)!) * 60 +
+        int.parse(match.group(2)!) +
+        difference;
+    final day = total ~/ 1440;
+    final clockMinutes = total.remainder(1440);
+    final hour = (clockMinutes ~/ 60).toString().padLeft(2, '0');
+    final minute = (clockMinutes % 60).toString().padLeft(2, '0');
+    return '$hour:$minute${day > 0 ? ' +$day' : ''}';
+  }
+
+  String _arrivalStatus(int? difference) {
+    if (difference == null) return 'Comparison pending';
+    if (difference == 0) return 'On schedule';
+    final amount = difference.abs();
+    final duration = amount >= 60
+        ? '${amount ~/ 60}h ${amount % 60}m'
+        : '${amount}m';
+    return difference < 0 ? '$duration early' : '$duration late';
+  }
+
   String _duration(String value) {
     final match = RegExp(r'^(\d{1,2})[.:](\d{2})$').firstMatch(value);
     return match == null

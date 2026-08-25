@@ -134,6 +134,8 @@ class BriefingStorage {
             'type': document.type.name,
             'title': document.title,
             'fileCount': document.fileCount,
+            'fileNames': document.fileNames,
+            'filePaths': document.filePaths,
           },
         )
         .toList(),
@@ -187,6 +189,10 @@ class BriefingStorage {
         type: BriefingDocumentType.values.byName(item['type']! as String),
         title: item['title']! as String,
         fileCount: item['fileCount']! as int,
+        fileNames:
+            (item['fileNames'] as List<Object?>?)?.cast<String>() ?? const [],
+        filePaths:
+            (item['filePaths'] as List<Object?>?)?.cast<String>() ?? const [],
       );
     }).toList(),
   );

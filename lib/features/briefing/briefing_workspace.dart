@@ -276,9 +276,13 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       if (!useAnyway || !mounted) return;
     }
     final counts = <BriefingDocumentType, int>{};
+    final fileNames = <BriefingDocumentType, List<String>>{};
+    final filePaths = <BriefingDocumentType, List<String>>{};
     for (final file in files) {
       final type = _documentType(file.name);
       counts[type] = (counts[type] ?? 0) + 1;
+      (fileNames[type] ??= []).add(file.name);
+      if (file.path != null) (filePaths[type] ??= []).add(file.path!);
     }
     final ofpTimes = ofp == null ? null : const OfpTimeResolver().resolve(ofp);
     final updated = FlightBriefing(
@@ -332,6 +336,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
               type: entry.key,
               title: _documentTitle(entry.key),
               fileCount: entry.value,
+              fileNames: fileNames[entry.key] ?? const [],
+              filePaths: filePaths[entry.key] ?? const [],
             ),
           )
           .toList(),

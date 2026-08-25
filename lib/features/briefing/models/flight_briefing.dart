@@ -15,10 +15,14 @@ class BriefingDocument {
     required this.type,
     required this.title,
     required this.fileCount,
+    this.fileNames = const [],
+    this.filePaths = const [],
   });
   final BriefingDocumentType type;
   final String title;
   final int fileCount;
+  final List<String> fileNames;
+  final List<String> filePaths;
 
   IconData get icon => switch (type) {
     BriefingDocumentType.operationalFlightPlan => Icons.description_outlined,
