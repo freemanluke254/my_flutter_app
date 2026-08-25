@@ -281,6 +281,9 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
 
   String _relevantText(String text) {
     if (widget.airportCodes.isEmpty) return text;
+    final relevantCodes = widget.contentType == _ContentType.notam
+        ? _notamScope(widget.airportCodes)
+        : widget.airportCodes.toSet();
     final starts = RegExp(
       r'^([A-Z]{4})\s*(?:-|/)',
       multiLine: true,
@@ -288,7 +291,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     final sections = <String>[];
     for (var index = 0; index < starts.length; index++) {
       final code = starts[index].group(1)!;
-      if (!widget.airportCodes.contains(code)) continue;
+      if (!relevantCodes.contains(code)) continue;
       final end = index + 1 < starts.length
           ? starts[index + 1].start
           : text.length;
@@ -302,14 +305,7 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
 
   String _decodedText(String raw) {
     if (widget.contentType == _ContentType.notam) {
-      return raw
-          .replaceAll(RegExp(r'\n(?=[A-Z0-9])'), ' ')
-          .replaceAll(RegExp(r'(?=\b[A-Z]{4}[A-Z]\d{4}/\d{2}\b)'), '\n\nNOTAM ')
-          .replaceAll(' E)', '\nDetails: ')
-          .replaceAll(' D)', '\nSchedule: ')
-          .replaceAll(' F)', '\nLower limit: ')
-          .replaceAll(' G)', '\nUpper limit: ')
-          .trim();
+      return _categorisedNotams(raw);
     }
     return raw
         .replaceAllMapped(
@@ -335,4 +331,104 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
               'Temperature ${match.group(1)}°C, dew point ${match.group(2)!.replaceFirst('M', '-')}°C',
         );
   }
+
+  Set<String> _notamScope(List<String> airports) {
+    const airspace = <String, List<String>>{
+      'EGLL': ['EGTT'],
+      'EGKK': ['EGTT'],
+      'EGSS': ['EGTT'],
+      'EGGW': ['EGTT'],
+      'EGLC': ['EGTT'],
+      'EGCC': ['EGTT'],
+      'KLAX': ['KZLA'],
+      'KLAS': ['KZLA'],
+      'KSAN': ['KZLA'],
+      'KONT': ['KZLA'],
+      'KJFK': ['KZNY'],
+      'KEWR': ['KZNY'],
+      'KIAD': ['KZDC'],
+      'KBOS': ['KZBW'],
+      'KMIA': ['KZMA'],
+      'KATL': ['KZTL'],
+      'KORD': ['KZAU'],
+      'KSFO': ['KZOA'],
+    };
+    return {
+      for (final airport in airports) airport,
+      for (final airport in airports) ...?airspace[airport],
+    };
+  }
+
+  String _categorisedNotams(String raw) {
+    final matches = RegExp(
+      r'(?=^[A-Z]{4}[A-Z]\d{4}/\d{2}\b)',
+      multiLine: true,
+    ).allMatches(raw).toList();
+    if (matches.isEmpty) return raw;
+    final grouped = <String, List<String>>{};
+    for (var index = 0; index < matches.length; index++) {
+      final end = index + 1 < matches.length
+          ? matches[index + 1].start
+          : raw.length;
+      final entry = raw.substring(matches[index].start, end).trim();
+      (grouped[_notamCategory(entry)] ??= []).add(_formatNotam(entry));
+    }
+    const order = <String>[
+      'Runways',
+      'Taxiways, aprons and stands',
+      'SIDs and departures',
+      'STARs and arrivals',
+      'Approaches',
+      'Navigation and communications',
+      'Airspace and FIR',
+      'Aerodrome facilities',
+      'Other operational NOTAMs',
+    ];
+    return order
+        .where((category) => grouped[category]?.isNotEmpty == true)
+        .map(
+          (category) =>
+              '$category (${grouped[category]!.length})\n${'─' * 34}\n${grouped[category]!.join('\n\n')}',
+        )
+        .join('\n\n══════════════════════════════════\n\n');
+  }
+
+  String _notamCategory(String entry) {
+    final value = entry.toUpperCase();
+    if (RegExp(r'\b(RWY|RUNWAY)\b').hasMatch(value)) return 'Runways';
+    if (RegExp(r'\b(TWY|TAXIWAY|APRON|STAND|GATE)\b').hasMatch(value)) {
+      return 'Taxiways, aprons and stands';
+    }
+    if (RegExp(r'\b(SID|DEPARTURE)\b').hasMatch(value)) {
+      return 'SIDs and departures';
+    }
+    if (RegExp(r'\b(STAR|ARRIVAL)\b').hasMatch(value)) {
+      return 'STARs and arrivals';
+    }
+    if (RegExp(r'\b(IAP|APPROACH|ILS|RNP|RNAV APP)\b').hasMatch(value)) {
+      return 'Approaches';
+    }
+    if (RegExp(r'\b(VOR|DME|NDB|FREQ|CPDLC|COM|NAV)\b').hasMatch(value)) {
+      return 'Navigation and communications';
+    }
+    if (RegExp(
+      r'\b(FIR|AIRSPACE|RESTRICTED AREA|UAS|UAV|DRONE|ATS ROUTE)\b',
+    ).hasMatch(value)) {
+      return 'Airspace and FIR';
+    }
+    if (RegExp(
+      r'\b(AD |AERODROME|TERMINAL|LIGHT|RFFS|FIRE)\b',
+    ).hasMatch(value)) {
+      return 'Aerodrome facilities';
+    }
+    return 'Other operational NOTAMs';
+  }
+
+  String _formatNotam(String entry) => entry
+      .replaceAll(' E)', '\nDetails: ')
+      .replaceAll(' D)', '\nSchedule: ')
+      .replaceAll(' F)', '\nLower limit: ')
+      .replaceAll(' G)', '\nUpper limit: ')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .trim();
 }
