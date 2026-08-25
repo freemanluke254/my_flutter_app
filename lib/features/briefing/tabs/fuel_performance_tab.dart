@@ -626,9 +626,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     builder: (context) => AlertDialog(
       content: const SizedBox(
         width: 680,
-        child: SingleChildScrollView(
-          child: _RtowCalculationReference(initiallyExpanded: true),
-        ),
+        child: SingleChildScrollView(child: _RtowCalculationReference()),
       ),
       actions: [
         TextButton(
@@ -644,9 +642,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     builder: (context) => AlertDialog(
       content: const SizedBox(
         width: 680,
-        child: SingleChildScrollView(
-          child: _LandingDispatchCriteria(initiallyExpanded: true),
-        ),
+        child: SingleChildScrollView(child: _LandingDispatchCriteria()),
       ),
       actions: [
         TextButton(
@@ -1143,9 +1139,7 @@ class _LandingDispatchDecision extends StatelessWidget {
 }
 
 class _LandingDispatchCriteria extends StatelessWidget {
-  const _LandingDispatchCriteria({this.initiallyExpanded = false});
-
-  final bool initiallyExpanded;
+  const _LandingDispatchCriteria();
 
   @override
   Widget build(BuildContext context) => Material(
@@ -1155,47 +1149,37 @@ class _LandingDispatchCriteria extends StatelessWidget {
       borderRadius: BorderRadius.circular(10),
       side: const BorderSide(color: Color(0xFFB9D1E4)),
     ),
-    child: ExpansionTile(
-      initiallyExpanded: initiallyExpanded,
-      dense: true,
-      leading: const Icon(Icons.flight_land_rounded, color: Color(0xFF315F86)),
-      title: const Text(
-        'Is a Landing Dispatch calculation needed?',
-        style: TextStyle(fontWeight: FontWeight.w900),
+    child: const Padding(
+      padding: EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'You do not need a Landing Dispatch calculation if all of these apply:',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
+          SizedBox(height: 6),
+          _CriteriaItem('Runway LDA is at least 8,000 ft.'),
+          _CriteriaItem(
+            'Expected OAT is 26°C or below when aerodrome elevation is 2,501–5,600 ft AMSL.',
+          ),
+          _CriteriaItem(
+            'Expected OAT is 40°C or below when aerodrome elevation is 2,500 ft AMSL or lower.',
+          ),
+          _CriteriaItem('QNH is at least 970 hPa.'),
+          _CriteriaItem('There is no tailwind component.'),
+          _CriteriaItem('Expected runway condition is dry.'),
+          _CriteriaItem(
+            'No MEL or CDL dispatch condition affects landing performance.',
+          ),
+          _CriteriaItem('Missed approach climb gradient is 2.5% or less.'),
+          SizedBox(height: 8),
+          Text(
+            'Criteria are based on a maximum landing weight of 192,776 kg.',
+            style: TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ],
       ),
-      subtitle: const Text('Check all exemption criteria'),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        Text(
-          'You do not need a Landing Dispatch calculation if all of these apply:',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        SizedBox(height: 6),
-        _CriteriaItem('Runway LDA is at least 8,000 ft.'),
-        _CriteriaItem(
-          'Expected OAT is 26°C or below when aerodrome elevation is 2,501–5,600 ft AMSL.',
-        ),
-        _CriteriaItem(
-          'Expected OAT is 40°C or below when aerodrome elevation is 2,500 ft AMSL or lower.',
-        ),
-        _CriteriaItem('QNH is at least 970 hPa.'),
-        _CriteriaItem('There is no tailwind component.'),
-        _CriteriaItem('Expected runway condition is dry.'),
-        _CriteriaItem(
-          'No MEL or CDL dispatch condition affects landing performance.',
-        ),
-        _CriteriaItem('Missed approach climb gradient is 2.5% or less.'),
-        SizedBox(height: 8),
-        Text(
-          'Criteria are based on a maximum landing weight of 192,776 kg.',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        SizedBox(height: 8),
-        Text(
-          'When a Landing Dispatch calculation is required, enter estimated OAT and QNH in OPT using the best available information.',
-        ),
-      ],
     ),
   );
 }
@@ -1286,9 +1270,7 @@ class _CriteriaItem extends StatelessWidget {
 }
 
 class _RtowCalculationReference extends StatefulWidget {
-  const _RtowCalculationReference({this.initiallyExpanded = false});
-
-  final bool initiallyExpanded;
+  const _RtowCalculationReference();
 
   @override
   State<_RtowCalculationReference> createState() =>
@@ -1306,68 +1288,77 @@ class _RtowCalculationReferenceState extends State<_RtowCalculationReference> {
       borderRadius: BorderRadius.circular(12),
       side: const BorderSide(color: Color(0xFFCBD5DE)),
     ),
-    child: ExpansionTile(
-      initiallyExpanded: widget.initiallyExpanded,
-      leading: Icon(
-        _portableEfbUnavailable
-            ? Icons.phonelink_erase_rounded
-            : Icons.tablet_mac_rounded,
-        color: const Color(0xFF315F86),
-      ),
-      title: Text(
-        _portableEfbUnavailable
-            ? 'No Portable EFB'
-            : 'How to calculate RTOW on Portable EFB in the OPT app',
-        style: TextStyle(fontWeight: FontWeight.w900),
-      ),
-      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (_portableEfbUnavailable)
-          const _PortableEfbUnavailableNote()
-        else ...const [
-          _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
-          _ReferenceStep(
-            number: 2,
-            text: 'Confirm PERFORMANCE – TAKEOFF in the top tab bar.',
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(
+                _portableEfbUnavailable
+                    ? Icons.phonelink_erase_rounded
+                    : Icons.tablet_mac_rounded,
+                color: const Color(0xFF315F86),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  _portableEfbUnavailable
+                      ? 'No Portable EFB'
+                      : 'How to calculate RTOW on Portable EFB in the OPT app',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+              ),
+            ],
           ),
-          _ReferenceStep(number: 3, text: 'Enter ARPT.'),
-          _ReferenceStep(number: 4, text: 'Enter RWY.'),
-          _ReferenceStep(
-            number: 5,
-            text: 'Select AIRPORT INFO and confirm AIRPORT DATA.',
+          const SizedBox(height: 8),
+          if (_portableEfbUnavailable)
+            const _PortableEfbUnavailableNote()
+          else ...const [
+            _ReferenceStep(number: 1, text: 'Confirm the correct aircraft.'),
+            _ReferenceStep(
+              number: 2,
+              text: 'Confirm PERFORMANCE – TAKEOFF in the top tab bar.',
+            ),
+            _ReferenceStep(number: 3, text: 'Enter ARPT.'),
+            _ReferenceStep(number: 4, text: 'Enter RWY.'),
+            _ReferenceStep(
+              number: 5,
+              text: 'Select AIRPORT INFO and confirm AIRPORT DATA.',
+            ),
+            _ReferenceStep(number: 6, text: 'Enter NOTAM, MEL and CDL data.'),
+            _ReferenceStep(number: 7, text: 'Enter all remaining data.'),
+            _ReferenceStep(
+              number: 8,
+              text:
+                  'Use OPTIMUM RTG and OPTIMUM FLAP unless conditions dictate otherwise.',
+            ),
+            _ReferenceStep(number: 9, text: 'Do not enter TOW, ZFW or CG.'),
+            _ReferenceStep(number: 10, text: 'Press CALC.'),
+            SizedBox(height: 10),
+            _RtowOutputSection(),
+            SizedBox(height: 8),
+            _ReferenceWarning(),
+            SizedBox(height: 8),
+            _CrosswindReferenceNote(),
+          ],
+          const SizedBox(height: 10),
+          const Text(
+            'Reference aid only — verify against the current approved company and aircraft procedure.',
+            style: TextStyle(color: Color(0xFF667069), fontSize: 11),
           ),
-          _ReferenceStep(number: 6, text: 'Enter NOTAM, MEL and CDL data.'),
-          _ReferenceStep(number: 7, text: 'Enter all remaining data.'),
-          _ReferenceStep(
-            number: 8,
-            text:
-                'Use OPTIMUM RTG and OPTIMUM FLAP unless conditions dictate otherwise.',
+          const Divider(height: 22),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text('Portable EFB or OPT APP failure?'),
+            value: _portableEfbUnavailable,
+            onChanged: (value) =>
+                setState(() => _portableEfbUnavailable = value ?? false),
           ),
-          _ReferenceStep(number: 9, text: 'Do not enter TOW, ZFW or CG.'),
-          _ReferenceStep(number: 10, text: 'Press CALC.'),
-          SizedBox(height: 8),
-          _ReferenceWarning(),
-          SizedBox(height: 8),
-          _CrosswindReferenceNote(),
-          SizedBox(height: 10),
-          _RtowOutputSection(),
         ],
-        const SizedBox(height: 10),
-        const Text(
-          'Reference aid only — verify against the current approved company and aircraft procedure.',
-          style: TextStyle(color: Color(0xFF667069), fontSize: 11),
-        ),
-        const Divider(height: 22),
-        CheckboxListTile(
-          contentPadding: EdgeInsets.zero,
-          controlAffinity: ListTileControlAffinity.leading,
-          title: const Text('Portable EFB or OPT APP failure?'),
-          value: _portableEfbUnavailable,
-          onChanged: (value) =>
-              setState(() => _portableEfbUnavailable = value ?? false),
-        ),
-      ],
+      ),
     ),
   );
 }
@@ -1464,18 +1455,12 @@ class _ReferenceWarning extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'MESSAGE INSTRUCTION',
-          style: TextStyle(
-            color: Color(0xFF8A5B13),
-            fontWeight: FontWeight.w900,
-          ),
+          'Ignore the following message:',
+          style: TextStyle(fontWeight: FontWeight.w900),
         ),
         SizedBox(height: 4),
-        Text('Ignore the following message:'),
-        SizedBox(height: 3),
         Text(
           '“For limit weight calculation, maximum crosswind has not been checked for this runway condition”.',
-          style: TextStyle(fontWeight: FontWeight.w800),
         ),
       ],
     ),
@@ -1506,7 +1491,7 @@ class _CrosswindReferenceNote extends StatelessWidget {
         ),
         SizedBox(height: 4),
         Text(
-          'At this stage, refer to “Take-off Crosswind Guidelines – TALPA ARC” in FCTM Chapter 3, section “Crosswind Take-off”, or QRH OI “Runway Condition Matrix and Crosswind Limits”.',
+          'Refer to “Take-off Crosswind Guidelines – TALPA ARC” in FCTM Chapter 3, section “Crosswind Take-off”, or QRH OI “Runway Condition Matrix and Crosswind Limits”.',
         ),
       ],
     ),
