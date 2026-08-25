@@ -123,6 +123,10 @@ class BriefingStorage {
     'contingencyFuel': flight.contingencyFuel,
     'finalReserveFuel': flight.finalReserveFuel,
     'extraFuel': flight.extraFuel,
+    'flightDeckCount': flight.flightDeckCount,
+    'cabinCrewCount': flight.cabinCrewCount,
+    'fsm': flight.fsm,
+    'css': flight.css,
     'documents': flight.documents
         .map(
           (document) => {
@@ -171,6 +175,10 @@ class BriefingStorage {
     contingencyFuel: json['contingencyFuel'] as String? ?? '',
     finalReserveFuel: json['finalReserveFuel'] as String? ?? '',
     extraFuel: json['extraFuel'] as String? ?? '',
+    flightDeckCount: json['flightDeckCount'] as int? ?? 3,
+    cabinCrewCount: json['cabinCrewCount'] as int? ?? 10,
+    fsm: json['fsm'] as String? ?? '',
+    css: json['css'] as String? ?? '',
     documents: (json['documents']! as List<Object?>).map((value) {
       final item = (value! as Map<Object?, Object?>).cast<String, Object?>();
       return BriefingDocument(

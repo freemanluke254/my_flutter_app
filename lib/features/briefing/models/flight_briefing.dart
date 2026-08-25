@@ -66,6 +66,10 @@ class FlightBriefing {
     this.contingencyFuel = '',
     this.finalReserveFuel = '',
     this.extraFuel = '',
+    this.flightDeckCount = 3,
+    this.cabinCrewCount = 10,
+    this.fsm = '',
+    this.css = '',
   });
   final String flightNumber;
   final String route;
@@ -100,6 +104,10 @@ class FlightBriefing {
   final String contingencyFuel;
   final String finalReserveFuel;
   final String extraFuel;
+  final int flightDeckCount;
+  final int cabinCrewCount;
+  final String fsm;
+  final String css;
 
   FlightBriefing copyWith({
     String? flightNumber,
@@ -135,6 +143,10 @@ class FlightBriefing {
     String? contingencyFuel,
     String? finalReserveFuel,
     String? extraFuel,
+    int? flightDeckCount,
+    int? cabinCrewCount,
+    String? fsm,
+    String? css,
   }) => FlightBriefing(
     flightNumber: flightNumber ?? this.flightNumber,
     route: route ?? this.route,
@@ -169,5 +181,9 @@ class FlightBriefing {
     contingencyFuel: contingencyFuel ?? this.contingencyFuel,
     finalReserveFuel: finalReserveFuel ?? this.finalReserveFuel,
     extraFuel: extraFuel ?? this.extraFuel,
+    flightDeckCount: flightDeckCount ?? this.flightDeckCount,
+    cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
+    fsm: fsm ?? this.fsm,
+    css: css ?? this.css,
   );
 }
