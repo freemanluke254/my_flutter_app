@@ -356,7 +356,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       scheduledDepartureUtc: ofp == null
           ? current.scheduledDepartureUtc
           : ofpTimes?.departureUtc,
-      flightDate: ofp?.flightDate ?? current.flightDate,
+      flightDate: ofp == null ? current.flightDate : ofp.flightDate,
       scheduledFlightTime:
           ofp?.scheduledFlightTime ?? current.scheduledFlightTime,
       flightPlanTime: ofp?.flightPlanTime ?? current.flightPlanTime,

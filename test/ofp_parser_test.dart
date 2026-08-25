@@ -32,6 +32,7 @@ RAMP 51700 TD FUEL 9500
     final result = const OfpParser().parseText(source);
 
     expect(result.callsign, 'VIR300');
+    expect(result.flightDate, DateTime(2026, 6, 22));
     expect(result.scheduledFlightTime, '8.30');
     expect(result.flightPlanTime, '07.44');
     expect(result.registration, 'GVZIG');
