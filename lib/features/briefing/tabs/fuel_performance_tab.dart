@@ -506,11 +506,17 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       ),
       const SizedBox(height: 12),
       Material(
-        color: const Color(0xFFF0F3F6),
+        color: flight.loadsheetInitialized
+            ? const Color(0xFFEAF6ED)
+            : const Color(0xFFF0F3F6),
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: Color(0xFFCBD5DE)),
+          side: BorderSide(
+            color: flight.loadsheetInitialized
+                ? const Color(0xFFA8CEB1)
+                : const Color(0xFFCBD5DE),
+          ),
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -527,77 +533,69 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
               const SizedBox(height: 12),
               _stepHeader('1', 'Initialise'),
               const SizedBox(height: 12),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final crewTotal =
-                      flight.flightDeckCount + flight.cabinCrewCount;
-                  final fields = [
-                    _ActualValue(label: 'RTOW', value: flight.calculatedRtow),
-                    _ActualValue(
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 155,
+                    child: _ActualValue(
+                      label: 'RTOW',
+                      value: flight.calculatedRtow,
+                      compact: true,
+                      locked: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 155,
+                    child: _ActualValue(
                       label: 'RLW',
                       value: flight.regulatedLandingWeight,
+                      compact: true,
+                      locked: true,
                     ),
-                    _ActualValue(label: 'TOTAL CREW', value: '$crewTotal'),
-                    _loadsheetField('CAPTAIN PAYROLL', 'captainPayroll'),
-                  ];
-                  if (constraints.maxWidth < 800) {
-                    return Column(
+                  ),
+                  SizedBox(
+                    width: 130,
+                    child: _ActualValue(
+                      label: 'TOTAL CREW',
+                      value:
+                          '${flight.flightDeckCount + flight.cabinCrewCount}',
+                      suffix: null,
+                      compact: true,
+                      locked: true,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 210,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: fields,
-                    );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: fields[0]),
-                      const SizedBox(width: 10),
-                      Expanded(child: fields[1]),
-                      const SizedBox(width: 10),
-                      Expanded(child: fields[2]),
-                      const SizedBox(width: 10),
-                      Expanded(child: fields[3]),
-                    ],
-                  );
-                },
+                      children: [
+                        _loadsheetField('CAPTAIN PAYROLL', 'captainPayroll'),
+                        CheckboxListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          title: const Text(
+                            'Sent GLC',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                          value: flight.loadsheetInitialized,
+                          onChanged:
+                              flight.loadsheetInitialized ||
+                                  !_canSendInitialLoadsheet(flight)
+                              ? null
+                              : (_) => _confirmInitialLoadsheetSent(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
               const Text(
                 'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
                 style: TextStyle(color: Color(0xFF667069), fontSize: 12),
-              ),
-              const SizedBox(height: 10),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Initial loadsheet sent to GLC'),
-                subtitle: Text(
-                  flight.loadsheetInitialized
-                      ? 'Initialisation complete'
-                      : 'Complete the figures above, then send.',
-                ),
-                value: flight.loadsheetInitialized,
-                onChanged: null,
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton.icon(
-                  onPressed:
-                      flight.loadsheetInitialized ||
-                          flight.calculatedRtow.isEmpty ||
-                          _controllers['rlw']!.text.isEmpty ||
-                          flight.flightDeckCount + flight.cabinCrewCount <= 0 ||
-                          _controllers['captainPayroll']!.text.isEmpty
-                      ? null
-                      : _sendInitialLoadsheet,
-                  icon: Icon(
-                    flight.loadsheetInitialized
-                        ? Icons.check_circle_rounded
-                        : Icons.send_rounded,
-                  ),
-                  label: Text(
-                    flight.loadsheetInitialized
-                        ? 'Sent to GLC'
-                        : 'Send initial loadsheet to GLC',
-                  ),
-                ),
               ),
             ],
           ),
@@ -688,6 +686,35 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     );
   }
 
+  bool _canSendInitialLoadsheet(FlightBriefing flight) =>
+      flight.calculatedRtow.isNotEmpty &&
+      _controllers['rlw']!.text.isNotEmpty &&
+      flight.flightDeckCount + flight.cabinCrewCount > 0 &&
+      _controllers['captainPayroll']!.text.isNotEmpty;
+
+  Future<void> _confirmInitialLoadsheetSent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm initial loadsheet'),
+        content: const Text(
+          'Are you sure the initial loadsheet has been sent to GLC?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('No'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) _sendInitialLoadsheet();
+  }
+
   Widget _stepHeader(String number, String title, {String? role}) => Row(
     children: [
       CircleAvatar(
@@ -745,9 +772,12 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
     decoration: InputDecoration(
       labelText: label,
+      hintText: 'To come',
+      isDense: true,
       filled: true,
       fillColor: Colors.white,
       border: const OutlineInputBorder(),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
     ),
     onChanged: (value) => _update(key, value),
   );
@@ -1543,14 +1573,23 @@ class _PerformanceFormula extends StatelessWidget {
 }
 
 class _ActualValue extends StatelessWidget {
-  const _ActualValue({required this.label, required this.value});
+  const _ActualValue({
+    required this.label,
+    required this.value,
+    this.suffix = 'kg',
+    this.compact = false,
+    this.locked = false,
+  });
   final String label;
   final String value;
+  final String? suffix;
+  final bool compact;
+  final bool locked;
 
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 10),
-    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+    padding: EdgeInsets.symmetric(horizontal: 11, vertical: compact ? 9 : 14),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(12),
@@ -1559,13 +1598,32 @@ class _ActualValue extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(color: Color(0xFF667069), fontSize: 12),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: Color(0xFF667069),
+                  fontSize: 12,
+                ),
+              ),
+            ),
+            if (locked)
+              const Icon(
+                Icons.lock_outline_rounded,
+                size: 14,
+                color: Color(0xFF667069),
+              ),
+          ],
         ),
         const SizedBox(height: 3),
         Text(
-          value.isEmpty ? 'Pending' : '$value kg',
+          value.isEmpty
+              ? 'Pending'
+              : suffix == null
+              ? value
+              : '$value $suffix',
           style: const TextStyle(fontWeight: FontWeight.w900),
         ),
       ],
