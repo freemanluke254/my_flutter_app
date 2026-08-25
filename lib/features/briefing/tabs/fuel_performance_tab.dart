@@ -485,44 +485,16 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _stepHeader('1', 'RTOW · Calculate', role: 'C, F/O'),
-              ),
-              IconButton(
-                tooltip: 'How to calculate RTOW',
-                onPressed: _showRtowProcedure,
-                icon: const Icon(
-                  Icons.info_outline_rounded,
-                  color: Color(0xFF315F86),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          IgnorePointer(
-            ignoring: flight.atisLetter.isEmpty,
-            child: Opacity(
-              opacity: flight.atisLetter.isEmpty ? 0.5 : 1,
-              child: _RtowField(
-                controller: _controllers['rtow']!,
-                onChanged: (value) => _update('rtow', value),
-              ),
-            ),
+          _RtowField(
+            controller: _controllers['rtow']!,
+            onChanged: (value) => _update('rtow', value),
+            onOpenChecklist: _showRtowProcedure,
           ),
           const SizedBox(height: 8),
           const _LandingDispatchCriteria(),
-          const SizedBox(height: 8),
-          const _ProcedureNote(
-            title: 'PORTABLE EFB / OPT APP UNAVAILABLE',
-            text:
-                'If no portable pilot-attached EFB OPT app is available—for example following portable EFB or OPT app failures—refer to OPT Device Failures in Chapter SP, Section 20.',
-            warning: true,
-          ),
           const Divider(height: 28),
           _stepHeader(
-            '2',
+            '1',
             'Initialise the loadsheet in the aircraft COMM page',
           ),
           CheckboxListTile(
@@ -798,9 +770,14 @@ class _EntryField extends StatelessWidget {
 }
 
 class _RtowField extends StatelessWidget {
-  const _RtowField({required this.controller, required this.onChanged});
+  const _RtowField({
+    required this.controller,
+    required this.onChanged,
+    required this.onOpenChecklist,
+  });
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
+  final VoidCallback onOpenChecklist;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -811,11 +788,10 @@ class _RtowField extends StatelessWidget {
     ),
     child: Row(
       children: [
-        const Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Expanded(
+          child: Row(
             children: [
-              Text(
+              const Text(
                 'CALCULATED RTOW',
                 style: TextStyle(
                   color: Colors.white,
@@ -823,9 +799,14 @@ class _RtowField extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              Text(
-                'B787 crew-entered regulated take-off weight',
-                style: TextStyle(color: Color(0xFFDCE8F3)),
+              const SizedBox(width: 6),
+              IconButton(
+                onPressed: onOpenChecklist,
+                tooltip: 'Open RTOW procedure',
+                padding: const EdgeInsets.all(4),
+                visualDensity: VisualDensity.compact,
+                color: Colors.white,
+                icon: const Icon(Icons.fact_check_outlined, size: 21),
               ),
             ],
           ),
@@ -1075,67 +1056,6 @@ class _ReferenceWarning extends StatelessWidget {
       ],
     ),
   );
-}
-
-class _ProcedureNote extends StatelessWidget {
-  const _ProcedureNote({
-    required this.title,
-    required this.text,
-    this.warning = false,
-  });
-
-  final String title;
-  final String text;
-  final bool warning;
-
-  @override
-  Widget build(BuildContext context) {
-    final background = warning
-        ? const Color(0xFFFFF1DA)
-        : const Color(0xFFEAF3FA);
-    final border = warning ? const Color(0xFFE3B96F) : const Color(0xFFB9D1E4);
-    final foreground = warning
-        ? const Color(0xFF8A5B13)
-        : const Color(0xFF315F86);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: border),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            warning ? Icons.warning_amber_rounded : Icons.info_outline,
-            size: 19,
-            color: foreground,
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: foreground,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(text),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _CrosswindReferenceNote extends StatelessWidget {
