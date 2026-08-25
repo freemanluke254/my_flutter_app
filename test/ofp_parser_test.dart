@@ -45,9 +45,9 @@ RAMP 51700 TD FUEL 9500
     expect(result.landingWeight, '171000');
     expect(result.blockFuel, '51700');
     expect(result.tripFuel, '41700');
-    expect(result.fuelTimes['trip'], '07.44');
-    expect(result.fuelTimes['cont'], '00.28');
-    expect(result.fuelTimes['taxiApu'], '00.23');
+    expect(result.fuelTimes['trip'], '07:44');
+    expect(result.fuelTimes['cont'], '00:28');
+    expect(result.fuelTimes['taxiApu'], '00:23');
     expect(result.maxPayloadPlan, isTrue);
   });
 
@@ -74,7 +74,7 @@ RAMP 57700
     final result = const OfpParser().parseText(source);
 
     expect(result.contingencyFuel, '1400');
-    expect(result.fuelTimes['cont'], '00.20');
+    expect(result.fuelTimes['cont'], '00:20');
     expect(result.alternateFuel, '2000');
     expect(result.arrivalDelayFuel, '200');
     expect(result.discretionaryFuel, '0');

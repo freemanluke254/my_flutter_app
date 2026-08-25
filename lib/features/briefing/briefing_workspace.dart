@@ -337,6 +337,22 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       extraFuel: ofp?.extraFuel ?? current.extraFuel,
       discretionaryFuel: ofp?.discretionaryFuel ?? current.discretionaryFuel,
       fuelTimes: ofp?.fuelTimes ?? current.fuelTimes,
+      amendedFuelFigures: current.amendedFuelFigures.isNotEmpty || ofp == null
+          ? current.amendedFuelFigures
+          : {
+              'trip': ofp.tripFuel,
+              'cont': ofp.contingencyFuel,
+              'altn': ofp.alternateFuel,
+              'fnlRes': ofp.finalReserveFuel,
+              'etpAdj': ofp.etpAdjustmentFuel,
+              'addnl': ofp.additionalFuel,
+              'unusable': ofp.unusableFuel,
+              'arrDly': ofp.arrivalDelayFuel,
+              'extra': ofp.extraFuel,
+              'disc': ofp.discretionaryFuel,
+              'taxiApu': ofp.taxiFuel,
+              'ramp': ofp.blockFuel,
+            },
       maxPayloadPlan: ofp?.maxPayloadPlan ?? current.maxPayloadPlan,
       flightDeckCount: current.flightDeckCount,
       cabinCrewCount: current.cabinCrewCount,

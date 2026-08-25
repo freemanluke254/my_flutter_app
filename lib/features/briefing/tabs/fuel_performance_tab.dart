@@ -57,6 +57,35 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'finalFlap': flight?.finalFlapSetting ?? '',
       'atis': flight?.atisLetter ?? '',
       'captainPayroll': flight?.captainPayrollNumber ?? '',
+      'fuel_trip': flight?.amendedFuelFigures['trip'] ?? flight?.tripFuel ?? '',
+      'fuel_cont':
+          flight?.amendedFuelFigures['cont'] ?? flight?.contingencyFuel ?? '',
+      'fuel_altn':
+          flight?.amendedFuelFigures['altn'] ?? flight?.alternateFuel ?? '',
+      'fuel_fnlRes':
+          flight?.amendedFuelFigures['fnlRes'] ??
+          flight?.finalReserveFuel ??
+          '',
+      'fuel_etpAdj':
+          flight?.amendedFuelFigures['etpAdj'] ??
+          flight?.etpAdjustmentFuel ??
+          '',
+      'fuel_addnl':
+          flight?.amendedFuelFigures['addnl'] ?? flight?.additionalFuel ?? '',
+      'fuel_unusable':
+          flight?.amendedFuelFigures['unusable'] ?? flight?.unusableFuel ?? '',
+      'fuel_arrDly':
+          flight?.amendedFuelFigures['arrDly'] ??
+          flight?.arrivalDelayFuel ??
+          '',
+      'fuel_extra':
+          flight?.amendedFuelFigures['extra'] ?? flight?.extraFuel ?? '',
+      'fuel_disc':
+          flight?.amendedFuelFigures['disc'] ?? flight?.discretionaryFuel ?? '',
+      'fuel_taxiApu':
+          flight?.amendedFuelFigures['taxiApu'] ?? flight?.taxiFuel ?? '',
+      'fuel_ramp':
+          flight?.amendedFuelFigures['ramp'] ?? flight?.blockFuel ?? '',
       'rlw': flight == null
           ? ''
           : flight.regulatedLandingWeight.isNotEmpty
@@ -209,6 +238,13 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
         decimal: true,
         onChanged: (value) => _update(key, value),
       );
+
+  Widget _amendedFuelField(String label, String key) => _EntryField(
+    label: label,
+    controller: _controllers['fuel_$key']!,
+    suffix: 'kg',
+    onChanged: (value) => _update('fuel_$key', value),
+  );
 
   Widget _takeoffPerformance(FlightBriefing flight) {
     final preliminaryTow = _preliminaryTow(flight);
@@ -643,7 +679,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'OFP FUEL FIGURES',
+                  'OFP FUEL FIGURES · READ ONLY',
                   style: TextStyle(
                     color: Color(0xFF315F86),
                     fontWeight: FontWeight.w900,
@@ -666,19 +702,66 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       ('TAXI/APU', flight.taxiFuel, 'taxiApu'),
                       ('RAMP', flight.blockFuel, 'ramp'),
                     ];
-                    return Wrap(
-                      children: figures
-                          .map(
-                            (figure) => SizedBox(
-                              width: constraints.maxWidth,
-                              child: _PlannedWeight(
-                                label: figure.$1,
-                                value: figure.$2,
-                                time: flight.fuelTimes[figure.$3] ?? '',
-                              ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (constraints.maxWidth >= 620)
+                          const Padding(
+                            padding: EdgeInsets.fromLTRB(12, 0, 12, 6),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  flex: 3,
+                                  child: Text(
+                                    'FROM OFP',
+                                    style: TextStyle(
+                                      color: Color(0xFF667069),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 10),
+                                Expanded(
+                                  flex: 2,
+                                  child: Text(
+                                    'CREW AMENDED',
+                                    style: TextStyle(
+                                      color: Color(0xFF667069),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
-                          )
-                          .toList(),
+                          ),
+                        ...figures.map((figure) {
+                          final planned = _PlannedWeight(
+                            label: figure.$1,
+                            value: figure.$2,
+                            time: flight.fuelTimes[figure.$3] ?? '',
+                          );
+                          final amended = _amendedFuelField(
+                            figure.$1,
+                            figure.$3,
+                          );
+                          if (constraints.maxWidth < 620) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [planned, amended],
+                            );
+                          }
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(flex: 3, child: planned),
+                              const SizedBox(width: 10),
+                              Expanded(flex: 2, child: amended),
+                            ],
+                          );
+                        }),
+                      ],
                     );
                   },
                 ),
@@ -887,6 +970,15 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
   void _update(String field, String value) {
     final flight = widget.flight;
     if (flight == null) return;
+    if (field.startsWith('fuel_')) {
+      final key = field.substring(5);
+      widget.onFlightChanged(
+        flight.copyWith(
+          amendedFuelFigures: {...flight.amendedFuelFigures, key: value},
+        ),
+      );
+      return;
+    }
     widget.onFlightChanged(switch (field) {
       'actualZfw' => flight.copyWith(actualZeroFuelWeight: value),
       'actualTow' => flight.copyWith(actualTakeoffWeight: value),
@@ -1011,7 +1103,7 @@ class _PlannedWeight extends StatelessWidget {
             if (time != null) ...[
               const SizedBox(width: 18),
               Text(
-                time!.isEmpty ? 'Time not found' : time!,
+                time!.isEmpty ? '00:00' : time!.replaceAll('.', ':'),
                 style: const TextStyle(
                   color: Color(0xFF315F86),
                   fontWeight: FontWeight.w800,

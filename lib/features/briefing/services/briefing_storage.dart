@@ -131,6 +131,7 @@ class BriefingStorage {
     'extraFuel': flight.extraFuel,
     'discretionaryFuel': flight.discretionaryFuel,
     'fuelTimes': flight.fuelTimes,
+    'amendedFuelFigures': flight.amendedFuelFigures,
     'actualZeroFuelWeight': flight.actualZeroFuelWeight,
     'actualTakeoffWeight': flight.actualTakeoffWeight,
     'actualLandingWeight': flight.actualLandingWeight,
@@ -223,6 +224,11 @@ class BriefingStorage {
     discretionaryFuel: json['discretionaryFuel'] as String? ?? '',
     fuelTimes:
         (json['fuelTimes'] as Map<String, dynamic>?)?.map(
+          (key, value) => MapEntry(key, value as String),
+        ) ??
+        const {},
+    amendedFuelFigures:
+        (json['amendedFuelFigures'] as Map<String, dynamic>?)?.map(
           (key, value) => MapEntry(key, value as String),
         ) ??
         const {},

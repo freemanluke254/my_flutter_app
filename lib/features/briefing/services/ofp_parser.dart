@@ -96,8 +96,9 @@ class OfpParser {
           multiLine: true,
         ).firstMatch(text)?.group(group)?.trim() ??
         fallback;
-    String fuelTime(String labelPattern) =>
-        match('$labelPattern\\s+\\d+\\s+(\\d{1,2}[.:]\\d{2})');
+    String fuelTime(String labelPattern) => match(
+      '$labelPattern\\s+\\d+\\s+(\\d{1,2}[.:]\\d{2})',
+    ).replaceAll('.', ':');
     final route = RegExp(r'\b([A-Z]{4})-([A-Z]{4})\b').firstMatch(text);
     final flightNumber = match(r'OPERATIONAL FLIGHT PLAN\s+([A-Z]{2}\d+)');
     if (flightNumber.isEmpty || route == null) {

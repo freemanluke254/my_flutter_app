@@ -78,6 +78,7 @@ class FlightBriefing {
     this.extraFuel = '',
     this.discretionaryFuel = '',
     this.fuelTimes = const {},
+    this.amendedFuelFigures = const {},
     this.actualZeroFuelWeight = '',
     this.actualTakeoffWeight = '',
     this.actualLandingWeight = '',
@@ -153,6 +154,7 @@ class FlightBriefing {
   final String extraFuel;
   final String discretionaryFuel;
   final Map<String, String> fuelTimes;
+  final Map<String, String> amendedFuelFigures;
   final String actualZeroFuelWeight;
   final String actualTakeoffWeight;
   final String actualLandingWeight;
@@ -229,6 +231,7 @@ class FlightBriefing {
     String? extraFuel,
     String? discretionaryFuel,
     Map<String, String>? fuelTimes,
+    Map<String, String>? amendedFuelFigures,
     String? actualZeroFuelWeight,
     String? actualTakeoffWeight,
     String? actualLandingWeight,
@@ -304,6 +307,7 @@ class FlightBriefing {
     extraFuel: extraFuel ?? this.extraFuel,
     discretionaryFuel: discretionaryFuel ?? this.discretionaryFuel,
     fuelTimes: fuelTimes ?? this.fuelTimes,
+    amendedFuelFigures: amendedFuelFigures ?? this.amendedFuelFigures,
     actualZeroFuelWeight: actualZeroFuelWeight ?? this.actualZeroFuelWeight,
     actualTakeoffWeight: actualTakeoffWeight ?? this.actualTakeoffWeight,
     actualLandingWeight: actualLandingWeight ?? this.actualLandingWeight,
