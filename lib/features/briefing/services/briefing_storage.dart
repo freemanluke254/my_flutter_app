@@ -104,6 +104,7 @@ class BriefingStorage {
     'scheduledDepartureUtc': flight.scheduledDepartureUtc?.toIso8601String(),
     'flightDate': flight.flightDate?.toIso8601String(),
     'scheduledFlightTime': flight.scheduledFlightTime,
+    'flightPlanTime': flight.flightPlanTime,
     'detailedRoute': flight.detailedRoute,
     'captain': flight.captain,
     'firstOfficer': flight.firstOfficer,
@@ -149,6 +150,7 @@ class BriefingStorage {
         ? null
         : DateTime.parse(json['flightDate']! as String),
     scheduledFlightTime: json['scheduledFlightTime'] as String? ?? '',
+    flightPlanTime: json['flightPlanTime'] as String? ?? '',
     detailedRoute: json['detailedRoute'] as String? ?? '',
     captain: json['captain'] as String? ?? '',
     firstOfficer: json['firstOfficer'] as String? ?? '',

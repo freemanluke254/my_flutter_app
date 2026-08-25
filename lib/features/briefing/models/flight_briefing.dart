@@ -47,6 +47,7 @@ class FlightBriefing {
     this.scheduledDepartureUtc,
     this.flightDate,
     this.scheduledFlightTime = '',
+    this.flightPlanTime = '',
     this.detailedRoute = '',
     this.captain = '',
     this.firstOfficer = '',
@@ -78,6 +79,7 @@ class FlightBriefing {
   final DateTime? scheduledDepartureUtc;
   final DateTime? flightDate;
   final String scheduledFlightTime;
+  final String flightPlanTime;
   final String detailedRoute;
   final String captain;
   final String firstOfficer;
@@ -110,6 +112,7 @@ class FlightBriefing {
     DateTime? scheduledDepartureUtc,
     DateTime? flightDate,
     String? scheduledFlightTime,
+    String? flightPlanTime,
     String? detailedRoute,
     String? captain,
     String? firstOfficer,
@@ -141,6 +144,7 @@ class FlightBriefing {
     scheduledDepartureUtc: scheduledDepartureUtc ?? this.scheduledDepartureUtc,
     flightDate: flightDate ?? this.flightDate,
     scheduledFlightTime: scheduledFlightTime ?? this.scheduledFlightTime,
+    flightPlanTime: flightPlanTime ?? this.flightPlanTime,
     detailedRoute: detailedRoute ?? this.detailedRoute,
     captain: captain ?? this.captain,
     firstOfficer: firstOfficer ?? this.firstOfficer,

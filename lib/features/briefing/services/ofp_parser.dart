@@ -14,6 +14,7 @@ class OfpFlightDetails {
     required this.planId,
     required this.flightDate,
     this.scheduledFlightTime = '',
+    this.flightPlanTime = '',
     this.detailedRoute = '',
     this.takeoffWeight = '',
     this.landingWeight = '',
@@ -38,6 +39,7 @@ class OfpFlightDetails {
   final String planId;
   final DateTime? flightDate;
   final String scheduledFlightTime;
+  final String flightPlanTime;
   final String detailedRoute;
   final String takeoffWeight;
   final String landingWeight;
@@ -85,10 +87,16 @@ class OfpParser {
       r'\b(\d{2})(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)(\d{2})\b',
       caseSensitive: false,
     ).firstMatch(text);
+    final departure = route.group(1)!;
+    final arrival = route.group(2)!;
+    final atcRoute = RegExp(
+      '^(${RegExp.escape(departure)}\\s+[\\s\\S]*?\\s+${RegExp.escape(arrival)})\\r?\\n${RegExp.escape(departure)}/',
+      multiLine: true,
+    ).firstMatch(text)?.group(1)?.replaceAll(RegExp(r'\s+'), ' ').trim();
     return OfpFlightDetails(
       flightNumber: flightNumber,
-      departure: route.group(1)!,
-      arrival: route.group(2)!,
+      departure: departure,
+      arrival: arrival,
       departureTime: match(r'STD LOCAL\s+\S+\s+(\d{4})', fallback: 'Pending'),
       arrivalTime: match(r'STA\s+\S+\s+(\d{4}\+?)', fallback: 'Pending'),
       aircraftType: match(r'^TYPE\s+([^\r\n]+)', fallback: 'Pending'),
@@ -116,22 +124,19 @@ class OfpParser {
               }[dateMatch.group(2)!.toUpperCase()]!,
               int.parse(dateMatch.group(1)!),
             ),
-      scheduledFlightTime: match(
-        r'(?:SCHEDULED\s+FLIGHT\s+TIME|EET)\s*[: ]\s*(\d{2}:?\d{2})',
-      ),
-      detailedRoute: match(r'(?:ATC\s+ROUTE|ROUTE)\s*[: ]\s*([^\r\n]+)'),
-      takeoffWeight: match(r'(?:PLAN(?:NED)?\s+)?TOW\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      landingWeight: match(r'(?:PLAN(?:NED)?\s+)?LAW\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      zeroFuelWeight: match(
-        r'(?:PLAN(?:NED)?\s+)?ZFW\s*[: ]\s*(\d+(?:\.\d+)?)',
-      ),
+      scheduledFlightTime: match(r'\bSCH\s+(\d{1,2}[.:]\d{2})'),
+      flightPlanTime: match(r'\bTRIP\s+\d+\s+(\d{2}[.:]\d{2})'),
+      detailedRoute: atcRoute ?? '',
+      takeoffWeight: match(r'RLF1\s+(\d+)'),
+      landingWeight: match(r'PAX\s+SOB\s+(\d+)'),
+      zeroFuelWeight: match(r'NBR\s+PF/PNF\s+(\d+)'),
       payload: match(r'PAYLOAD\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      blockFuel: match(r'BLOCK\s+FUEL\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      taxiFuel: match(r'TAXI\s+FUEL\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      tripFuel: match(r'TRIP\s+FUEL\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      contingencyFuel: match(r'CONT(?:INGENCY)?\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      finalReserveFuel: match(r'FINAL\s+RES(?:ERVE)?\s*[: ]\s*(\d+(?:\.\d+)?)'),
-      extraFuel: match(r'EXTRA\s*[: ]\s*(\d+(?:\.\d+)?)'),
+      blockFuel: match(r'\bRAMP\s+(\d+)'),
+      taxiFuel: match(r'\bTAXI/APU\s+(\d+)'),
+      tripFuel: match(r'\bTRIP\s+(\d+)'),
+      contingencyFuel: match(r'\bCONT%?\d*\s+(\d+)'),
+      finalReserveFuel: match(r'\bFNL\s+RES\s+(\d+)'),
+      extraFuel: match(r'\bEXTRA\s+(\d+)'),
     );
   }
 }
