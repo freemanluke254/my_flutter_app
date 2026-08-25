@@ -86,11 +86,19 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          'Fuel & performance',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text(
+                'Fuel & performance',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            if (isB787) _compactAtisField(),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -106,7 +114,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
         ),
         const SizedBox(height: 10),
         if (isB787) ...[
-          _atisAndLoadsheetSetup(flight),
+          _rtowAndLoadsheetSetup(flight),
           const SizedBox(height: 12),
         ],
         LayoutBuilder(
@@ -390,7 +398,69 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     );
   }
 
-  Widget _atisAndLoadsheetSetup(FlightBriefing flight) => Material(
+  Widget _compactAtisField() => Container(
+    padding: const EdgeInsets.fromLTRB(10, 7, 7, 7),
+    decoration: BoxDecoration(
+      color: const Color(0xFF315F86),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: const Color(0xFF234968), width: 2),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Text(
+          'ATIS',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 52,
+          child: TextField(
+            controller: _controllers['atis']!,
+            textAlign: TextAlign.center,
+            cursorColor: const Color(0xFF315F86),
+            style: const TextStyle(
+              color: Color(0xFF173D31),
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+            textCapitalization: TextCapitalization.characters,
+            inputFormatters: [
+              LengthLimitingTextInputFormatter(1),
+              FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]')),
+              TextInputFormatter.withFunction(
+                (oldValue, newValue) => newValue.copyWith(
+                  text: newValue.text.toUpperCase(),
+                  selection: newValue.selection,
+                ),
+              ),
+            ],
+            decoration: const InputDecoration(
+              isDense: true,
+              filled: true,
+              fillColor: Colors.white,
+              enabledBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFFD4E0EA)),
+                borderRadius: BorderRadius.all(Radius.circular(6)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderSide: BorderSide(color: Color(0xFF78B7E5), width: 2),
+                borderRadius: BorderRadius.all(Radius.circular(6)),
+              ),
+              contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+            ),
+            onChanged: (value) => _update('atis', value),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _rtowAndLoadsheetSetup(FlightBriefing flight) => Material(
     color: const Color(0xFFF0F3F6),
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
@@ -403,75 +473,17 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            'ATIS & LOADSHEET SETUP',
+            'RTOW & LOADSHEET SETUP',
             style: TextStyle(
               color: Color(0xFF315F86),
               fontWeight: FontWeight.w900,
             ),
           ),
           const SizedBox(height: 12),
-          _stepHeader('1', 'ATIS · Obtain, as needed', role: 'F/O'),
-          const Padding(
-            padding: EdgeInsets.fromLTRB(35, 5, 0, 9),
-            child: Text(
-              'COMM  ›  FLIGHT INFORMATION  ›  ATIS REQUEST',
-              style: TextStyle(
-                color: Color(0xFF315F86),
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: 112,
-                child: TextField(
-                  controller: _controllers['atis']!,
-                  textCapitalization: TextCapitalization.characters,
-                  inputFormatters: [
-                    LengthLimitingTextInputFormatter(1),
-                    FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]')),
-                    TextInputFormatter.withFunction(
-                      (oldValue, newValue) => newValue.copyWith(
-                        text: newValue.text.toUpperCase(),
-                        selection: newValue.selection,
-                      ),
-                    ),
-                  ],
-                  decoration: const InputDecoration(
-                    labelText: 'ATIS',
-                    hintText: 'A–Z',
-                    isDense: true,
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(),
-                  ),
-                  onChanged: (value) => _update('atis', value),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Checkbox(
-                value: flight.atisPrintedAndRetained,
-                onChanged: flight.atisLetter.isEmpty
-                    ? null
-                    : (value) => _updateFlag('atisRetained', value ?? false),
-              ),
-              const Flexible(
-                child: Text(
-                  'Printed and retained',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          const Divider(height: 28),
           Row(
             children: [
               Expanded(
-                child: _stepHeader('2', 'RTOW · Calculate', role: 'C, F/O'),
+                child: _stepHeader('1', 'RTOW · Calculate', role: 'C, F/O'),
               ),
               IconButton(
                 tooltip: 'How to calculate RTOW',
@@ -505,7 +517,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
           ),
           const Divider(height: 28),
           _stepHeader(
-            '3',
+            '2',
             'Initialise the loadsheet in the aircraft COMM page',
           ),
           CheckboxListTile(
@@ -867,7 +879,7 @@ class _LandingDispatchCriteria extends StatelessWidget {
       expandedCrossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'A Landing Dispatch calculation is not required only when every condition below is met:',
+          'You do not need a Landing Dispatch calculation if all of these apply:',
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
         SizedBox(height: 6),
