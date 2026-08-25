@@ -41,6 +41,9 @@ class BriefingOverviewTab extends StatelessWidget {
         const SizedBox(height: 14),
         _BriefingFlightTile(flight: current),
         const SizedBox(height: 16),
+        _sectionTitle(context, 'Aircraft'),
+        _AircraftDetailsCard(flight: current),
+        const SizedBox(height: 16),
         _sectionTitle(context, 'Crew and load'),
         _CrewLoadCard(
           flight: current,
@@ -166,6 +169,91 @@ class BriefingOverviewTab extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _AircraftDetailsCard extends StatelessWidget {
+  const _AircraftDetailsCard({required this.flight});
+  final FlightBriefing flight;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDefects = flight.melCdlReferences.isNotEmpty ||
+        flight.defectSummary.isNotEmpty ||
+        flight.operationalRestrictions.isNotEmpty;
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: _detail('REG', flight.registration)),
+                Expanded(child: _detail('TYPE', flight.aircraftType)),
+                Expanded(child: _detail('STAND', flight.stand)),
+              ],
+            ),
+            const Divider(height: 22),
+            Row(
+              children: [
+                Icon(
+                  hasDefects
+                      ? Icons.warning_amber_rounded
+                      : Icons.check_circle_outline_rounded,
+                  color: hasDefects
+                      ? const Color(0xFFBD7A17)
+                      : const Color(0xFF28634A),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    hasDefects
+                        ? 'MEL / CDL ${_value(flight.melCdlReferences)}'
+                        : 'No aircraft defects entered',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+              ],
+            ),
+            if (flight.defectSummary.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Effect: ${flight.defectSummary}'),
+            ],
+            if (flight.operationalRestrictions.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                'Restrictions: ${flight.operationalRestrictions}',
+                style: const TextStyle(color: Color(0xFFB93B3B)),
+              ),
+            ],
+            if (hasDefects) ...[
+              const SizedBox(height: 8),
+              const Text(
+                'Pilot-entered information — verify against the approved MEL/CDL and technical log.',
+                style: TextStyle(color: Color(0xFF667069), fontSize: 11),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _detail(String label, String value) => Column(
+        children: [
+          Text(label, style: const TextStyle(color: Color(0xFF667069))),
+          const SizedBox(height: 3),
+          Text(
+            _value(value),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+        ],
+      );
+
+  String _value(String value) => value.trim().isEmpty ? 'Pending' : value;
 }
 
 class _CrewLoadCard extends StatelessWidget {

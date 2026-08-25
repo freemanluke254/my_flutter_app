@@ -61,6 +61,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
         onReuploadDocuments: _reuploadDocuments,
         onClearAllFields: _clearConfiguration,
         onFlightChanged: (flight) => _changeFlight(flight, _active),
+        onSaved: () => setState(() => _selectedIndex = 2),
       ),
       BriefingOverviewTab(flight: _flight),
       WeatherNotamsTab(flight: _flight),
@@ -330,6 +331,10 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       cabinCrewCount: current.cabinCrewCount,
       fsm: current.fsm,
       css: current.css,
+      stand: current.stand,
+      melCdlReferences: current.melCdlReferences,
+      defectSummary: current.defectSummary,
+      operationalRestrictions: current.operationalRestrictions,
       documents: counts.entries
           .map(
             (entry) => BriefingDocument(

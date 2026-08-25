@@ -13,6 +13,7 @@ class ConfigurationTab extends StatefulWidget {
     required this.onReuploadDocuments,
     required this.onClearAllFields,
     required this.onFlightChanged,
+    required this.onSaved,
     super.key,
   });
   final FlightBriefing? flight;
@@ -20,6 +21,7 @@ class ConfigurationTab extends StatefulWidget {
   final Future<void> Function() onReuploadDocuments;
   final Future<void> Function() onClearAllFields;
   final ValueChanged<FlightBriefing> onFlightChanged;
+  final VoidCallback onSaved;
   @override
   State<ConfigurationTab> createState() => _ConfigurationTabState();
 }
@@ -176,6 +178,44 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     _formatDuration(flight.scheduledFlightTime),
                   ),
                   _flightPlanTimeValue(flight),
+                ],
+              ),
+            ),
+            _section(
+              title: 'Aircraft details, MEL and CDL',
+              child: Column(
+                children: [
+                  _field('stand', 'Aircraft stand'),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _controllers['melCdlReferences'],
+                    decoration: const InputDecoration(
+                      labelText: 'MEL / CDL reference numbers',
+                      helperText: 'Separate multiple references with commas',
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _controllers['defectSummary'],
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Defect or affected system summary',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _controllers['operationalRestrictions'],
+                    minLines: 2,
+                    maxLines: 4,
+                    decoration: const InputDecoration(
+                      labelText: 'Operational restrictions',
+                      helperText:
+                          'Pilot-entered until an approved MEL/CDL source is loaded',
+                      alignLabelWithHint: true,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -405,6 +445,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       'css': flight?.css ?? '',
       'cabinCrewCount': '${flight?.cabinCrewCount ?? 10}',
       'detailedRoute': flight?.detailedRoute ?? '',
+      'stand': flight?.stand ?? '',
+      'melCdlReferences': flight?.melCdlReferences ?? '',
+      'defectSummary': flight?.defectSummary ?? '',
+      'operationalRestrictions': flight?.operationalRestrictions ?? '',
       'takeoffWeight': flight?.takeoffWeight ?? '',
       'landingWeight': flight?.landingWeight ?? '',
       'zeroFuelWeight': flight?.zeroFuelWeight ?? '',
@@ -445,6 +489,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         cabinCrewCount: cabinCrewCount,
         pilotFlying: _pilotFlying,
         detailedRoute: value('detailedRoute'),
+        stand: value('stand'),
+        melCdlReferences: value('melCdlReferences'),
+        defectSummary: value('defectSummary'),
+        operationalRestrictions: value('operationalRestrictions'),
         takeoffWeight: value('takeoffWeight'),
         landingWeight: value('landingWeight'),
         zeroFuelWeight: value('zeroFuelWeight'),
@@ -461,6 +509,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Flight setup saved.')));
+    widget.onSaved();
   }
 
   Future<void> _loadCrewDirectory() async {

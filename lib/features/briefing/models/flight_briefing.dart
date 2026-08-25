@@ -75,6 +75,10 @@ class FlightBriefing {
     this.cabinCrewCount = 10,
     this.fsm = '',
     this.css = '',
+    this.stand = '',
+    this.melCdlReferences = '',
+    this.defectSummary = '',
+    this.operationalRestrictions = '',
   });
   final String flightNumber;
   final String route;
@@ -114,6 +118,10 @@ class FlightBriefing {
   final int cabinCrewCount;
   final String fsm;
   final String css;
+  final String stand;
+  final String melCdlReferences;
+  final String defectSummary;
+  final String operationalRestrictions;
 
   FlightBriefing copyWith({
     String? flightNumber,
@@ -154,6 +162,10 @@ class FlightBriefing {
     int? cabinCrewCount,
     String? fsm,
     String? css,
+    String? stand,
+    String? melCdlReferences,
+    String? defectSummary,
+    String? operationalRestrictions,
   }) => FlightBriefing(
     flightNumber: flightNumber ?? this.flightNumber,
     route: route ?? this.route,
@@ -193,5 +205,10 @@ class FlightBriefing {
     cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
     fsm: fsm ?? this.fsm,
     css: css ?? this.css,
+    stand: stand ?? this.stand,
+    melCdlReferences: melCdlReferences ?? this.melCdlReferences,
+    defectSummary: defectSummary ?? this.defectSummary,
+    operationalRestrictions:
+        operationalRestrictions ?? this.operationalRestrictions,
   );
 }

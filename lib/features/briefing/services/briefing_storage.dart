@@ -128,6 +128,10 @@ class BriefingStorage {
     'cabinCrewCount': flight.cabinCrewCount,
     'fsm': flight.fsm,
     'css': flight.css,
+    'stand': flight.stand,
+    'melCdlReferences': flight.melCdlReferences,
+    'defectSummary': flight.defectSummary,
+    'operationalRestrictions': flight.operationalRestrictions,
     'documents': flight.documents
         .map(
           (document) => {
@@ -183,6 +187,11 @@ class BriefingStorage {
     cabinCrewCount: json['cabinCrewCount'] as int? ?? 10,
     fsm: json['fsm'] as String? ?? '',
     css: json['css'] as String? ?? '',
+    stand: json['stand'] as String? ?? '',
+    melCdlReferences: json['melCdlReferences'] as String? ?? '',
+    defectSummary: json['defectSummary'] as String? ?? '',
+    operationalRestrictions:
+        json['operationalRestrictions'] as String? ?? '',
     documents: (json['documents']! as List<Object?>).map((value) {
       final item = (value! as Map<Object?, Object?>).cast<String, Object?>();
       return BriefingDocument(
