@@ -366,7 +366,12 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
                 final displayText = _raw ? rawText : _decodedText(rawText);
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(18),
-                  child: SelectableText(displayText),
+                  child: _raw
+                      ? SelectableText(displayText)
+                      : _DecodedContentView(
+                          text: displayText,
+                          contentType: widget.contentType,
+                        ),
                 );
               },
             ),
@@ -593,3 +598,171 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
 }
 
 enum _NotamRelevance { relevant, outsideFlightWindow, ambiguous }
+
+class _DecodedContentView extends StatelessWidget {
+  const _DecodedContentView({required this.text, required this.contentType});
+  final String text;
+  final BriefingDocumentContentType contentType;
+
+  @override
+  Widget build(BuildContext context) {
+    final sections = text
+        .split(RegExp(r'\n\n═{10,}\n\n'))
+        .where((section) => section.trim().isNotEmpty)
+        .toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: List.generate(sections.length, (index) {
+        final section = sections[index].trim();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: contentType == BriefingDocumentContentType.weather
+              ? _weatherCard(section, index)
+              : _notamCard(section),
+        );
+      }),
+    );
+  }
+
+  Widget _weatherCard(String section, int index) {
+    String? heading;
+    var body = section;
+    if (section.startsWith('AIRPORT ·')) {
+      final lineEnd = section.indexOf('\n');
+      heading = lineEnd < 0 ? section : section.substring(0, lineEnd);
+      body = lineEnd < 0 ? '' : section.substring(lineEnd).trim();
+    }
+    final parts = body
+        .split(RegExp(r'\n\n─{10,}\n\n'))
+        .where((part) => part.trim().isNotEmpty);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: index.isEven ? Colors.white : const Color(0xFFF0F2F1),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD7DDDA)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (heading != null) ...[
+            Text(
+              heading,
+              style: const TextStyle(
+                color: Color(0xFF173E67),
+                fontSize: 16,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+          ...parts.map((part) {
+            final taf = part.trimLeft().startsWith('FORECAST');
+            final colour = taf
+                ? const Color(0xFFEDE6F7)
+                : const Color(0xFFE2F0F7);
+            final accent = taf
+                ? const Color(0xFF704C9F)
+                : const Color(0xFF216487);
+            return Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(11),
+              decoration: BoxDecoration(
+                color: colour,
+                borderRadius: BorderRadius.circular(10),
+                border: Border(left: BorderSide(color: accent, width: 4)),
+              ),
+              child: _labelledText(part.trim(), boldFirstLine: true),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _notamCard(String section) {
+    final title = section.split('\n').first;
+    final colour = _notamColour(title);
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: colour.$1,
+        borderRadius: BorderRadius.circular(14),
+        border: Border(left: BorderSide(color: colour.$2, width: 5)),
+      ),
+      child: _labelledText(section, boldFirstLine: true),
+    );
+  }
+
+  Widget _labelledText(String value, {bool boldFirstLine = false}) {
+    final lines = value.split('\n');
+    final spans = <InlineSpan>[];
+    for (var index = 0; index < lines.length; index++) {
+      final line = lines[index];
+      if (boldFirstLine && index == 0) {
+        spans.add(
+          TextSpan(
+            text: line,
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+        );
+      } else {
+        final separator = line.indexOf(':');
+        if (separator > 0 && separator < 32) {
+          spans.add(
+            TextSpan(
+              text: line.substring(0, separator + 1),
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          );
+          spans.add(TextSpan(text: line.substring(separator + 1)));
+        } else if (RegExp(r'^[A-Z]{4}[A-Z]\d{4}/\d{2}\b').hasMatch(line)) {
+          spans.add(
+            TextSpan(
+              text: line,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          );
+        } else {
+          spans.add(TextSpan(text: line));
+        }
+      }
+      if (index < lines.length - 1) spans.add(const TextSpan(text: '\n'));
+    }
+    return SelectableText.rich(
+      TextSpan(
+        style: const TextStyle(
+          color: Color(0xFF202522),
+          height: 1.4,
+          fontSize: 14,
+        ),
+        children: spans,
+      ),
+    );
+  }
+
+  (Color, Color) _notamColour(String title) {
+    if (title.startsWith('Runways')) {
+      return (const Color(0xFFFBE7E5), const Color(0xFFB9473D));
+    }
+    if (title.startsWith('Taxiways')) {
+      return (const Color(0xFFFFF3D8), const Color(0xFFB97918));
+    }
+    if (title.startsWith('SIDs')) {
+      return (const Color(0xFFE2EEF9), const Color(0xFF356D9E));
+    }
+    if (title.startsWith('STARs')) {
+      return (const Color(0xFFE6F3EC), const Color(0xFF34785A));
+    }
+    if (title.startsWith('Approaches')) {
+      return (const Color(0xFFEDE6F7), const Color(0xFF704C9F));
+    }
+    if (title.startsWith('Airspace')) {
+      return (const Color(0xFFE2F3F2), const Color(0xFF287A78));
+    }
+    if (title.startsWith('Navigation')) {
+      return (const Color(0xFFE8ECF5), const Color(0xFF4D638E));
+    }
+    return (const Color(0xFFF0F2F1), const Color(0xFF737C77));
+  }
+}

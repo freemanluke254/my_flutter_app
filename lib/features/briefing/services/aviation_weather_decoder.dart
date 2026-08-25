@@ -40,7 +40,7 @@ class AviationWeatherDecoder {
           final body = match.group(2)!.replaceAll(RegExp(r'\s+'), ' ').trim();
           return '${type == 'TAF' ? 'FORECAST' : 'OBSERVATION'} · $type\n${_decodeTokens(body)}';
         })
-        .join('\n\n══════════════════════════════════\n\n');
+        .join('\n\n──────────────────────────────────\n\n');
   }
 
   String _decodeTokens(String message) {
