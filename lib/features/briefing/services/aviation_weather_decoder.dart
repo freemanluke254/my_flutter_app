@@ -2,16 +2,43 @@ class AviationWeatherDecoder {
   const AviationWeatherDecoder();
 
   String decodeDocument(String raw) {
+    final headings = RegExp(
+      r'^([A-Z]{4})\s*-\s*([^\n]+)$',
+      multiLine: true,
+    ).allMatches(raw).toList();
+    if (headings.isNotEmpty) {
+      final sections = <String>[];
+      for (var index = 0; index < headings.length; index++) {
+        final end = index + 1 < headings.length
+            ? headings[index + 1].start
+            : raw.length;
+        final decoded = _decodeMessages(
+          raw.substring(headings[index].end, end),
+        );
+        if (decoded.isEmpty) continue;
+        sections.add(
+          'AIRPORT · ${headings[index].group(1)} · ${headings[index].group(2)!.trim()}\n\n$decoded',
+        );
+      }
+      if (sections.isNotEmpty) {
+        return sections.join('\n\n══════════════════════════════════\n\n');
+      }
+    }
+    final decoded = _decodeMessages(raw);
+    return decoded.isEmpty ? raw : decoded;
+  }
+
+  String _decodeMessages(String raw) {
     final messages = RegExp(
       r'\b(METAR|SPECI|TAF)\s+([^=]+)=',
       dotAll: true,
     ).allMatches(raw).toList();
-    if (messages.isEmpty) return raw;
+    if (messages.isEmpty) return '';
     return messages
         .map((match) {
           final type = match.group(1)!;
           final body = match.group(2)!.replaceAll(RegExp(r'\s+'), ' ').trim();
-          return '${type == 'TAF' ? 'FORECAST' : 'OBSERVATION'} · $type\n${_decodeTokens(body)}\n\nRAW\n$type $body=';
+          return '${type == 'TAF' ? 'FORECAST' : 'OBSERVATION'} · $type\n${_decodeTokens(body)}';
         })
         .join('\n\n══════════════════════════════════\n\n');
   }
