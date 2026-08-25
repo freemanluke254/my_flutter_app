@@ -370,7 +370,8 @@ class _OriginalDocumentsSection extends StatelessWidget {
       if (document.type == BriefingDocumentType.significantWeather ||
           document.type == BriefingDocumentType.operationalFlightPlan ||
           document.type == BriefingDocumentType.routeChart ||
-          document.type == BriefingDocumentType.tracks) {
+          document.type == BriefingDocumentType.tracks ||
+          document.type == BriefingDocumentType.terrain) {
         continue;
       }
       for (var index = 0; index < document.fileCount; index++) {
@@ -905,8 +906,12 @@ class _BriefingFlightTileState extends State<_BriefingFlightTile> {
     final passed =
         f.scheduledDepartureUtc?.isBefore(DateTime.now().toUtc()) ?? false;
     final routeChart = widget.routeCharts;
-    final routeChartPath = routeChart?.filePaths.firstOrNull;
-    final routeChartName = routeChart?.fileNames.firstOrNull ?? 'Route chart';
+    final orderedCharts = routeChart == null
+        ? const <RouteChartFile>[]
+        : orderedRouteChartFiles(routeChart);
+    final firstRouteChart = orderedCharts.firstOrNull;
+    final routeChartPath = firstRouteChart?.path;
+    final routeChartName = firstRouteChart?.name ?? 'Route chart';
     final scheduledMinutes = _minutes(f.scheduledFlightTime);
     final planMinutes = _minutes(f.flightPlanTime);
     final difference = scheduledMinutes == null || planMinutes == null

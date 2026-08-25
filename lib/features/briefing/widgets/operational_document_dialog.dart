@@ -4,7 +4,6 @@ import '../models/flight_briefing.dart';
 import '../services/pdf_document_reader.dart';
 import '../services/terrain_scenario_decoder.dart';
 import '../services/track_message_decoder.dart';
-import 'pdf_full_page_viewer.dart';
 
 class OperationalDocumentDialog extends StatefulWidget {
   const OperationalDocumentDialog({
@@ -51,24 +50,14 @@ class _OperationalDocumentDialogState extends State<OperationalDocumentDialog> {
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-            child: Row(
-              children: [
-                SegmentedButton<bool>(
-                  segments: const [
-                    ButtonSegment(value: true, label: Text('RAW')),
-                    ButtonSegment(value: false, label: Text('Decoded')),
-                  ],
-                  selected: {_raw},
-                  onSelectionChanged: (selection) =>
-                      setState(() => _raw = selection.first),
-                ),
-                const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: () => _showOriginal(context),
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('Original PDF'),
-                ),
+            child: SegmentedButton<bool>(
+              segments: const [
+                ButtonSegment(value: true, label: Text('RAW')),
+                ButtonSegment(value: false, label: Text('Decoded')),
               ],
+              selected: {_raw},
+              onSelectionChanged: (selection) =>
+                  setState(() => _raw = selection.first),
             ),
           ),
           const Divider(height: 1),
@@ -101,28 +90,6 @@ class _OperationalDocumentDialogState extends State<OperationalDocumentDialog> {
             ),
           ),
         ],
-      ),
-    ),
-  );
-
-  void _showOriginal(BuildContext context) => showDialog<void>(
-    context: context,
-    builder: (context) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1100, maxHeight: 820),
-        child: Column(
-          children: [
-            ListTile(
-              title: Text(widget.name),
-              trailing: IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close_rounded),
-              ),
-            ),
-            const Divider(height: 1),
-            Expanded(child: PdfFullPageViewer(path: widget.path)),
-          ],
-        ),
       ),
     ),
   );

@@ -3,6 +3,43 @@ import 'package:flutter/material.dart';
 import '../models/flight_briefing.dart';
 import 'pdf_full_page_viewer.dart';
 
+class RouteChartFile {
+  const RouteChartFile({required this.name, required this.path});
+  final String name;
+  final String? path;
+}
+
+List<RouteChartFile> orderedRouteChartFiles(BriefingDocument document) {
+  final charts = List.generate(
+    document.fileCount,
+    (index) => RouteChartFile(
+      name: index < document.fileNames.length
+          ? document.fileNames[index]
+          : 'Route chart ${index + 1}',
+      path: index < document.filePaths.length
+          ? document.filePaths[index]
+          : null,
+    ),
+  );
+  charts.sort((a, b) {
+    final aOrder = _chartOrder(a.name);
+    final bOrder = _chartOrder(b.name);
+    final numberComparison = aOrder.$1.compareTo(bOrder.$1);
+    if (numberComparison != 0) return numberComparison;
+    if (aOrder.$2 != bOrder.$2) return aOrder.$2 ? 1 : -1;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+  return charts;
+}
+
+(int, bool) _chartOrder(String name) {
+  final match = RegExp(
+    r'route\s*chart\s*(\d+)',
+    caseSensitive: false,
+  ).firstMatch(name);
+  return (int.tryParse(match?.group(1) ?? '') ?? 1, match != null);
+}
+
 class RouteChartsDialog extends StatefulWidget {
   const RouteChartsDialog({required this.document, super.key});
   final BriefingDocument document;
@@ -14,17 +51,7 @@ class RouteChartsDialog extends StatefulWidget {
 class _RouteChartsDialogState extends State<RouteChartsDialog> {
   var _index = 0;
 
-  List<({String name, String? path})> get _charts => List.generate(
-    widget.document.fileCount,
-    (index) => (
-      name: index < widget.document.fileNames.length
-          ? widget.document.fileNames[index]
-          : 'Route chart ${index + 1}',
-      path: index < widget.document.filePaths.length
-          ? widget.document.filePaths[index]
-          : null,
-    ),
-  );
+  List<RouteChartFile> get _charts => orderedRouteChartFiles(widget.document);
 
   @override
   Widget build(BuildContext context) {
