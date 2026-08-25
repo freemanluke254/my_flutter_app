@@ -633,10 +633,13 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _stepHeader('3', 'Fuel'),
-                const SizedBox(height: 10),
-                const Text(
-                  'Fuel details will be added here.',
-                  style: TextStyle(color: Color(0xFF667069)),
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 180,
+                    child: _weightField('FINAL ZFW', 'actualZfw'),
+                  ),
                 ),
               ],
             ),
