@@ -132,6 +132,7 @@ class BriefingStorage {
     'discretionaryFuel': flight.discretionaryFuel,
     'fuelTimes': flight.fuelTimes,
     'amendedFuelFigures': flight.amendedFuelFigures,
+    'fuelBurnCorrectionFactor': flight.fuelBurnCorrectionFactor,
     'actualZeroFuelWeight': flight.actualZeroFuelWeight,
     'actualTakeoffWeight': flight.actualTakeoffWeight,
     'actualLandingWeight': flight.actualLandingWeight,
@@ -232,6 +233,7 @@ class BriefingStorage {
           (key, value) => MapEntry(key, value as String),
         ) ??
         const {},
+    fuelBurnCorrectionFactor: json['fuelBurnCorrectionFactor'] as String? ?? '',
     actualZeroFuelWeight: json['actualZeroFuelWeight'] as String? ?? '',
     actualTakeoffWeight: json['actualTakeoffWeight'] as String? ?? '',
     actualLandingWeight: json['actualLandingWeight'] as String? ?? '',

@@ -69,6 +69,7 @@ EXTRA 0 00.00
 DISC 0 00.00
 TAXI/APU 600 00.28
 RAMP 57700
+INCREASE/DECREASE FUEL BURN BY 253kg PER 1000kg CHANGE IN T.O.W.
 ''';
 
     final result = const OfpParser().parseText(source);
@@ -78,6 +79,7 @@ RAMP 57700
     expect(result.alternateFuel, '2000');
     expect(result.arrivalDelayFuel, '200');
     expect(result.discretionaryFuel, '0');
+    expect(result.fuelBurnCorrectionFactor, '253');
   });
 
   test('uses the OFP date and local STD for the UTC countdown time', () {

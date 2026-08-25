@@ -33,6 +33,7 @@ class OfpFlightDetails {
     this.extraFuel = '',
     this.discretionaryFuel = '',
     this.fuelTimes = const {},
+    this.fuelBurnCorrectionFactor = '',
     this.maxPayloadPlan = false,
   });
   final String flightNumber;
@@ -66,6 +67,7 @@ class OfpFlightDetails {
   final String extraFuel;
   final String discretionaryFuel;
   final Map<String, String> fuelTimes;
+  final String fuelBurnCorrectionFactor;
   final bool maxPayloadPlan;
 }
 
@@ -183,6 +185,9 @@ class OfpParser {
         'taxiApu': fuelTime(r'\bTAXI/APU'),
         'ramp': fuelTime(r'\bRAMP'),
       },
+      fuelBurnCorrectionFactor: match(
+        r'INCREASE/DECREASE\s+FUEL\s+BURN\s+BY\s+(\d+)\s*KG\s+PER\s+1000\s*KG',
+      ),
       maxPayloadPlan: RegExp(
         r'\bMAX\s+PAYLOAD\s+PLAN\b',
         caseSensitive: false,

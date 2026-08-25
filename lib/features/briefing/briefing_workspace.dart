@@ -337,6 +337,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       extraFuel: ofp?.extraFuel ?? current.extraFuel,
       discretionaryFuel: ofp?.discretionaryFuel ?? current.discretionaryFuel,
       fuelTimes: ofp?.fuelTimes ?? current.fuelTimes,
+      fuelBurnCorrectionFactor:
+          ofp?.fuelBurnCorrectionFactor ?? current.fuelBurnCorrectionFactor,
       amendedFuelFigures: current.amendedFuelFigures.isNotEmpty || ofp == null
           ? current.amendedFuelFigures
           : {

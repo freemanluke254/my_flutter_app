@@ -243,6 +243,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     label: label,
     controller: _controllers['fuel_$key']!,
     suffix: 'kg',
+    readOnly: key == 'ramp',
     onChanged: (value) => _update('fuel_$key', value),
   );
 
@@ -677,6 +678,24 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                     child: _weightField('FINAL ZFW', 'actualZfw'),
                   ),
                 ),
+                Builder(
+                  builder: (context) {
+                    final difference = _zfwDifference(flight);
+                    final factor = double.tryParse(
+                      flight.fuelBurnCorrectionFactor,
+                    );
+                    if (difference == null || factor == null) {
+                      return const SizedBox.shrink();
+                    }
+                    final burnAdjustment =
+                        (difference / 1000) * factor * (1 + factor / 1000);
+                    return _FuelAdjustmentSummary(
+                      difference: difference,
+                      correctionFactor: factor,
+                      burnAdjustment: burnAdjustment,
+                    );
+                  },
+                ),
                 const SizedBox(height: 4),
                 const Text(
                   'OFP FUEL FIGURES · READ ONLY',
@@ -970,13 +989,24 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
   void _update(String field, String value) {
     final flight = widget.flight;
     if (flight == null) return;
+    if (field == 'actualZfw') {
+      _updateFinalZfw(flight, value);
+      return;
+    }
     if (field.startsWith('fuel_')) {
       final key = field.substring(5);
-      widget.onFlightChanged(
-        flight.copyWith(
-          amendedFuelFigures: {...flight.amendedFuelFigures, key: value},
-        ),
-      );
+      final amended = {...flight.amendedFuelFigures, key: value};
+      if (key != 'ramp') {
+        final ramp = amended.entries
+            .where((entry) => entry.key != 'ramp')
+            .fold<double>(
+              0,
+              (total, entry) => total + (double.tryParse(entry.value) ?? 0),
+            );
+        amended['ramp'] = ramp.round().toString();
+        _controllers['fuel_ramp']!.text = amended['ramp']!;
+      }
+      widget.onFlightChanged(flight.copyWith(amendedFuelFigures: amended));
       return;
     }
     widget.onFlightChanged(switch (field) {
@@ -1008,6 +1038,65 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       ),
       _ => flight,
     });
+  }
+
+  void _updateFinalZfw(FlightBriefing flight, String value) {
+    final amended = _calculateAmendedFuel(flight, value);
+    for (final entry in amended.entries) {
+      _controllers['fuel_${entry.key}']?.text = entry.value;
+    }
+    widget.onFlightChanged(
+      flight.copyWith(actualZeroFuelWeight: value, amendedFuelFigures: amended),
+    );
+  }
+
+  Map<String, String> _calculateAmendedFuel(
+    FlightBriefing flight,
+    String finalZfw,
+  ) {
+    final planned = <String, String>{
+      'trip': flight.tripFuel,
+      'cont': flight.contingencyFuel,
+      'altn': flight.alternateFuel,
+      'fnlRes': flight.finalReserveFuel,
+      'etpAdj': flight.etpAdjustmentFuel,
+      'addnl': flight.additionalFuel,
+      'unusable': flight.unusableFuel,
+      'arrDly': flight.arrivalDelayFuel,
+      'extra': flight.extraFuel,
+      'disc': flight.discretionaryFuel,
+      'taxiApu': flight.taxiFuel,
+    };
+    final plannedZfw = double.tryParse(flight.zeroFuelWeight);
+    final enteredZfw = double.tryParse(finalZfw);
+    final correction = double.tryParse(flight.fuelBurnCorrectionFactor);
+    if (plannedZfw != null && enteredZfw != null && correction != null) {
+      final deltaTonnes = (enteredZfw - plannedZfw) / 1000;
+      final burnAdjustment = deltaTonnes * correction * (1 + correction / 1000);
+      final plannedTrip = double.tryParse(flight.tripFuel);
+      if (plannedTrip != null) {
+        planned['trip'] = (plannedTrip + burnAdjustment).round().toString();
+      }
+      final plannedEtp = double.tryParse(flight.etpAdjustmentFuel);
+      if (plannedEtp != null && plannedEtp > 0) {
+        planned['etpAdj'] = (plannedEtp - (deltaTonnes * 100))
+            .clamp(0, double.infinity)
+            .round()
+            .toString();
+      }
+    }
+    final ramp = planned.values.fold<double>(
+      0,
+      (total, value) => total + (double.tryParse(value) ?? 0),
+    );
+    return {...planned, 'ramp': ramp.round().toString()};
+  }
+
+  double? _zfwDifference(FlightBriefing flight) {
+    final planned = double.tryParse(flight.zeroFuelWeight);
+    final finalValue = double.tryParse(flight.actualZeroFuelWeight);
+    if (planned == null || finalValue == null) return null;
+    return finalValue - planned;
   }
 
   void _updateFlag(String field, bool value) {
@@ -1117,6 +1206,61 @@ class _PlannedWeight extends StatelessWidget {
   );
 }
 
+class _FuelAdjustmentSummary extends StatelessWidget {
+  const _FuelAdjustmentSummary({
+    required this.difference,
+    required this.correctionFactor,
+    required this.burnAdjustment,
+  });
+
+  final double difference;
+  final double correctionFactor;
+  final double burnAdjustment;
+
+  @override
+  Widget build(BuildContext context) {
+    final requiresNewPlan = difference.abs() > 5000;
+    final sign = difference >= 0 ? '+' : '−';
+    final burnSign = burnAdjustment >= 0 ? '+' : '−';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(11),
+      decoration: BoxDecoration(
+        color: requiresNewPlan
+            ? const Color(0xFFFFF1DA)
+            : const Color(0xFFEAF3FA),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: requiresNewPlan
+              ? const Color(0xFFE3B96F)
+              : const Color(0xFFB9D1E4),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ZFW difference: $sign${difference.abs().round()} kg  ·  '
+            'Burn factor: ${correctionFactor.round()} kg/1,000 kg  ·  '
+            'Trip burn adjustment: $burnSign${burnAdjustment.abs().round()} kg',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          if (requiresNewPlan) ...[
+            const SizedBox(height: 5),
+            const Text(
+              'Final ZFW differs from the OFP planned ZFW by more than 5,000 kg. Request a new flight plan, time permitting.',
+              style: TextStyle(
+                color: Color(0xFF8A5B13),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _EntryField extends StatelessWidget {
   const _EntryField({
     required this.label,
@@ -1124,18 +1268,21 @@ class _EntryField extends StatelessWidget {
     required this.onChanged,
     this.suffix,
     this.decimal = false,
+    this.readOnly = false,
   });
   final String label;
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final String? suffix;
   final bool decimal;
+  final bool readOnly;
 
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: TextField(
       controller: controller,
+      readOnly: readOnly,
       keyboardType: TextInputType.numberWithOptions(decimal: decimal),
       inputFormatters: [
         FilteringTextInputFormatter.allow(
