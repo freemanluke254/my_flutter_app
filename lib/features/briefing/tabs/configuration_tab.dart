@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
+import '../services/crew_directory_storage.dart';
+import '../widgets/crew_name_field.dart';
 
 class ConfigurationTab extends StatefulWidget {
   const ConfigurationTab({
@@ -26,11 +28,14 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
   final _controllers = <String, TextEditingController>{};
   String _pilotFlying = '';
   String _otherCrewRole = 'Other';
+  List<String> _crewNames = const [];
+  final _crewDirectoryStorage = CrewDirectoryStorage();
 
   @override
   void initState() {
     super.initState();
     _load(widget.flight);
+    _loadCrewDirectory();
   }
 
   @override
@@ -104,7 +109,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     'First officer',
                     'First officer',
                   ),
-                  _field('reliefPilot', 'SO / Relief'),
+                  _crewNameField('reliefPilot', 'SO / Relief'),
                   const SizedBox(height: 10),
                   _row([
                     DropdownButtonFormField<String>(
@@ -135,9 +140,20 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                       onChanged: (value) =>
                           setState(() => _otherCrewRole = value ?? 'Other'),
                     ),
-                    _field('otherCrew', 'Additional crew name'),
+                    _crewNameField('otherCrew', 'Additional crew name'),
                   ]),
-                  _row([_field('fsm', 'FSM'), _field('css', 'CSS')]),
+                  _row([
+                    _crewNameField('fsm', 'FSM'),
+                    _crewNameField('css', 'CSS'),
+                  ]),
+                  TextField(
+                    controller: _controllers['cabinCrewCount'],
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Cabin crew complement',
+                      helperText: '1 to 20 crew members',
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -242,7 +258,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         children: [
-          Expanded(child: _field(key, label)),
+          Expanded(child: _crewNameField(key, label)),
           const SizedBox(width: 10),
           SegmentedButton<String>(
             segments: const [
@@ -265,6 +281,13 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       ),
     );
   }
+
+  Widget _crewNameField(String key, String label) => CrewNameField(
+    controller: _controllers[key]!,
+    label: label,
+    names: _crewNames,
+    onNewName: _addCrewName,
+  );
 
   Widget _timeValue(String label, String value) => Container(
     width: 145,
@@ -380,6 +403,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       'otherCrew': flight?.otherCrew ?? '',
       'fsm': flight?.fsm ?? '',
       'css': flight?.css ?? '',
+      'cabinCrewCount': '${flight?.cabinCrewCount ?? 10}',
       'detailedRoute': flight?.detailedRoute ?? '',
       'takeoffWeight': flight?.takeoffWeight ?? '',
       'landingWeight': flight?.landingWeight ?? '',
@@ -403,6 +427,10 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
     final flight = widget.flight;
     if (flight == null) return;
     String value(String key) => _controllers[key]!.text.trim();
+    final cabinCrewCount = (int.tryParse(value('cabinCrewCount')) ?? 10).clamp(
+      1,
+      20,
+    );
     widget.onFlightChanged(
       flight.copyWith(
         registration: value('registration'),
@@ -414,6 +442,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         otherCrewRole: _otherCrewRole,
         fsm: value('fsm'),
         css: value('css'),
+        cabinCrewCount: cabinCrewCount,
         pilotFlying: _pilotFlying,
         detailedRoute: value('detailedRoute'),
         takeoffWeight: value('takeoffWeight'),
@@ -428,9 +457,32 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         extraFuel: value('extraFuel'),
       ),
     );
+    _addCrewNamesFromFields();
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Flight setup saved.')));
+  }
+
+  Future<void> _loadCrewDirectory() async {
+    final names = await _crewDirectoryStorage.load();
+    if (mounted) setState(() => _crewNames = names);
+  }
+
+  Future<void> _addCrewName(String name) async {
+    final names = await _crewDirectoryStorage.addAll([name]);
+    if (mounted) setState(() => _crewNames = names);
+  }
+
+  Future<void> _addCrewNamesFromFields() async {
+    final names = await _crewDirectoryStorage.addAll([
+      _controllers['captain']!.text,
+      _controllers['firstOfficer']!.text,
+      _controllers['reliefPilot']!.text,
+      _controllers['otherCrew']!.text,
+      _controllers['fsm']!.text,
+      _controllers['css']!.text,
+    ]);
+    if (mounted) setState(() => _crewNames = names);
   }
 
   Future<void> _confirmReupload() async {
