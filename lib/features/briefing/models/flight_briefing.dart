@@ -77,6 +77,7 @@ class FlightBriefing {
     this.calculatedRtow = '',
     this.airbusZfwCg = '',
     this.airbusStabCg = '',
+    this.maxPayloadPlan = false,
     this.flightDeckCount = 3,
     this.cabinCrewCount = 10,
     this.fsm = '',
@@ -126,6 +127,7 @@ class FlightBriefing {
   final String calculatedRtow;
   final String airbusZfwCg;
   final String airbusStabCg;
+  final bool maxPayloadPlan;
   final int flightDeckCount;
   final int cabinCrewCount;
   final String fsm;
@@ -176,6 +178,7 @@ class FlightBriefing {
     String? calculatedRtow,
     String? airbusZfwCg,
     String? airbusStabCg,
+    bool? maxPayloadPlan,
     int? flightDeckCount,
     int? cabinCrewCount,
     String? fsm,
@@ -219,13 +222,13 @@ class FlightBriefing {
     contingencyFuel: contingencyFuel ?? this.contingencyFuel,
     finalReserveFuel: finalReserveFuel ?? this.finalReserveFuel,
     extraFuel: extraFuel ?? this.extraFuel,
-    actualZeroFuelWeight:
-        actualZeroFuelWeight ?? this.actualZeroFuelWeight,
+    actualZeroFuelWeight: actualZeroFuelWeight ?? this.actualZeroFuelWeight,
     actualTakeoffWeight: actualTakeoffWeight ?? this.actualTakeoffWeight,
     actualLandingWeight: actualLandingWeight ?? this.actualLandingWeight,
     calculatedRtow: calculatedRtow ?? this.calculatedRtow,
     airbusZfwCg: airbusZfwCg ?? this.airbusZfwCg,
     airbusStabCg: airbusStabCg ?? this.airbusStabCg,
+    maxPayloadPlan: maxPayloadPlan ?? this.maxPayloadPlan,
     flightDeckCount: flightDeckCount ?? this.flightDeckCount,
     cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
     fsm: fsm ?? this.fsm,

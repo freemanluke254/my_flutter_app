@@ -26,6 +26,7 @@ class OfpFlightDetails {
     this.contingencyFuel = '',
     this.finalReserveFuel = '',
     this.extraFuel = '',
+    this.maxPayloadPlan = false,
   });
   final String flightNumber;
   final String departure;
@@ -51,6 +52,7 @@ class OfpFlightDetails {
   final String contingencyFuel;
   final String finalReserveFuel;
   final String extraFuel;
+  final bool maxPayloadPlan;
 }
 
 class OfpParser {
@@ -144,6 +146,10 @@ class OfpParser {
       contingencyFuel: match(r'\bCONT%?\d*\s+(\d+)'),
       finalReserveFuel: match(r'\bFNL\s+RES\s+(\d+)'),
       extraFuel: match(r'\bEXTRA\s+(\d+)'),
+      maxPayloadPlan: RegExp(
+        r'\bMAX\s+PAYLOAD\s+PLAN\b',
+        caseSensitive: false,
+      ).hasMatch(text),
     );
   }
 
