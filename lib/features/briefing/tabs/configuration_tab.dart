@@ -25,6 +25,7 @@ class ConfigurationTab extends StatefulWidget {
 class _ConfigurationTabState extends State<ConfigurationTab> {
   final _controllers = <String, TextEditingController>{};
   String _pilotFlying = '';
+  String _otherCrewRole = 'Other';
 
   @override
   void initState() {
@@ -103,9 +104,38 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
                     'First officer',
                     'First officer',
                   ),
+                  _field('reliefPilot', 'SO / Relief'),
+                  const SizedBox(height: 10),
                   _row([
-                    _field('reliefPilot', 'SO / Relief'),
-                    _field('otherCrew', 'Other'),
+                    DropdownButtonFormField<String>(
+                      key: ValueKey(_otherCrewRole),
+                      initialValue: _otherCrewRole,
+                      decoration: const InputDecoration(
+                        labelText: 'Additional crew role',
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: 'SO / Relief',
+                          child: Text('SO / Relief'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Instructor',
+                          child: Text('Instructor'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Observer',
+                          child: Text('Observer'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Examiner',
+                          child: Text('Examiner'),
+                        ),
+                        DropdownMenuItem(value: 'Other', child: Text('Other')),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _otherCrewRole = value ?? 'Other'),
+                    ),
+                    _field('otherCrew', 'Additional crew name'),
                   ]),
                   _row([_field('fsm', 'FSM'), _field('css', 'CSS')]),
                 ],
@@ -366,6 +396,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
       (_controllers[entry.key] ??= TextEditingController()).text = entry.value;
     }
     _pilotFlying = flight?.pilotFlying ?? '';
+    _otherCrewRole = flight?.otherCrewRole ?? 'Other';
   }
 
   void _save() {
@@ -380,6 +411,7 @@ class _ConfigurationTabState extends State<ConfigurationTab> {
         firstOfficer: value('firstOfficer'),
         reliefPilot: value('reliefPilot'),
         otherCrew: value('otherCrew'),
+        otherCrewRole: _otherCrewRole,
         fsm: value('fsm'),
         css: value('css'),
         pilotFlying: _pilotFlying,

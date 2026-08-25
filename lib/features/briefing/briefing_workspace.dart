@@ -310,6 +310,7 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       firstOfficer: current.firstOfficer,
       reliefPilot: current.reliefPilot,
       otherCrew: current.otherCrew,
+      otherCrewRole: current.otherCrewRole,
       pilotFlying: current.pilotFlying,
       takeoffWeight: ofp?.takeoffWeight ?? current.takeoffWeight,
       landingWeight: ofp?.landingWeight ?? current.landingWeight,

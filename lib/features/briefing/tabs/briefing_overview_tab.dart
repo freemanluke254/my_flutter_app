@@ -168,49 +168,55 @@ class _CrewLoadCard extends StatelessWidget {
   final FlightBriefing flight;
   final VoidCallback onLoadChecker;
   @override
-  Widget build(BuildContext context) => Card(
-    elevation: 0,
-    color: Colors.white,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: _crew(
-                  '${flight.flightDeckCount} flight deck',
-                  [
-                    'Captain ${_name(flight.captain)}',
-                    'FO ${_name(flight.firstOfficer)}',
-                    if (flight.reliefPilot.isNotEmpty)
-                      'Relief ${flight.reliefPilot}',
-                    if (flight.otherCrew.isNotEmpty) flight.otherCrew,
-                  ].join(' · '),
+  Widget build(BuildContext context) {
+    final flightDeckNames = <String>[
+      if (flight.captain.isNotEmpty) 'Captain ${flight.captain}',
+      if (flight.firstOfficer.isNotEmpty) 'FO ${flight.firstOfficer}',
+      if (flight.reliefPilot.isNotEmpty) 'SO / Relief ${flight.reliefPilot}',
+      if (flight.otherCrew.isNotEmpty)
+        '${flight.otherCrewRole} ${flight.otherCrew}',
+    ];
+    return Card(
+      elevation: 0,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _crew(
+                    '${flightDeckNames.length} flight deck',
+                    flightDeckNames.isEmpty
+                        ? 'Crew names pending'
+                        : flightDeckNames.join(' · '),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: _crew(
-                  '${flight.cabinCrewCount} cabin crew',
-                  'FSM ${_name(flight.fsm)} · CSS ${_name(flight.css)}',
+                const SizedBox(width: 14),
+                Expanded(
+                  child: _crew(
+                    '${flight.cabinCrewCount} cabin crew',
+                    'FSM ${_name(flight.fsm)} · CSS ${_name(flight.css)}',
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const Divider(height: 28),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onLoadChecker,
-              icon: const Icon(Icons.groups_2_outlined),
-              label: const Text('Open load checker'),
+              ],
             ),
-          ),
-        ],
+            const Divider(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onLoadChecker,
+                icon: const Icon(Icons.groups_2_outlined),
+                label: const Text('Open load checker'),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
+
   Widget _crew(String title, String names) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [

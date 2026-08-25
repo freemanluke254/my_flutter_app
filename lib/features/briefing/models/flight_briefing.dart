@@ -55,6 +55,7 @@ class FlightBriefing {
     this.firstOfficer = '',
     this.reliefPilot = '',
     this.otherCrew = '',
+    this.otherCrewRole = 'Other',
     this.pilotFlying = '',
     this.takeoffWeight = '',
     this.landingWeight = '',
@@ -93,6 +94,7 @@ class FlightBriefing {
   final String firstOfficer;
   final String reliefPilot;
   final String otherCrew;
+  final String otherCrewRole;
   final String pilotFlying;
   final String takeoffWeight;
   final String landingWeight;
@@ -132,6 +134,7 @@ class FlightBriefing {
     String? firstOfficer,
     String? reliefPilot,
     String? otherCrew,
+    String? otherCrewRole,
     String? pilotFlying,
     String? takeoffWeight,
     String? landingWeight,
@@ -170,6 +173,7 @@ class FlightBriefing {
     firstOfficer: firstOfficer ?? this.firstOfficer,
     reliefPilot: reliefPilot ?? this.reliefPilot,
     otherCrew: otherCrew ?? this.otherCrew,
+    otherCrewRole: otherCrewRole ?? this.otherCrewRole,
     pilotFlying: pilotFlying ?? this.pilotFlying,
     takeoffWeight: takeoffWeight ?? this.takeoffWeight,
     landingWeight: landingWeight ?? this.landingWeight,
