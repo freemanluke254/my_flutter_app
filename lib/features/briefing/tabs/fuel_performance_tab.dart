@@ -544,7 +544,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       label: 'RTOW',
                       value: flight.calculatedRtow,
                       compact: true,
-                      locked: true,
                     ),
                   ),
                   SizedBox(
@@ -553,7 +552,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                       label: 'RLW',
                       value: flight.regulatedLandingWeight,
                       compact: true,
-                      locked: true,
                     ),
                   ),
                   SizedBox(
@@ -564,7 +562,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                           '${flight.flightDeckCount + flight.cabinCrewCount}',
                       suffix: null,
                       compact: true,
-                      locked: true,
                     ),
                   ),
                   SizedBox(
@@ -593,10 +590,15 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                   ),
                 ],
               ),
-              const Text(
-                'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
-                style: TextStyle(color: Color(0xFF667069), fontSize: 12),
-              ),
+              if (flight.regulatedLandingWeight.replaceAll(
+                    RegExp(r'\D'),
+                    '',
+                  ) ==
+                  '192776')
+                const Text(
+                  'RLW of 192,776 kg is prefilled.',
+                  style: TextStyle(color: Color(0xFF667069), fontSize: 12),
+                ),
             ],
           ),
         ),
@@ -696,10 +698,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm initial loadsheet'),
-        content: const Text(
-          'Are you sure the initial loadsheet has been sent to GLC?',
-        ),
+        content: const Text('Confirm sent to GLC?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1578,13 +1577,11 @@ class _ActualValue extends StatelessWidget {
     required this.value,
     this.suffix = 'kg',
     this.compact = false,
-    this.locked = false,
   });
   final String label;
   final String value;
   final String? suffix;
   final bool compact;
-  final bool locked;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -1598,24 +1595,9 @@ class _ActualValue extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xFF667069),
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            if (locked)
-              const Icon(
-                Icons.lock_outline_rounded,
-                size: 14,
-                color: Color(0xFF667069),
-              ),
-          ],
+        Text(
+          label,
+          style: const TextStyle(color: Color(0xFF667069), fontSize: 12),
         ),
         const SizedBox(height: 3),
         Text(
