@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/flight_briefing.dart';
+import '../services/free_aviation_reference_service.dart';
 import '../services/pdf_document_reader.dart';
 import '../widgets/pdf_full_page_viewer.dart';
 
@@ -301,10 +302,19 @@ class _PdfTextDialog extends StatefulWidget {
 }
 
 class _PdfTextDialogState extends State<_PdfTextDialog> {
-  late final Future<String> _text = const PdfDocumentReader().extractText(
-    widget.path,
-  );
+  late final Future<_PdfBriefingContent> _content = _loadContent();
   bool _raw = false;
+
+  Future<_PdfBriefingContent> _loadContent() async {
+    final results = await Future.wait<Object>([
+      const PdfDocumentReader().extractText(widget.path),
+      const FreeAviationReferenceService().airports(widget.airportCodes),
+    ]);
+    return _PdfBriefingContent(
+      text: results[0] as String,
+      airports: results[1] as List<AirportReference>,
+    );
+  }
   @override
   Widget build(BuildContext context) => Dialog(
     child: ConstrainedBox(
@@ -338,8 +348,8 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
             ),
           const Divider(height: 1),
           Expanded(
-            child: FutureBuilder<String>(
-              future: _text,
+            child: FutureBuilder<_PdfBriefingContent>(
+              future: _content,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -352,11 +362,35 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
                     ),
                   );
                 }
-                final rawText = _relevantText(snapshot.data ?? '');
+                final content = snapshot.data;
+                final rawText = _relevantText(
+                  content?.text ?? '',
+                  content?.airports ?? const [],
+                );
                 final displayText = _raw ? rawText : _decodedText(rawText);
                 return SingleChildScrollView(
                   padding: const EdgeInsets.all(18),
-                  child: SelectableText(displayText),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (content?.airports.isNotEmpty == true) ...[
+                        Text(
+                          content!.airports
+                              .map(
+                                (airport) =>
+                                    '${airport.icao}${airport.iata.isEmpty ? '' : ' / ${airport.iata}'} · ${airport.name}${airport.firCode.isEmpty ? '' : ' · ${airport.firCode} FIR'}',
+                              )
+                              .join('\n'),
+                          style: const TextStyle(
+                            color: Color(0xFF244A73),
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      SelectableText(displayText),
+                    ],
+                  ),
                 );
               },
             ),
@@ -366,12 +400,14 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
     ),
   );
 
-  String _relevantText(String text) {
+  String _relevantText(String text, List<AirportReference> airports) {
     if (widget.airportCodes.isEmpty) return text;
-    final relevantCodes =
-        widget.contentType == BriefingDocumentContentType.notam
-        ? _notamScope(widget.airportCodes)
-        : widget.airportCodes.toSet();
+    final relevantCodes = widget.airportCodes.toSet();
+    if (widget.contentType == BriefingDocumentContentType.notam) {
+      relevantCodes.addAll(
+        airports.map((airport) => airport.firCode).where((code) => code.isNotEmpty),
+      );
+    }
     final starts = RegExp(
       r'^([A-Z]{4})\s*(?:-|/)',
       multiLine: true,
@@ -424,33 +460,6 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
           (match) =>
               'Temperature ${match.group(1)}°C, dew point ${match.group(2)!.replaceFirst('M', '-')}°C',
         );
-  }
-
-  Set<String> _notamScope(List<String> airports) {
-    const airspace = <String, List<String>>{
-      'EGLL': ['EGTT'],
-      'EGKK': ['EGTT'],
-      'EGSS': ['EGTT'],
-      'EGGW': ['EGTT'],
-      'EGLC': ['EGTT'],
-      'EGCC': ['EGTT'],
-      'KLAX': ['KZLA'],
-      'KLAS': ['KZLA'],
-      'KSAN': ['KZLA'],
-      'KONT': ['KZLA'],
-      'KJFK': ['KZNY'],
-      'KEWR': ['KZNY'],
-      'KIAD': ['KZDC'],
-      'KBOS': ['KZBW'],
-      'KMIA': ['KZMA'],
-      'KATL': ['KZTL'],
-      'KORD': ['KZAU'],
-      'KSFO': ['KZOA'],
-    };
-    return {
-      for (final airport in airports) airport,
-      for (final airport in airports) ...?airspace[airport],
-    };
   }
 
   String _categorisedNotams(String raw) {
@@ -525,4 +534,10 @@ class _PdfTextDialogState extends State<_PdfTextDialog> {
       .replaceAll(' G)', '\nUpper limit: ')
       .replaceAll(RegExp(r'\n{3,}'), '\n\n')
       .trim();
+}
+
+class _PdfBriefingContent {
+  const _PdfBriefingContent({required this.text, required this.airports});
+  final String text;
+  final List<AirportReference> airports;
 }
