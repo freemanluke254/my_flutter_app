@@ -480,14 +480,6 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text(
-                'RTOW',
-                style: TextStyle(
-                  color: Color(0xFF315F86),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 12),
               _RtowField(
                 controller: _controllers['rtow']!,
                 onChanged: (value) => _update('rtow', value),
@@ -526,12 +518,14 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
               ),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Loadsheet initialised'),
+                title: const Text('Initial loadsheet sent to GLC'),
+                subtitle: Text(
+                  flight.loadsheetInitialized
+                      ? 'Initialisation complete'
+                      : 'Enter the RTOW and RLW, then send the initial loadsheet.',
+                ),
                 value: flight.loadsheetInitialized,
-                onChanged: flight.calculatedRtow.isEmpty
-                    ? null
-                    : (value) =>
-                          _updateFlag('loadsheetInitialized', value ?? false),
+                onChanged: null,
               ),
               const SizedBox(height: 4),
               Row(
@@ -546,19 +540,31 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                   Expanded(child: _weightField('RLW TO SEND', 'rlw')),
                 ],
               ),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('RTOW and RLW sent through COMM'),
-                subtitle: const Text(
-                  'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
+              const Text(
+                'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
+                style: TextStyle(color: Color(0xFF667069), fontSize: 12),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerRight,
+                child: FilledButton.icon(
+                  onPressed:
+                      flight.loadsheetInitialized ||
+                          flight.calculatedRtow.isEmpty ||
+                          _controllers['rlw']!.text.isEmpty
+                      ? null
+                      : _sendInitialLoadsheet,
+                  icon: Icon(
+                    flight.loadsheetInitialized
+                        ? Icons.check_circle_rounded
+                        : Icons.send_rounded,
+                  ),
+                  label: Text(
+                    flight.loadsheetInitialized
+                        ? 'Sent to GLC'
+                        : 'Send initial loadsheet to GLC',
+                  ),
                 ),
-                value: flight.regulatedWeightsSent,
-                onChanged:
-                    !flight.loadsheetInitialized ||
-                        flight.calculatedRtow.isEmpty ||
-                        _controllers['rlw']!.text.isEmpty
-                    ? null
-                    : (value) => _updateFlag('weightsSent', value ?? false),
               ),
             ],
           ),
@@ -585,6 +591,22 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       ],
     ),
   );
+
+  void _sendInitialLoadsheet() {
+    final flight = widget.flight;
+    if (flight == null ||
+        flight.calculatedRtow.isEmpty ||
+        _controllers['rlw']!.text.isEmpty) {
+      return;
+    }
+    widget.onFlightChanged(
+      flight.copyWith(
+        regulatedLandingWeight: _controllers['rlw']!.text,
+        loadsheetInitialized: true,
+        regulatedWeightsSent: true,
+      ),
+    );
+  }
 
   Widget _stepHeader(String number, String title, {String? role}) => Row(
     children: [
