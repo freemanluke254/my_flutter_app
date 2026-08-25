@@ -424,9 +424,10 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
           ),
           const SizedBox(height: 8),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
-                width: 180,
+                width: 112,
                 child: TextField(
                   controller: _controllers['atis']!,
                   textCapitalization: TextCapitalization.characters,
@@ -441,8 +442,9 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                     ),
                   ],
                   decoration: const InputDecoration(
-                    labelText: 'ATIS letter',
+                    labelText: 'ATIS',
                     hintText: 'A–Z',
+                    isDense: true,
                     filled: true,
                     fillColor: Colors.white,
                     border: OutlineInputBorder(),
@@ -450,23 +452,37 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                   onChanged: (value) => _update('atis', value),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text(
-                    'ATIS printed and retained with aircraft paperwork',
-                  ),
-                  value: flight.atisPrintedAndRetained,
-                  onChanged: flight.atisLetter.isEmpty
-                      ? null
-                      : (value) => _updateFlag('atisRetained', value ?? false),
+              const SizedBox(width: 8),
+              Checkbox(
+                value: flight.atisPrintedAndRetained,
+                onChanged: flight.atisLetter.isEmpty
+                    ? null
+                    : (value) => _updateFlag('atisRetained', value ?? false),
+              ),
+              const Flexible(
+                child: Text(
+                  'Printed and retained',
+                  style: TextStyle(fontSize: 12),
                 ),
               ),
             ],
           ),
           const Divider(height: 28),
-          _stepHeader('2', 'RTOW · Calculate', role: 'C, F/O'),
+          Row(
+            children: [
+              Expanded(
+                child: _stepHeader('2', 'RTOW · Calculate', role: 'C, F/O'),
+              ),
+              IconButton(
+                tooltip: 'How to calculate RTOW',
+                onPressed: _showRtowProcedure,
+                icon: const Icon(
+                  Icons.info_outline_rounded,
+                  color: Color(0xFF315F86),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           IgnorePointer(
             ignoring: flight.atisLetter.isEmpty,
@@ -479,13 +495,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
             ),
           ),
           const SizedBox(height: 8),
-          const _RtowCalculationReference(),
-          const SizedBox(height: 8),
-          const _ProcedureNote(
-            title: 'LANDING DISPATCH',
-            text:
-                'Landing Dispatch calculations should be completed during planning if the applicable criteria in the QRH OI section have not been met.',
-          ),
+          const _LandingDispatchCriteria(),
           const SizedBox(height: 8),
           const _ProcedureNote(
             title: 'PORTABLE EFB / OPT APP UNAVAILABLE',
@@ -536,6 +546,25 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
           ),
         ],
       ),
+    ),
+  );
+
+  Future<void> _showRtowProcedure() => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('How to calculate RTOW'),
+      content: const SizedBox(
+        width: 680,
+        child: SingleChildScrollView(
+          child: _RtowCalculationReference(initiallyExpanded: true),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
     ),
   );
 
@@ -815,8 +844,87 @@ class _RtowField extends StatelessWidget {
   );
 }
 
+class _LandingDispatchCriteria extends StatelessWidget {
+  const _LandingDispatchCriteria();
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: const Color(0xFFEAF3FA),
+    clipBehavior: Clip.antiAlias,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(10),
+      side: const BorderSide(color: Color(0xFFB9D1E4)),
+    ),
+    child: const ExpansionTile(
+      dense: true,
+      leading: Icon(Icons.flight_land_rounded, color: Color(0xFF315F86)),
+      title: Text(
+        'Is a Landing Dispatch calculation needed?',
+        style: TextStyle(fontWeight: FontWeight.w900),
+      ),
+      subtitle: Text('Open to check all exemption criteria'),
+      childrenPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      expandedCrossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'A Landing Dispatch calculation is not required only when every condition below is met:',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        SizedBox(height: 6),
+        _CriteriaItem('Runway LDA is at least 8,000 ft.'),
+        _CriteriaItem(
+          'Expected OAT is 26°C or below when aerodrome elevation is 2,501–5,600 ft AMSL.',
+        ),
+        _CriteriaItem(
+          'Expected OAT is 40°C or below when aerodrome elevation is 2,500 ft AMSL or lower.',
+        ),
+        _CriteriaItem('QNH is at least 970 hPa.'),
+        _CriteriaItem('There is no tailwind component.'),
+        _CriteriaItem('Expected runway condition is dry.'),
+        _CriteriaItem(
+          'No MEL or CDL dispatch condition affects landing performance.',
+        ),
+        _CriteriaItem('Missed approach climb gradient is 2.5% or less.'),
+        SizedBox(height: 8),
+        Text(
+          'Criteria are based on a maximum landing weight of 192,776 kg.',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        SizedBox(height: 8),
+        Text(
+          'When a Landing Dispatch calculation is required, enter estimated OAT and QNH in OPT using the best available information.',
+        ),
+      ],
+    ),
+  );
+}
+
+class _CriteriaItem extends StatelessWidget {
+  const _CriteriaItem(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 5),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Icon(Icons.check_circle_outline, size: 16),
+        ),
+        const SizedBox(width: 7),
+        Expanded(child: Text(text)),
+      ],
+    ),
+  );
+}
+
 class _RtowCalculationReference extends StatelessWidget {
-  const _RtowCalculationReference();
+  const _RtowCalculationReference({this.initiallyExpanded = false});
+
+  final bool initiallyExpanded;
 
   @override
   Widget build(BuildContext context) => Material(
@@ -826,16 +934,17 @@ class _RtowCalculationReference extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       side: const BorderSide(color: Color(0xFFCBD5DE)),
     ),
-    child: const ExpansionTile(
-      leading: Icon(Icons.fact_check_outlined, color: Color(0xFF315F86)),
-      title: Text(
+    child: ExpansionTile(
+      initiallyExpanded: initiallyExpanded,
+      leading: const Icon(Icons.fact_check_outlined, color: Color(0xFF315F86)),
+      title: const Text(
         'How to calculate RTOW',
         style: TextStyle(fontWeight: FontWeight.w900),
       ),
-      subtitle: Text('Open for the OPT take-off setup sequence'),
-      childrenPadding: EdgeInsets.fromLTRB(16, 0, 16, 16),
+      subtitle: const Text('OPT take-off setup sequence'),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       expandedCrossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+      children: const [
         _ReferenceStep(
           number: 1,
           text: 'Confirm the correct aircraft is displayed at the top left.',
