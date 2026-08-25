@@ -55,6 +55,14 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'actualCg': flight?.actualTakeoffCg ?? '',
       'finalThrust': flight?.finalThrustSetting ?? '',
       'finalFlap': flight?.finalFlapSetting ?? '',
+      'atis': flight?.atisLetter ?? '',
+      'rlw': flight == null
+          ? ''
+          : flight.regulatedLandingWeight.isNotEmpty
+          ? flight.regulatedLandingWeight
+          : flight.aircraftType.contains('787')
+          ? '192776'
+          : '',
     };
     for (final entry in values.entries) {
       final existing = _controllers[entry.key];
@@ -98,10 +106,7 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
         ),
         const SizedBox(height: 10),
         if (isB787) ...[
-          _RtowField(
-            controller: _controllers['rtow']!,
-            onChanged: (value) => _update('rtow', value),
-          ),
+          _atisAndLoadsheetSetup(flight),
           const SizedBox(height: 12),
         ],
         LayoutBuilder(
@@ -385,6 +390,143 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
     );
   }
 
+  Widget _atisAndLoadsheetSetup(FlightBriefing flight) => Container(
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF0F3F6),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFFCBD5DE)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Text(
+          'ATIS & LOADSHEET SETUP',
+          style: TextStyle(
+            color: Color(0xFF315F86),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _stepHeader('1', 'Obtain and retain the ATIS'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            SizedBox(
+              width: 180,
+              child: TextField(
+                controller: _controllers['atis']!,
+                textCapitalization: TextCapitalization.characters,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(1),
+                  FilteringTextInputFormatter.allow(RegExp('[a-zA-Z]')),
+                  TextInputFormatter.withFunction(
+                    (oldValue, newValue) => newValue.copyWith(
+                      text: newValue.text.toUpperCase(),
+                      selection: newValue.selection,
+                    ),
+                  ),
+                ],
+                decoration: const InputDecoration(
+                  labelText: 'ATIS letter',
+                  hintText: 'A–Z',
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) => _update('atis', value),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text(
+                  'ATIS printed and retained with aircraft paperwork',
+                ),
+                value: flight.atisPrintedAndRetained,
+                onChanged: flight.atisLetter.isEmpty
+                    ? null
+                    : (value) => _updateFlag('atisRetained', value ?? false),
+              ),
+            ),
+          ],
+        ),
+        const Divider(height: 28),
+        _stepHeader('2', 'Calculate and record RTOW'),
+        const SizedBox(height: 8),
+        IgnorePointer(
+          ignoring: flight.atisLetter.isEmpty,
+          child: Opacity(
+            opacity: flight.atisLetter.isEmpty ? 0.5 : 1,
+            child: _RtowField(
+              controller: _controllers['rtow']!,
+              onChanged: (value) => _update('rtow', value),
+            ),
+          ),
+        ),
+        const Divider(height: 28),
+        _stepHeader('3', 'Initialise the loadsheet in the aircraft COMM page'),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Loadsheet initialised'),
+          value: flight.loadsheetInitialized,
+          onChanged: flight.calculatedRtow.isEmpty
+              ? null
+              : (value) => _updateFlag('loadsheetInitialized', value ?? false),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: _ActualValue(
+                label: 'RTOW TO SEND',
+                value: flight.calculatedRtow,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: _weightField('RLW TO SEND', 'rlw')),
+          ],
+        ),
+        CheckboxListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('RTOW and RLW sent through COMM'),
+          subtitle: const Text(
+            'The B787 RLW is prefilled to 192,776 kg and remains amendable.',
+          ),
+          value: flight.regulatedWeightsSent,
+          onChanged:
+              !flight.loadsheetInitialized ||
+                  flight.calculatedRtow.isEmpty ||
+                  _controllers['rlw']!.text.isEmpty
+              ? null
+              : (value) => _updateFlag('weightsSent', value ?? false),
+        ),
+      ],
+    ),
+  );
+
+  Widget _stepHeader(String number, String title) => Row(
+    children: [
+      CircleAvatar(
+        radius: 13,
+        backgroundColor: const Color(0xFF315F86),
+        child: Text(
+          number,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+      const SizedBox(width: 9),
+      Expanded(
+        child: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+      ),
+    ],
+  );
+
   Widget _performanceField(String label, String key) => Padding(
     padding: const EdgeInsets.only(bottom: 10),
     child: TextField(
@@ -424,6 +566,8 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'actualCg' => flight.copyWith(actualTakeoffCg: value),
       'finalThrust' => flight.copyWith(finalThrustSetting: value),
       'finalFlap' => flight.copyWith(finalFlapSetting: value),
+      'atis' => flight.copyWith(atisLetter: value),
+      'rlw' => flight.copyWith(regulatedLandingWeight: value),
       _ => flight,
     });
   }
@@ -439,12 +583,18 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       'efbEntered' => flight.copyWith(efbPerformanceEntered: value),
       'loadsheetReceived' => flight.copyWith(finalLoadsheetReceived: value),
       'finalComplete' => flight.copyWith(finalPerformanceComplete: value),
+      'atisRetained' => flight.copyWith(atisPrintedAndRetained: value),
+      'loadsheetInitialized' => flight.copyWith(loadsheetInitialized: value),
+      'weightsSent' => flight.copyWith(
+        regulatedLandingWeight: _controllers['rlw']!.text,
+        regulatedWeightsSent: value,
+      ),
       _ => flight,
     });
   }
 
   String _flightKey(FlightBriefing? flight) =>
-      '${flight?.callsign}|${flight?.flightDate?.toIso8601String()}|${flight?.route}';
+      '${flight?.callsign}|${flight?.flightDate?.toIso8601String()}|${flight?.route}|${flight?.aircraftType}';
 }
 
 class _WeightColumn extends StatelessWidget {

@@ -88,6 +88,11 @@ class FlightBriefing {
     this.finalThrustSetting = '',
     this.finalFlapSetting = '',
     this.finalPerformanceComplete = false,
+    this.atisLetter = '',
+    this.atisPrintedAndRetained = false,
+    this.loadsheetInitialized = false,
+    this.regulatedLandingWeight = '',
+    this.regulatedWeightsSent = false,
     this.flightDeckCount = 3,
     this.cabinCrewCount = 10,
     this.fsm = '',
@@ -148,6 +153,11 @@ class FlightBriefing {
   final String finalThrustSetting;
   final String finalFlapSetting;
   final bool finalPerformanceComplete;
+  final String atisLetter;
+  final bool atisPrintedAndRetained;
+  final bool loadsheetInitialized;
+  final String regulatedLandingWeight;
+  final bool regulatedWeightsSent;
   final int flightDeckCount;
   final int cabinCrewCount;
   final String fsm;
@@ -209,6 +219,11 @@ class FlightBriefing {
     String? finalThrustSetting,
     String? finalFlapSetting,
     bool? finalPerformanceComplete,
+    String? atisLetter,
+    bool? atisPrintedAndRetained,
+    bool? loadsheetInitialized,
+    String? regulatedLandingWeight,
+    bool? regulatedWeightsSent,
     int? flightDeckCount,
     int? cabinCrewCount,
     String? fsm,
@@ -274,6 +289,13 @@ class FlightBriefing {
     finalFlapSetting: finalFlapSetting ?? this.finalFlapSetting,
     finalPerformanceComplete:
         finalPerformanceComplete ?? this.finalPerformanceComplete,
+    atisLetter: atisLetter ?? this.atisLetter,
+    atisPrintedAndRetained:
+        atisPrintedAndRetained ?? this.atisPrintedAndRetained,
+    loadsheetInitialized: loadsheetInitialized ?? this.loadsheetInitialized,
+    regulatedLandingWeight:
+        regulatedLandingWeight ?? this.regulatedLandingWeight,
+    regulatedWeightsSent: regulatedWeightsSent ?? this.regulatedWeightsSent,
     flightDeckCount: flightDeckCount ?? this.flightDeckCount,
     cabinCrewCount: cabinCrewCount ?? this.cabinCrewCount,
     fsm: fsm ?? this.fsm,
