@@ -652,32 +652,29 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                 const SizedBox(height: 10),
                 LayoutBuilder(
                   builder: (context, constraints) {
-                    final figures = <(String, String)>[
-                      ('TRIP', flight.tripFuel),
-                      ('CONT', flight.contingencyFuel),
-                      ('ALTN', flight.alternateFuel),
-                      ('FNL RES', flight.finalReserveFuel),
-                      ('ETP ADJ', flight.etpAdjustmentFuel),
-                      ('ADDNL', flight.additionalFuel),
-                      ('UNUSABLE', flight.unusableFuel),
-                      ('ARR DLY', flight.arrivalDelayFuel),
-                      ('EXTRA', flight.extraFuel),
-                      ('DISC', flight.discretionaryFuel),
-                      ('TAXI/APU', flight.taxiFuel),
-                      ('RAMP', flight.blockFuel),
+                    final figures = <(String, String, String)>[
+                      ('TRIP', flight.tripFuel, 'trip'),
+                      ('CONT', flight.contingencyFuel, 'cont'),
+                      ('ALTN', flight.alternateFuel, 'altn'),
+                      ('FNL RES', flight.finalReserveFuel, 'fnlRes'),
+                      ('ETP ADJ', flight.etpAdjustmentFuel, 'etpAdj'),
+                      ('ADDNL', flight.additionalFuel, 'addnl'),
+                      ('UNUSABLE', flight.unusableFuel, 'unusable'),
+                      ('ARR DLY', flight.arrivalDelayFuel, 'arrDly'),
+                      ('EXTRA', flight.extraFuel, 'extra'),
+                      ('DISC', flight.discretionaryFuel, 'disc'),
+                      ('TAXI/APU', flight.taxiFuel, 'taxiApu'),
+                      ('RAMP', flight.blockFuel, 'ramp'),
                     ];
-                    final width = constraints.maxWidth < 620
-                        ? constraints.maxWidth
-                        : (constraints.maxWidth - 10) / 2;
                     return Wrap(
-                      spacing: 10,
                       children: figures
                           .map(
                             (figure) => SizedBox(
-                              width: width,
+                              width: constraints.maxWidth,
                               child: _PlannedWeight(
                                 label: figure.$1,
                                 value: figure.$2,
+                                time: flight.fuelTimes[figure.$3] ?? '',
                               ),
                             ),
                           )
@@ -982,9 +979,10 @@ class _WeightColumn extends StatelessWidget {
 }
 
 class _PlannedWeight extends StatelessWidget {
-  const _PlannedWeight({required this.label, required this.value});
+  const _PlannedWeight({required this.label, required this.value, this.time});
   final String label;
   final String value;
+  final String? time;
 
   @override
   Widget build(BuildContext context) => Container(
@@ -997,17 +995,30 @@ class _PlannedWeight extends StatelessWidget {
     ),
     child: Row(
       children: [
-        const Icon(Icons.lock_outline_rounded, size: 18),
-        const SizedBox(width: 9),
         Expanded(
           child: Text(
             label,
             style: const TextStyle(fontWeight: FontWeight.w800),
           ),
         ),
-        Text(
-          value.isEmpty ? 'Not found in OFP' : '$value kg',
-          style: const TextStyle(fontWeight: FontWeight.w900),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value.isEmpty ? 'Not found in OFP' : '$value kg',
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            if (time != null) ...[
+              const SizedBox(width: 18),
+              Text(
+                time!.isEmpty ? 'Time not found' : time!,
+                style: const TextStyle(
+                  color: Color(0xFF315F86),
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ],
+          ],
         ),
       ],
     ),

@@ -45,7 +45,39 @@ RAMP 51700 TD FUEL 9500
     expect(result.landingWeight, '171000');
     expect(result.blockFuel, '51700');
     expect(result.tripFuel, '41700');
+    expect(result.fuelTimes['trip'], '07.44');
+    expect(result.fuelTimes['cont'], '00.28');
+    expect(result.fuelTimes['taxiApu'], '00.23');
     expect(result.maxPayloadPlan, isTrue);
+  });
+
+  test('decodes split CONT20MIN and the complete OFP fuel table', () {
+    const source = '''
+OPERATIONAL FLIGHT PLAN VS23 PG 1/9
+VIR23X 24AUG26 EGLL-KLAX
+TRIP 51500 10.24
+CONT20MI
+N
+1400 00.20
+ALTN 2000 00.24
+FNL RES 2000 00.30
+ETP ADJ 0
+ADDNL 0
+UNUSABLE 0
+ARR DLY 200 00.02
+EXTRA 0 00.00
+DISC 0 00.00
+TAXI/APU 600 00.28
+RAMP 57700
+''';
+
+    final result = const OfpParser().parseText(source);
+
+    expect(result.contingencyFuel, '1400');
+    expect(result.fuelTimes['cont'], '00.20');
+    expect(result.alternateFuel, '2000');
+    expect(result.arrivalDelayFuel, '200');
+    expect(result.discretionaryFuel, '0');
   });
 
   test('uses the OFP date and local STD for the UTC countdown time', () {

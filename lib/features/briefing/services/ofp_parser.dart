@@ -32,6 +32,7 @@ class OfpFlightDetails {
     this.arrivalDelayFuel = '',
     this.extraFuel = '',
     this.discretionaryFuel = '',
+    this.fuelTimes = const {},
     this.maxPayloadPlan = false,
   });
   final String flightNumber;
@@ -64,6 +65,7 @@ class OfpFlightDetails {
   final String arrivalDelayFuel;
   final String extraFuel;
   final String discretionaryFuel;
+  final Map<String, String> fuelTimes;
   final bool maxPayloadPlan;
 }
 
@@ -94,6 +96,8 @@ class OfpParser {
           multiLine: true,
         ).firstMatch(text)?.group(group)?.trim() ??
         fallback;
+    String fuelTime(String labelPattern) =>
+        match('$labelPattern\\s+\\d+\\s+(\\d{1,2}[.:]\\d{2})');
     final route = RegExp(r'\b([A-Z]{4})-([A-Z]{4})\b').firstMatch(text);
     final flightNumber = match(r'OPERATIONAL FLIGHT PLAN\s+([A-Z]{2}\d+)');
     if (flightNumber.isEmpty || route == null) {
@@ -155,7 +159,7 @@ class OfpParser {
       blockFuel: match(r'\bRAMP\s+(\d+)'),
       taxiFuel: match(r'\bTAXI/APU\s+(\d+)'),
       tripFuel: match(r'\bTRIP\s+(\d+)'),
-      contingencyFuel: match(r'\bCONT%?\d*\s+(\d+)'),
+      contingencyFuel: match(r'\bCONT(?:%\d+|\d+MI\s*N)?\s+(\d+)'),
       alternateFuel: match(r'\bALTN\s+(\d+)'),
       finalReserveFuel: match(r'\bFNL\s+RES\s+(\d+)'),
       etpAdjustmentFuel: match(r'\bETP\s+ADJ\s+(\d+)'),
@@ -164,6 +168,20 @@ class OfpParser {
       arrivalDelayFuel: match(r'\bARR\s+DLY\s+(\d+)'),
       extraFuel: match(r'\bEXTRA\s+(\d+)'),
       discretionaryFuel: match(r'\bDISC\s+(\d+)'),
+      fuelTimes: {
+        'trip': fuelTime(r'\bTRIP'),
+        'cont': fuelTime(r'\bCONT(?:%\d+|\d+MI\s*N)?'),
+        'altn': fuelTime(r'\bALTN'),
+        'fnlRes': fuelTime(r'\bFNL\s+RES'),
+        'etpAdj': fuelTime(r'\bETP\s+ADJ'),
+        'addnl': fuelTime(r'\bADDNL'),
+        'unusable': fuelTime(r'\bUNUSABLE'),
+        'arrDly': fuelTime(r'\bARR\s+DLY'),
+        'extra': fuelTime(r'\bEXTRA'),
+        'disc': fuelTime(r'\bDISC'),
+        'taxiApu': fuelTime(r'\bTAXI/APU'),
+        'ramp': fuelTime(r'\bRAMP'),
+      },
       maxPayloadPlan: RegExp(
         r'\bMAX\s+PAYLOAD\s+PLAN\b',
         caseSensitive: false,
