@@ -715,6 +715,13 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
                     );
                   },
                 ),
+                if ((double.tryParse(flight.etpAdjustmentFuel) ?? 0) == 0 &&
+                    flight.minimumEtpRemainingFuel.isNotEmpty)
+                  _EtpProximityCheck(
+                    remainingFuel: flight.minimumEtpRemainingFuel,
+                    finalReserveFuel: flight.finalReserveFuel,
+                    zfwDifference: _zfwDifference(flight),
+                  ),
                 const SizedBox(height: 4),
                 const Text(
                   'OFP FUEL FIGURES · READ ONLY',
@@ -1394,6 +1401,75 @@ class _FuelCorrectionFactor extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _EtpProximityCheck extends StatelessWidget {
+  const _EtpProximityCheck({
+    required this.remainingFuel,
+    required this.finalReserveFuel,
+    required this.zfwDifference,
+  });
+
+  final String remainingFuel;
+  final String finalReserveFuel;
+  final double? zfwDifference;
+
+  @override
+  Widget build(BuildContext context) {
+    final remaining = double.tryParse(remainingFuel);
+    final reserve = double.tryParse(finalReserveFuel);
+    final margin = remaining == null || reserve == null
+        ? null
+        : remaining - reserve;
+    final zfwReduction = zfwDifference != null && zfwDifference! < 0
+        ? zfwDifference!.abs()
+        : 0.0;
+    final indicativeEtpChange = (zfwReduction / 1000) * 100;
+    final closeMargin = margin != null && margin <= 500;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: closeMargin ? const Color(0xFFFFF1DA) : const Color(0xFFF4F6F8),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: closeMargin
+              ? const Color(0xFFE3B96F)
+              : const Color(0xFFCBD5DE),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'ETP PROXIMITY CHECK · OFP ETP ADJ IS ZERO',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            'Lowest ETP REM: $remainingFuel kg  ·  '
+            'FNL RES: ${finalReserveFuel.isEmpty ? 'Not found' : '$finalReserveFuel kg'}'
+            '${margin == null ? '' : '  ·  Margin: ${margin.round()} kg'}',
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          if (zfwReduction > 0) ...[
+            const SizedBox(height: 5),
+            Text(
+              'Final ZFW reduction: ${zfwReduction.round()} kg. '
+              'Indicative ETP sensitivity: +${indicativeEtpChange.round()} kg.',
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ],
+          const SizedBox(height: 5),
+          const Text(
+            'A zero planned ETP adjustment may still be close to requiring additional ETP fuel. Review the OFP ETP data and liaise with Flight Planning for a definitive figure; this indication is not automatically added to fuel.',
+            style: TextStyle(color: Color(0xFF667069), height: 1.35),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _FuelCalculationBreakdown extends StatelessWidget {

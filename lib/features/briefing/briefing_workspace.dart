@@ -331,6 +331,8 @@ class _BriefingWorkspaceState extends State<BriefingWorkspace> {
       alternateFuel: ofp?.alternateFuel ?? current.alternateFuel,
       finalReserveFuel: ofp?.finalReserveFuel ?? current.finalReserveFuel,
       etpAdjustmentFuel: ofp?.etpAdjustmentFuel ?? current.etpAdjustmentFuel,
+      minimumEtpRemainingFuel:
+          ofp?.minimumEtpRemainingFuel ?? current.minimumEtpRemainingFuel,
       additionalFuel: ofp?.additionalFuel ?? current.additionalFuel,
       unusableFuel: ofp?.unusableFuel ?? current.unusableFuel,
       arrivalDelayFuel: ofp?.arrivalDelayFuel ?? current.arrivalDelayFuel,

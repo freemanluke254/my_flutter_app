@@ -72,6 +72,7 @@ class FlightBriefing {
     this.alternateFuel = '',
     this.finalReserveFuel = '',
     this.etpAdjustmentFuel = '',
+    this.minimumEtpRemainingFuel = '',
     this.additionalFuel = '',
     this.unusableFuel = '',
     this.arrivalDelayFuel = '',
@@ -149,6 +150,7 @@ class FlightBriefing {
   final String alternateFuel;
   final String finalReserveFuel;
   final String etpAdjustmentFuel;
+  final String minimumEtpRemainingFuel;
   final String additionalFuel;
   final String unusableFuel;
   final String arrivalDelayFuel;
@@ -227,6 +229,7 @@ class FlightBriefing {
     String? alternateFuel,
     String? finalReserveFuel,
     String? etpAdjustmentFuel,
+    String? minimumEtpRemainingFuel,
     String? additionalFuel,
     String? unusableFuel,
     String? arrivalDelayFuel,
@@ -304,6 +307,8 @@ class FlightBriefing {
     alternateFuel: alternateFuel ?? this.alternateFuel,
     finalReserveFuel: finalReserveFuel ?? this.finalReserveFuel,
     etpAdjustmentFuel: etpAdjustmentFuel ?? this.etpAdjustmentFuel,
+    minimumEtpRemainingFuel:
+        minimumEtpRemainingFuel ?? this.minimumEtpRemainingFuel,
     additionalFuel: additionalFuel ?? this.additionalFuel,
     unusableFuel: unusableFuel ?? this.unusableFuel,
     arrivalDelayFuel: arrivalDelayFuel ?? this.arrivalDelayFuel,

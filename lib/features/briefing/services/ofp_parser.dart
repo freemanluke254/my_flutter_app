@@ -27,6 +27,7 @@ class OfpFlightDetails {
     this.alternateFuel = '',
     this.finalReserveFuel = '',
     this.etpAdjustmentFuel = '',
+    this.minimumEtpRemainingFuel = '',
     this.additionalFuel = '',
     this.unusableFuel = '',
     this.arrivalDelayFuel = '',
@@ -61,6 +62,7 @@ class OfpFlightDetails {
   final String alternateFuel;
   final String finalReserveFuel;
   final String etpAdjustmentFuel;
+  final String minimumEtpRemainingFuel;
   final String additionalFuel;
   final String unusableFuel;
   final String arrivalDelayFuel;
@@ -166,6 +168,7 @@ class OfpParser {
       alternateFuel: match(r'\bALTN\s+(\d+)'),
       finalReserveFuel: match(r'\bFNL\s+RES\s+(\d+)'),
       etpAdjustmentFuel: match(r'\bETP\s+ADJ\s+(\d+)'),
+      minimumEtpRemainingFuel: _minimumEtpRemainingFuel(text),
       additionalFuel: match(r'\bADDNL\s+(\d+)'),
       unusableFuel: match(r'\bUNUSABLE\s+(\d+)'),
       arrivalDelayFuel: match(r'\bARR\s+DLY\s+(\d+)'),
@@ -193,6 +196,39 @@ class OfpParser {
         caseSensitive: false,
       ).hasMatch(text),
     );
+  }
+
+  String _minimumEtpRemainingFuel(String text) {
+    final lines = text.split(RegExp(r'\r?\n'));
+    final remainingValues = <double>[];
+    var inEtpTable = false;
+    for (final rawLine in lines) {
+      final line = rawLine.trim();
+      if (RegExp(
+        r'\bALTN\s+WX\s+WINDOW\b',
+        caseSensitive: false,
+      ).hasMatch(line)) {
+        inEtpTable = true;
+        continue;
+      }
+      if (!inEtpTable) continue;
+      if (RegExp(
+        r'\b(?:TOTAL\s+ETP|NO\s+CRITICAL|CRITICAL\s+FUEL|RMK:)',
+        caseSensitive: false,
+      ).hasMatch(line)) {
+        if (remainingValues.isNotEmpty) break;
+        continue;
+      }
+      final value = RegExp(r'(\d+(?:\.\d+)?)\s*$').firstMatch(line)?.group(1);
+      if (value == null) continue;
+      final parsed = double.tryParse(value);
+      if (parsed != null) remainingValues.add(parsed);
+    }
+    if (remainingValues.isEmpty) return '';
+    final minimum = remainingValues.reduce((a, b) => a < b ? a : b);
+    // Some OFPs print this table in tonnes while the fuel summary uses kg.
+    final kilograms = minimum < 100 ? minimum * 1000 : minimum;
+    return kilograms.round().toString();
   }
 
   String _frontPageRoute(String text, String departure, String arrival) {

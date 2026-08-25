@@ -70,6 +70,10 @@ DISC 0 00.00
 TAXI/APU 600 00.28
 RAMP 57700
 INCREASE/DECREASE FUEL BURN BY 253kg PER 1000kg CHANGE IN T.O.W.
+ALTN WX WINDOW TIME DIST ISA DEV WIND INFO FOB REQ REM
+BIKF 1708 - 2001 01.50 663 +0 270/030 P001 13.1 12.9 2.3
+EIDW 1729 - 2003 01.50 708 +0 270/030 P029 13.1 12.9 2.3
+TOTAL ETP FUEL DOES NOT EXCEED NORMAL REQUIREMENTS
 ''';
 
     final result = const OfpParser().parseText(source);
@@ -80,6 +84,7 @@ INCREASE/DECREASE FUEL BURN BY 253kg PER 1000kg CHANGE IN T.O.W.
     expect(result.arrivalDelayFuel, '200');
     expect(result.discretionaryFuel, '0');
     expect(result.fuelBurnCorrectionFactor, '253');
+    expect(result.minimumEtpRemainingFuel, '2300');
   });
 
   test('uses the OFP date and local STD for the UTC countdown time', () {
