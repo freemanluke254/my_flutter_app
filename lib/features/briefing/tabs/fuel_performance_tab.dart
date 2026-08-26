@@ -671,49 +671,12 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
               children: [
                 _stepHeader('3', 'Fuel'),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 2,
-                  crossAxisAlignment: WrapCrossAlignment.start,
-                  children: [
-                    SizedBox(
-                      width: 180,
-                      child: _weightField('FINAL ZFW', 'actualZfw'),
-                    ),
-                    _FuelCorrectionFactor(
-                      value: flight.fuelBurnCorrectionFactor,
-                    ),
-                  ],
-                ),
-                Builder(
-                  builder: (context) {
-                    final difference = _zfwDifference(flight);
-                    final factor = double.tryParse(
-                      flight.fuelBurnCorrectionFactor,
-                    );
-                    if (difference == null || factor == null) {
-                      return const SizedBox.shrink();
-                    }
-                    final zfwBurnAdjustment = _burnAdjustment(
-                      factor,
-                      difference,
-                    );
-                    final plannedEtp =
-                        double.tryParse(flight.etpAdjustmentFuel) ?? 0;
-                    final amendedEtp = double.tryParse(
-                      flight.amendedFuelFigures['etpAdj'] ??
-                          flight.etpAdjustmentFuel,
-                    );
-                    final etpBurnAdjustment = amendedEtp == null
-                        ? 0.0
-                        : _burnAdjustment(factor, amendedEtp - plannedEtp);
-                    return _FuelAdjustmentSummary(
-                      difference: difference,
-                      correctionFactor: factor,
-                      zfwBurnAdjustment: zfwBurnAdjustment,
-                      etpBurnAdjustment: etpBurnAdjustment,
-                    );
-                  },
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 180,
+                    child: _weightField('FINAL ZFW', 'actualZfw'),
+                  ),
                 ),
                 if ((double.tryParse(flight.etpAdjustmentFuel) ?? 0) == 0 &&
                     flight.minimumEtpRemainingFuel.isNotEmpty)
@@ -1190,6 +1153,8 @@ class _FuelPerformanceTabState extends State<FuelPerformanceTab> {
       amendedTrip: fuelValue('trip', flight.tripFuel),
       zfwAdjustment: zfwAdjustment,
       etpAdjustment: etpAdjustment,
+      zfwDifference: zfwDifference,
+      correctionFactor: flight.fuelBurnCorrectionFactor,
       components: components,
       ramp: ramp,
     );
@@ -1309,100 +1274,6 @@ class _PlannedWeight extends StatelessWidget {
   );
 }
 
-class _FuelAdjustmentSummary extends StatelessWidget {
-  const _FuelAdjustmentSummary({
-    required this.difference,
-    required this.correctionFactor,
-    required this.zfwBurnAdjustment,
-    required this.etpBurnAdjustment,
-  });
-
-  final double difference;
-  final double correctionFactor;
-  final double zfwBurnAdjustment;
-  final double etpBurnAdjustment;
-
-  @override
-  Widget build(BuildContext context) {
-    final requiresNewPlan = difference.abs() > 5000;
-    final sign = difference >= 0 ? '+' : '−';
-    final zfwBurnSign = zfwBurnAdjustment >= 0 ? '+' : '−';
-    final etpBurnSign = etpBurnAdjustment >= 0 ? '+' : '−';
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(11),
-      decoration: BoxDecoration(
-        color: requiresNewPlan
-            ? const Color(0xFFFFF1DA)
-            : const Color(0xFFEAF3FA),
-        borderRadius: BorderRadius.circular(9),
-        border: Border.all(
-          color: requiresNewPlan
-              ? const Color(0xFFE3B96F)
-              : const Color(0xFFB9D1E4),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'ZFW difference: $sign${difference.abs().round()} kg  ·  '
-            'Burn factor: ${correctionFactor.round()} kg/1,000 kg  ·  '
-            'ZFW trip adjustment: $zfwBurnSign${zfwBurnAdjustment.abs().round()} kg  ·  '
-            'ETP trip adjustment: $etpBurnSign${etpBurnAdjustment.abs().round()} kg',
-            style: const TextStyle(fontWeight: FontWeight.w800),
-          ),
-          if (requiresNewPlan) ...[
-            const SizedBox(height: 5),
-            const Text(
-              'Final ZFW differs from the OFP planned ZFW by more than 5,000 kg. Request a new flight plan, time permitting.',
-              style: TextStyle(
-                color: Color(0xFF8A5B13),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _FuelCorrectionFactor extends StatelessWidget {
-  const _FuelCorrectionFactor({required this.value});
-
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 230,
-    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
-    decoration: BoxDecoration(
-      color: const Color(0xFFE8EEF6),
-      borderRadius: BorderRadius.circular(8),
-      border: Border.all(color: const Color(0xFFC7D4E2)),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'OFP CORRECTION FACTOR',
-          style: TextStyle(
-            color: Color(0xFF315F86),
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value.isEmpty ? 'Not found in OFP' : '$value kg per 1,000 kg',
-          style: const TextStyle(fontWeight: FontWeight.w900),
-        ),
-      ],
-    ),
-  );
-}
-
 class _EtpProximityCheck extends StatelessWidget {
   const _EtpProximityCheck({
     required this.remainingFuel,
@@ -1478,6 +1349,8 @@ class _FuelCalculationBreakdown extends StatelessWidget {
     required this.amendedTrip,
     required this.zfwAdjustment,
     required this.etpAdjustment,
+    required this.zfwDifference,
+    required this.correctionFactor,
     required this.components,
     required this.ramp,
   });
@@ -1486,6 +1359,8 @@ class _FuelCalculationBreakdown extends StatelessWidget {
   final String amendedTrip;
   final double? zfwAdjustment;
   final double? etpAdjustment;
+  final double? zfwDifference;
+  final String correctionFactor;
   final List<(String, String)> components;
   final String ramp;
 
@@ -1506,6 +1381,14 @@ class _FuelCalculationBreakdown extends StatelessWidget {
         const Text(
           'FUEL CALCULATION',
           style: TextStyle(
+            color: Color(0xFF315F86),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'OFP correction factor: ${correctionFactor.isEmpty ? 'Not found in OFP' : '$correctionFactor kg per 1,000 kg'}',
+          style: const TextStyle(
             color: Color(0xFF315F86),
             fontWeight: FontWeight.w900,
           ),
@@ -1531,6 +1414,16 @@ class _FuelCalculationBreakdown extends StatelessWidget {
           '${components.map((item) => '${item.$1} ${item.$2.isEmpty ? '0' : item.$2}').join('  +  ')}  =  RAMP ${ramp.isEmpty ? '0' : ramp} kg',
           style: const TextStyle(fontWeight: FontWeight.w800, height: 1.45),
         ),
+        if (zfwDifference != null && zfwDifference!.abs() > 5000) ...[
+          const SizedBox(height: 8),
+          const Text(
+            'Final ZFW differs from the OFP planned ZFW by more than 5,000 kg. Request a new flight plan, time permitting.',
+            style: TextStyle(
+              color: Color(0xFF8A5B13),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ],
       ],
     ),
   );
